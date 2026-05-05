@@ -1,0 +1,815 @@
+{
+  "common": {
+    "search": "Search",
+    "browse": "Browse",
+    "viewDetails": "View Details",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "submit": "Submit",
+    "send": "Send",
+    "clear": "Clear",
+    "all": "All",
+    "tryAgain": "Try Again",
+    "goHome": "Go Home"
+  },
+  "nav": {
+    "browse": "Browse",
+    "sell": "Sell",
+    "workshop": "Workshops",
+    "showrooms": "Showrooms",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "favorites": "Favorites",
+    "appointments": "Appointments",
+    "profile": "Profile",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "admin": "Admin",
+    "becomeDealer": "Become a Dealer"
+  },
+  "hero": {
+    "title": "Find Your Perfect Car",
+    "subtitle": "Browse thousands of cars from trusted sellers across Saudi Arabia"
+  },
+  "search": {
+    "make": "Make",
+    "model": "Model",
+    "allMakes": "All Makes",
+    "allModels": "All Models",
+    "minPrice": "Min Price (SAR)",
+    "maxPrice": "Max Price (SAR)",
+    "minPricePlaceholder": "e.g. 50,000",
+    "maxPricePlaceholder": "e.g. 200,000"
+  },
+  "browse": {
+    "title": "Browse Cars",
+    "subtitle": "Find your perfect car from our extensive collection",
+    "filters": "Filters",
+    "clearFilters": "Clear Filters",
+    "applyFilters": "Apply Filters",
+    "showingResults": "Showing {count} cars",
+    "noCarsFound": "No cars found",
+    "noCarsMessage": "Try adjusting your filters or check back later for new listings.",
+    "loadingCars": "Loading cars from database...",
+    "sampleListings": "Showing sample listings. Seed the database to see real listings.",
+    "seedButton": "Seed Sample Cars",
+    "devNoData": "DEV: No data in Convex?"
+  },
+  "filters": {
+    "title": "Filters",
+    "make": "Make",
+    "model": "Model",
+    "city": "City",
+    "allCities": "All Cities",
+    "priceRange": "Price Range",
+    "minPrice": "Min Price",
+    "maxPrice": "Max Price",
+    "yearRange": "Year Range",
+    "minYear": "Min Year",
+    "maxYear": "Max Year",
+    "mileageRange": "Mileage Range",
+    "minMileage": "Min Mileage",
+    "maxMileage": "Max Mileage",
+    "fuelType": "Fuel Type",
+    "allFuelTypes": "All Fuel Types",
+    "transmission": "Transmission",
+    "allTransmissions": "All Transmissions",
+    "condition": "Condition",
+    "allConditions": "All Conditions",
+    "petrol": "Petrol",
+    "diesel": "Diesel",
+    "hybrid": "Hybrid",
+    "electric": "Electric",
+    "automatic": "Automatic",
+    "manual": "Manual",
+    "new": "New",
+    "used": "Used"
+  },
+  "car": {
+    "price": "Price",
+    "year": "Year",
+    "mileage": "Mileage",
+    "fuelType": "Fuel Type",
+    "transmission": "Transmission",
+    "condition": "Condition",
+    "color": "Color",
+    "location": "Location",
+    "description": "Description",
+    "make": "Make",
+    "model": "Model",
+    "new": "New",
+    "used": "Used",
+    "sellerInfo": "Seller Information",
+    "privateSeller": "Private Seller",
+    "verified": "Verified",
+    "noLongerAvailable": "Car no longer available",
+    "gallery": {
+      "viewAll": "View all photos",
+      "photoCount": "{current} of {total}",
+      "close": "Close gallery",
+      "previous": "Previous image",
+      "next": "Next image"
+    },
+    "share": {
+      "title": "Share this listing",
+      "copyLink": "Copy Link",
+      "linkCopied": "Link copied!",
+      "whatsapp": "WhatsApp",
+      "twitter": "Twitter",
+      "facebook": "Facebook",
+      "shareVia": "Share via"
+    }
+  },
+  "actions": {
+    "contactSeller": "Contact Seller",
+    "bookTestDrive": "Book Test Drive",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
+    "savedToFavorites": "Saved to Favorites",
+    "saveToFavorites": "Save to Favorites",
+    "compare": "Compare",
+    "compared": "Compared",
+    "compareNow": "Compare Now",
+    "clearAll": "Clear All",
+    "compareSelected": "Compare ({count}) selected",
+    "maxCompareReached": "You can compare up to 4 cars.",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Saved!"
+  },
+  "testDrive": {
+    "title": "Book a Test Drive",
+    "yourName": "Your Name",
+    "fullName": "Full name",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "+966 5X XXX XXXX",
+    "preferredDate": "Preferred Date",
+    "preferredTime": "Preferred Time",
+    "selectTime": "Select time",
+    "message": "Message (optional)",
+    "messagePlaceholder": "Any questions or special requests...",
+    "sendRequest": "Send Request",
+    "sending": "Sending...",
+    "requestSent": "Request Sent!",
+    "city": "City",
+    "selectCity": "Select city",
+    "bookingFor": "Booking test drive for"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account information",
+    "signInRequired": "Sign in to view your profile",
+    "signInMessage": "Access and manage your account settings",
+    "fullName": "Full Name",
+    "namePlaceholder": "Your full name",
+    "emailAddress": "Email Address",
+    "emailCannotChange": "Email cannot be changed",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "+966 XX XXX XXXX",
+    "updateFailed": "Failed to update profile. Please try again."
+  },
+  "appointments": {
+    "title": "My Appointments",
+    "subtitle": "Your scheduled car viewings",
+    "signInRequired": "Sign in to view your appointments",
+    "signInMessage": "Manage your car viewing appointments",
+    "noAppointments": "No appointments yet",
+    "noAppointmentsMessage": "Browse cars and book a viewing appointment",
+    "cancelConfirm": "Are you sure you want to cancel this appointment?",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    }
+  },
+  "about": {
+    "heroTitle": "About MARKABA",
+    "heroSubtitle": "We're on a mission to make buying and selling cars in Saudi Arabia simple, transparent, and trustworthy.",
+    "ourStory": "Our Story",
+    "storyP1": "Founded in 2024, MARKABA was created with a simple goal: to transform the car buying and selling experience in Saudi Arabia.",
+    "storyP2": "We noticed that finding the right car was often a frustrating experience - scattered listings, unreliable sellers, and lack of transparency. We set out to change that.",
+    "storyP3": "Today, we connect thousands of buyers and sellers across the Kingdom, providing a platform that prioritizes trust, convenience, and exceptional user experience.",
+    "carsListed": "Cars Listed",
+    "happyCustomers": "Happy Customers",
+    "citiesCovered": "Cities Covered",
+    "satisfactionRate": "Satisfaction Rate",
+    "ourValues": "Our Values",
+    "trustTitle": "Trust & Transparency",
+    "trustDesc": "We verify all sellers and provide detailed car histories to ensure you make informed decisions.",
+    "customerTitle": "Customer First",
+    "customerDesc": "Your satisfaction is our priority. We're here to help you every step of the way.",
+    "qualityTitle": "Quality Excellence",
+    "qualityDesc": "We curate high-quality listings and maintain strict standards for all cars on our platform.",
+    "coverageTitle": "We Cover All Major Cities",
+    "coverageSubtitle": "Find cars near you from our extensive network across Saudi Arabia",
+    "ctaTitle": "Ready to Get Started?",
+    "ctaSubtitle": "Join thousands of satisfied customers who found their dream cars through MARKABA.",
+    "browseNow": "Browse Cars Now"
+  },
+  "contactPage": {
+    "title": "Contact Us",
+    "subtitle": "Have questions or need help? We're here to assist you. Reach out and we'll get back to you as soon as possible.",
+    "email": "Email",
+    "emailDesc": "Send us an email anytime",
+    "phone": "Phone",
+    "phoneHours": "Sun-Thu, 9am to 6pm",
+    "office": "Office",
+    "officeDesc": "Visit our headquarters",
+    "faqTitle": "Frequently Asked Questions",
+    "faqDesc": "Find quick answers to common questions about buying and selling cars.",
+    "viewFaq": "View FAQ →",
+    "formTitle": "Send us a Message",
+    "yourName": "Your Name",
+    "namePlaceholder": "John Doe",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "you@example.com",
+    "subject": "Subject",
+    "selectSubject": "Select a subject",
+    "subjectGeneral": "General Inquiry",
+    "subjectSupport": "Technical Support",
+    "subjectListing": "Listing Help",
+    "subjectReport": "Report an Issue",
+    "subjectPartnership": "Partnership Inquiry",
+    "subjectOther": "Other",
+    "message": "Message",
+    "messagePlaceholder": "How can we help you?",
+    "sendMessage": "Send Message",
+    "sending": "Sending...",
+    "messageSent": "Message Sent!",
+    "thankYou": "Thank you for reaching out. We'll get back to you within 24 hours.",
+    "sendAnother": "Send another message"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Get in touch with our team",
+    "notAvailable": "Contact Not Available",
+    "notAvailableMessage": "The seller's contact information is not available. You can reach out to us instead.",
+    "contactUs": "Contact Us"
+  },
+  "favorites": {
+    "title": "My Favorites",
+    "carsSaved": "{count} car saved | {count} cars saved",
+    "carsForLater": "Cars you've saved for later",
+    "noFavorites": "No favorites yet",
+    "noFavoritesMessage": "Browse our collection and tap the heart icon on cars you like to save them here.",
+    "browseCars": "Browse Cars"
+  },
+  "compare": {
+    "title": "Compare Cars",
+    "subtitle": "Side-by-side comparison of your selected cars",
+    "needMoreCars": "Select at least 2 cars to compare",
+    "addMoreMessage": "Go back to browse and add cars to compare.",
+    "noCarsSelected": "No cars selected for comparison",
+    "remove": "Remove"
+  },
+  "carNotFound": {
+    "title": "Car not found",
+    "message": "This car may have been sold or removed",
+    "backToBrowse": "Back to Browse"
+  },
+  "featured": {
+    "title": "Featured Cars",
+    "subtitle": "Handpicked listings to get you started.",
+    "browseAll": "Browse All Cars"
+  },
+  "info": {
+    "headline": "Buy smarter. Drive sooner.",
+    "subheadline": "Verified listings, instant comparison, and fast seller contact — built for Saudi Arabia.",
+    "disclaimer": "The premier car marketplace for Saudi Arabia",
+    "exploreCars": "Explore Cars",
+    "verified": "Verified",
+    "compareChip": "Compare",
+    "testDriveChip": "Test drive",
+    "verifiedHeadline": "Every listing verified",
+    "verifiedSubheadline": "Trust in quality. All sellers are reviewed for authenticity.",
+    "compareHeadline": "Compare side by side",
+    "compareSubheadline": "Make informed decisions with instant car comparisons.",
+    "testDriveHeadline": "Book your test drive",
+    "testDriveSubheadline": "Schedule a test drive with just a few taps."
+  },
+  "footer": {
+    "description": "Your trusted marketplace for buying and selling cars in Saudi Arabia.",
+    "quickLinks": "Quick Links",
+    "home": "Home",
+    "browse": "Browse Cars",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "allRightsReserved": "All rights reserved."
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Name",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signInWith": "Sign in with {provider}",
+    "orContinueWith": "Or continue with"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Find answers to common questions about buying and selling cars on MARKABA.",
+    "stillHaveQuestions": "Still have questions?",
+    "contactSupport": "Our support team is here to help you with any questions.",
+    "contactUs": "Contact Us",
+    "categories": {
+      "buying": "Buying a Car",
+      "selling": "Selling a Car",
+      "account": "Account & Security",
+      "payments": "Payments & Fees"
+    },
+    "questions": {
+      "howToBuy": "How do I buy a car on MARKABA?",
+      "howToBuyAnswer": "Browse our listings, use filters to find your perfect car, contact the seller, arrange a test drive, and complete the purchase directly with the seller. We facilitate the connection but the transaction is between you and the seller.",
+      "isItSafe": "Is it safe to buy a car online?",
+      "isItSafeAnswer": "We verify all sellers and listings to ensure authenticity. However, we recommend meeting in a safe public place, inspecting the car thoroughly, and completing the transaction through secure methods.",
+      "canITestDrive": "Can I test drive before buying?",
+      "canITestDriveAnswer": "Yes! We encourage test drives. Use the 'Book Test Drive' feature on any listing to schedule a viewing with the seller.",
+      "howToSell": "How do I list my car for sale?",
+      "howToSellAnswer": "Sign in to your account, click 'Sell Your Car' in the navigation, fill in your car details, upload photos, set your price, and submit. Your listing will be reviewed and published within 24 hours.",
+      "listingFee": "Is there a fee to list my car?",
+      "listingFeeAnswer": "Basic listings are free! We offer premium listing options with enhanced visibility for a small fee. Check our pricing page for details.",
+      "howLongListing": "How long does my listing stay active?",
+      "howLongListingAnswer": "Listings remain active for 30 days. You can renew or edit your listing at any time from your dashboard.",
+      "createAccount": "How do I create an account?",
+      "createAccountAnswer": "Click 'Sign Up' in the top navigation, enter your email and create a password. You can also sign up using your Google or Apple account for faster access.",
+      "forgotPassword": "I forgot my password. What do I do?",
+      "forgotPasswordAnswer": "Click 'Sign In', then 'Forgot Password'. Enter your email and we'll send you a link to reset your password.",
+      "deleteAccount": "Can I delete my account?",
+      "deleteAccountAnswer": "Yes, you can delete your account from your profile settings. Please note that this action is permanent and will remove all your listings and data.",
+      "paymentMethods": "What payment methods are accepted?",
+      "paymentMethodsAnswer": "Transactions are made directly between buyers and sellers. We recommend bank transfers or cash in person. Always use secure payment methods and get receipts.",
+      "platformFees": "Does MARKABA charge any fees?",
+      "platformFeesAnswer": "Browsing and basic listings are free. We charge a small commission only on successful sales through our platform. Premium features may have additional fees."
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated",
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By accessing and using MARKABA, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these terms, please do not use our service."
+      },
+      "services": {
+        "title": "2. Description of Services",
+        "content": "MARKABA provides an online marketplace platform that connects car buyers and sellers in Saudi Arabia. We facilitate listings and communications but are not a party to any transaction between users."
+      },
+      "eligibility": {
+        "title": "3. User Eligibility",
+        "content": "You must be at least 18 years old and a resident of Saudi Arabia to use our services. By using MARKABA, you represent that you meet these requirements."
+      },
+      "accounts": {
+        "title": "4. User Accounts",
+        "content": "You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorized use of your account. We reserve the right to suspend or terminate accounts that violate our terms."
+      },
+      "listings": {
+        "title": "5. Listing Guidelines",
+        "content": "All listings must be accurate and truthful. You may only list vehicles you have the legal right to sell. Fraudulent, misleading, or illegal listings will be removed and may result in account termination."
+      },
+      "prohibited": {
+        "title": "6. Prohibited Activities",
+        "content": "Users may not: post false or misleading information, engage in fraudulent activities, harass other users, attempt to circumvent our systems, or use the platform for any illegal purposes."
+      },
+      "liability": {
+        "title": "7. Limitation of Liability",
+        "content": "MARKABA is not responsible for the quality, safety, or legality of items listed, the truth or accuracy of listings, the ability of sellers to sell items, or the ability of buyers to pay for items."
+      },
+      "disputes": {
+        "title": "8. Dispute Resolution",
+        "content": "Any disputes between users should be resolved directly between the parties. MARKABA may provide assistance but is not obligated to mediate or resolve disputes."
+      },
+      "modifications": {
+        "title": "9. Modifications to Terms",
+        "content": "We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms."
+      },
+      "contact": {
+        "title": "10. Contact Information",
+        "content": "For questions about these Terms of Service, please contact us at legal@markaba.sa or through our Contact page."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated",
+    "intro": "At MARKABA, we take your privacy seriously. This policy describes how we collect, use, and protect your personal information.",
+    "sections": {
+      "collection": {
+        "title": "1. Information We Collect",
+        "content": "We collect information you provide directly (name, email, phone number, car listings), information collected automatically (IP address, browser type, device information), and information from third parties (payment processors, social login providers)."
+      },
+      "usage": {
+        "title": "2. How We Use Your Information",
+        "content": "We use your information to: provide and improve our services, process transactions, communicate with you, personalize your experience, ensure platform security, and comply with legal obligations."
+      },
+      "sharing": {
+        "title": "3. Information Sharing",
+        "content": "We may share your information with: other users (as necessary for transactions), service providers (hosting, analytics, payment processing), law enforcement (when required by law), and business partners (with your consent)."
+      },
+      "security": {
+        "title": "4. Data Security",
+        "content": "We implement industry-standard security measures to protect your data, including encryption, secure servers, and regular security audits. However, no method of transmission over the internet is 100% secure."
+      },
+      "cookies": {
+        "title": "5. Cookies and Tracking",
+        "content": "We use cookies and similar technologies to enhance your experience, analyze usage patterns, and deliver personalized content. You can control cookie preferences through your browser settings."
+      },
+      "rights": {
+        "title": "6. Your Rights",
+        "content": "You have the right to: access your personal data, correct inaccurate data, delete your data, object to processing, and data portability. Contact us to exercise these rights."
+      },
+      "retention": {
+        "title": "7. Data Retention",
+        "content": "We retain your personal information for as long as your account is active or as needed to provide services. We may retain certain information as required by law or for legitimate business purposes."
+      },
+      "children": {
+        "title": "8. Children's Privacy",
+        "content": "Our services are not intended for children under 18. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us."
+      },
+      "international": {
+        "title": "9. International Data Transfers",
+        "content": "Your information may be transferred to and processed in countries other than Saudi Arabia. We ensure appropriate safeguards are in place for such transfers."
+      },
+      "changes": {
+        "title": "10. Changes to This Policy",
+        "content": "We may update this privacy policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the 'Last updated' date."
+      },
+      "contact": {
+        "title": "11. Contact Us",
+        "content": "If you have questions about this Privacy Policy, please contact us at privacy@markaba.sa or through our Contact page."
+      }
+    }
+  },
+  "sell": {
+    "title": "Sell Your Car",
+    "subtitle": "List your car and reach thousands of potential buyers across Saudi Arabia.",
+    "signInRequired": "Sign in to sell your car",
+    "signInMessage": "Create an account or sign in to list your vehicle",
+    "steps": {
+      "details": "Car Details",
+      "photos": "Photos",
+      "pricing": "Pricing",
+      "review": "Review"
+    },
+    "form": {
+      "make": "Make",
+      "selectMake": "Select make",
+      "model": "Model",
+      "selectModel": "Select model",
+      "year": "Year",
+      "selectYear": "Select year",
+      "mileage": "Mileage (km)",
+      "mileagePlaceholder": "e.g. 50000",
+      "condition": "Condition",
+      "fuelType": "Fuel Type",
+      "transmission": "Transmission",
+      "color": "Exterior Color",
+      "selectColor": "Select color",
+      "city": "City",
+      "selectCity": "Select city",
+      "title": "Listing Title",
+      "titlePlaceholder": "e.g. 2022 Toyota Camry - Excellent Condition",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your car's features, history, and condition...",
+      "price": "Asking Price (SAR)",
+      "pricePlaceholder": "e.g. 85000",
+      "negotiable": "Price is negotiable",
+      "phone": "Contact Phone",
+      "phonePlaceholder": "+966 5X XXX XXXX"
+    },
+    "photos": {
+      "title": "Upload Photos",
+      "subtitle": "Add up to 10 photos of your car. Good photos help sell faster!",
+      "dragDrop": "Drag and drop images here, or click to browse",
+      "requirements": "JPG, PNG, WebP up to 5MB each. Minimum 3 photos required.",
+      "tips": "Tips: Include exterior (all angles), interior, engine, and any special features or damage.",
+      "mainPhoto": "Main Photo",
+      "maxReached": "Maximum 10 images allowed",
+      "invalidType": "Only JPG, PNG, and WebP images are allowed"
+    },
+    "review": {
+      "title": "Review Your Listing",
+      "subtitle": "Make sure all information is correct before publishing.",
+      "edit": "Edit"
+    },
+    "next": "Next",
+    "back": "Back",
+    "publish": "Publish Listing",
+    "publishing": "Publishing...",
+    "success": {
+      "title": "Listing Published!",
+      "message": "Your car is now live on MARKABA. Buyers can view and contact you.",
+      "pendingTitle": "Listing Submitted!",
+      "pendingMessage": "Your listing has been submitted for review. An admin will approve it shortly.",
+      "viewListing": "View Listing",
+      "browseCars": "Browse Cars",
+      "sellAnother": "Sell Another Car"
+    },
+    "dealerOnly": "Dealer Account Required",
+    "dealerOnlyMessage": "Only verified dealers can list cars for sale. Contact us to become a dealer.",
+    "becomeDealerButton": "Become a Dealer",
+    "error": {
+      "notDealer": "Only dealers and admins can create listings. Please contact us to become a dealer."
+    }
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "subtitle": "Manage listings, users, and approvals",
+    "notAuthenticated": "Please sign in to access admin panel",
+    "accessDenied": "Access Denied",
+    "adminOnly": "This page is only accessible to administrators.",
+    "stats": {
+      "totalListings": "Total Listings",
+      "pending": "Pending",
+      "active": "Active",
+      "users": "Users"
+    },
+    "tabs": {
+      "pending": "Pending Approvals",
+      "dealerApps": "Dealer Applications",
+      "users": "Users",
+      "allListings": "All Listings"
+    },
+    "noPending": "No pending listings",
+    "noPendingDesc": "All listings have been reviewed.",
+    "noApplications": "No pending applications",
+    "noApplicationsDesc": "All dealer applications have been reviewed.",
+    "pendingReview": "Pending Review",
+    "appliedOn": "Applied on",
+    "approveDealer": "Approve as Dealer",
+    "rejectReasonPlaceholder": "Reason for rejection (optional)",
+    "confirmReject": "Confirm Rejection",
+    "submittedBy": "Submitted by",
+    "view": "View",
+    "approve": "Approve",
+    "reject": "Reject",
+    "user": "User",
+    "email": "Email",
+    "role": "Role",
+    "actions": "Actions",
+    "changeRole": "Change Role",
+    "save": "Save",
+    "cancel": "Cancel",
+    "listing": "Listing",
+    "price": "Price",
+    "owner": "Owner",
+    "status": "Status",
+    "edit": "Edit",
+    "delete": "Delete",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "searchPlaceholder": "Search by title, make, model, or owner...",
+    "allStatuses": "All Statuses",
+    "newestFirst": "Newest First",
+    "oldestFirst": "Oldest First",
+    "priceHighLow": "Price: High to Low",
+    "priceLowHigh": "Price: Low to High",
+    "selected": "{count} selected",
+    "approveAll": "Approve All",
+    "deleteAll": "Delete All",
+    "clearSelection": "Clear selection",
+    "showingListings": "Showing {count} of {total} listings",
+    "noListingsFound": "No listings found",
+    "adjustFilters": "Try adjusting your search or filters.",
+    "editListing": "Edit Listing",
+    "saveChanges": "Save Changes",
+    "deleteListing": "Delete Listing?",
+    "deleteWarning": "This action cannot be undone.",
+    "deleteConfirm": "Are you sure you want to delete",
+    "listingUpdated": "Listing updated successfully",
+    "listingDeleted": "Listing deleted successfully",
+    "listingApproved": "Listing approved successfully",
+    "listingRejected": "Listing rejected",
+    "listingActivated": "Listing activated",
+    "listingDeactivated": "Listing deactivated",
+    "bulkApproved": "{count} listings approved",
+    "bulkDeleted": "{count} listings deleted",
+    "failedToUpdate": "Failed to update listing",
+    "failedToDelete": "Failed to delete listing",
+    "failedToApprove": "Failed to approve listing",
+    "failedToReject": "Failed to reject listing",
+    "userCard": {
+      "title": "User Details",
+      "totalListings": "Total Listings",
+      "activeListings": "Active Listings",
+      "pendingListings": "Pending Listings",
+      "changeRoleTo": "Change Role"
+    },
+    "roleChanged": "User role changed to {role}",
+    "failedToChangeRole": "Failed to change user role",
+    "manage": "Manage",
+    "workshops": {
+      "title": "Workshops",
+      "newWorkshop": "New Workshop",
+      "editWorkshop": "Edit Workshop",
+      "createWorkshop": "Create Workshop",
+      "workshopCreated": "Workshop created successfully",
+      "workshopUpdated": "Workshop updated successfully",
+      "workshopDeleted": "Workshop deleted successfully",
+      "workshopVerified": "Workshop verified",
+      "workshopUnverified": "Workshop unverified",
+      "noWorkshops": "No workshops found",
+      "listingsDetached": "{count} listings were detached",
+      "services": "Services",
+      "verified": "Verified",
+      "unverified": "Unverified"
+    },
+    "users": {
+      "title": "Users",
+      "noUsers": "No users found",
+      "blocked": "Blocked",
+      "active": "Active",
+      "blockUser": "Block User",
+      "unblockUser": "Unblock User",
+      "userBlocked": "User blocked",
+      "userUnblocked": "User unblocked"
+    },
+    "applications": {
+      "title": "Dealer Applications",
+      "noApplications": "No applications found",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "applicationApproved": "Application approved",
+      "applicationRejected": "Application rejected"
+    },
+    "audit": {
+      "title": "Audit Log",
+      "noLogs": "No audit logs yet",
+      "timestamp": "Timestamp",
+      "admin": "Admin",
+      "action": "Action",
+      "target": "Target"
+    }
+  },
+  "dealerApplication": {
+    "title": "Become a Dealer",
+    "subtitle": "Apply to become a verified dealer on MARKABA and start listing your cars.",
+    "signInRequired": "Sign In Required",
+    "signInMessage": "Please sign in to apply for a dealer account.",
+    "alreadyDealer": "You're Already a Dealer!",
+    "alreadyDealerMessage": "You already have dealer privileges and can list cars for sale.",
+    "startSelling": "Start Selling",
+    "pendingTitle": "Application Pending",
+    "pendingMessage": "Your dealer application is being reviewed. We'll notify you once it's approved.",
+    "submittedOn": "Submitted on",
+    "previouslyRejected": "Previous Application Rejected",
+    "rejectionReason": "Reason",
+    "canReapply": "You can submit a new application with updated information.",
+    "successTitle": "Application Submitted!",
+    "successMessage": "Thank you for your application. Our team will review it within 24-48 hours. You'll be notified once approved.",
+    "businessType": "Business Type",
+    "types": {
+      "individual": "Individual",
+      "dealership": "Workshop",
+      "showroom": "Showroom"
+    },
+    "businessName": "Business/Shop Name",
+    "businessNamePlaceholder": "Your business or shop name",
+    "city": "City",
+    "selectCity": "Select your city",
+    "phone": "Phone Number",
+    "email": "Email Address",
+    "address": "Business Address",
+    "addressPlaceholder": "Street address (optional)",
+    "expectedListings": "Expected Monthly Listings",
+    "selectExpected": "How many cars will you list?",
+    "carsPerMonth": "cars/month",
+    "description": "Tell Us About Your Business",
+    "descriptionPlaceholder": "Briefly describe your car business and why you want to join MARKABA...",
+    "submitting": "Submitting...",
+    "submit": "Submit Application",
+    "reviewNote": "Applications are typically reviewed within 24-48 hours.",
+    "error": {
+      "generic": "An error occurred. Please try again."
+    }
+  },
+  "workshop": {
+    "title": "Workshops",
+    "subtitle": "Find the best car workshops across Saudi Arabia",
+    "createTitle": "Create Workshop",
+    "createSubtitle": "Add your workshop to reach more customers",
+    "searchPlaceholder": "Search workshop, city, or service...",
+    "resultsFound": "{count} result(s) found",
+    "noWorkshops": "No workshops found",
+    "noWorkshopsMessage": "Be the first to add your workshop!",
+    "createButton": "Create Workshop",
+    "selectedOnMap": "Selected on map",
+    "carsAvailable": "Cars available",
+    "browseAll": "Browse all",
+    "call": "Call",
+    "viewOnMap": "View on map",
+    "noCarsYet": "No cars available yet",
+    "form": {
+      "name": "Workshop Name",
+      "namePlaceholder": "e.g., Gulf Auto Service",
+      "city": "City",
+      "selectCity": "Select city",
+      "address": "Full Address",
+      "addressPlaceholder": "Street, District, Landmark",
+      "phone": "Phone Number",
+      "services": "Services Offered",
+      "servicesHelp": "Select the services your workshop offers",
+      "description": "Description (Optional)",
+      "descriptionPlaceholder": "Tell us more about your workshop, experience, specialties..."
+    },
+    "success": {
+      "title": "Workshop Created!",
+      "message": "Your workshop is pending admin review. It will appear on the workshops page once approved.",
+      "viewWorkshops": "View Workshops",
+      "addCar": "Add a Car"
+    },
+    "error": {
+      "nameRequired": "Workshop name is required",
+      "cityRequired": "City is required",
+      "addressRequired": "Address is required",
+      "phoneRequired": "Phone number is required",
+      "servicesRequired": "Select at least one service",
+      "dealersOnly": "Only dealers and admins can create workshops"
+    },
+    "sellForm": {
+      "workshopLabel": "Workshop (Optional)",
+      "workshopHelp": "Attach this listing to your workshop to show it on your workshop page, or leave empty to list as an individual seller",
+      "noWorkshop": "No workshop (Individual seller)",
+      "listings": "listings",
+      "createNewWorkshop": "Create a new workshop"
+    }
+  },
+  "showroom": {
+    "title": "Showrooms",
+    "subtitle": "Discover the best car dealerships across Saudi Arabia",
+    "createTitle": "Create Showroom",
+    "createSubtitle": "Add your showroom to reach more customers",
+    "searchPlaceholder": "Search showroom, city, or service...",
+    "resultsFound": "{count} result(s) found",
+    "noShowrooms": "No showrooms found",
+    "noShowroomsMessage": "Be the first to add your showroom!",
+    "createButton": "Create Showroom",
+    "selectedOnMap": "Selected on map",
+    "carsForSale": "Cars for sale",
+    "browseAll": "Browse all",
+    "call": "Call",
+    "viewOnMap": "View on map",
+    "noCarsYet": "No cars available yet",
+    "form": {
+      "name": "Showroom Name",
+      "namePlaceholder": "e.g., Al Jazirah Motors",
+      "city": "City",
+      "selectCity": "Select city",
+      "address": "Full Address",
+      "addressPlaceholder": "Street, District, Landmark",
+      "phone": "Phone Number",
+      "services": "Services Offered",
+      "servicesHelp": "Select the services your showroom offers",
+      "description": "Description (Optional)",
+      "descriptionPlaceholder": "Tell us more about your showroom, brands, specialties..."
+    },
+    "success": {
+      "title": "Showroom Created!",
+      "message": "Your showroom is pending admin review. It will appear on the showrooms page once approved.",
+      "viewShowrooms": "View Showrooms",
+      "addCar": "Add a Car"
+    },
+    "error": {
+      "nameRequired": "Showroom name is required",
+      "cityRequired": "City is required",
+      "addressRequired": "Address is required",
+      "phoneRequired": "Phone number is required",
+      "servicesRequired": "Select at least one service",
+      "dealersOnly": "Only dealers and admins can create showrooms"
+    },
+    "sellForm": {
+      "showroomLabel": "Showroom (Optional)",
+      "showroomHelp": "Attach this listing to your showroom to show it on your showroom page, or leave empty to list as an individual seller",
+      "noShowroom": "No showroom (Individual seller)",
+      "listings": "listings",
+      "createNewShowroom": "Create a new showroom"
+    },
+    "services": {
+      "financing": "Financing",
+      "certified": "Certified",
+      "tradeIn": "Trade-in",
+      "warranty": "Warranty",
+      "insurance": "Insurance",
+      "inspection": "Inspection",
+      "delivery": "Delivery",
+      "afterSale": "After-sale Service",
+      "extendedWarranty": "Extended Warranty",
+      "testDrive": "Test Drive"
+    }
+  }
+}

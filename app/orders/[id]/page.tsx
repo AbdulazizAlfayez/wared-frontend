@@ -1,0 +1,622 @@
+"use client";
+
+export const dynamic = "force-dynamic";
+
+import { useParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { api } from "@/lib/api";
+import { useApiQuery } from "@/lib/hooks/use-api";
+import type { Order, OrderTimelineEvent, OrderDocument } from "@/lib/types";
+import Link from "next/link";
+import Image from "next/image";
+import { useState } from "react";
+import nextDynamic from "next/dynamic";
+import {
+  ArrowLeft,
+  Loader2,
+  Package,
+  CheckCircle,
+  Clock,
+  MapPin,
+  FileText,
+  Download,
+  MessageSquare,
+  XCircle,
+  Ship,
+  Anchor,
+  ShieldCheck,
+  Truck,
+  Home,
+  CreditCard,
+  AlertCircle,
+  User,
+  Calendar,
+  DollarSign,
+  ExternalLink,
+  ChevronRight,
+} from "lucide-react";
+import { useToast } from "@/components/Toast";
+import { getImageUrl } from "@/lib/utils";
+
+const OrderTrackingMap = nextDynamic(
+  () => import("@/components/OrderTrackingMap"),
+  { ssr: false, loading: () => (
+    <div className="h-[300px] rounded-xl bg-slate-100 animate-pulse" />
+  )}
+);
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const formatSAR = (n: number | null | undefined) => {
+  if (n == null) return "—";
+  const num = typeof (n as unknown) === "string" ? parseFloat(n as unknown as string) : n;
+  return new Intl.NumberFormat("en-SA", {
+    style: "currency",
+    currency: "SAR",
+    maximumFractionDigits: 0,
+  }).format(num);
+};
+
+const formatDate = (dateStr: string | null | undefined) => {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-SA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const formatDateTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString("en-SA", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  usa: "🇺🇸", us: "🇺🇸", japan: "🇯🇵", jp: "🇯🇵",
+  uae: "🇦🇪", ae: "🇦🇪", korea: "🇰🇷", kr: "🇰🇷",
+  germany: "🇩🇪", de: "🇩🇪", uk: "🇬🇧", gb: "🇬🇧",
+  canada: "🇨🇦", ca: "🇨🇦", europe: "🇪🇺", eu: "🇪🇺",
+};
+
+const STATUS_STEPS: { key: OrderStatus | string; label: string; icon: React.ElementType }[] = [
+  { key: "pending",             label: "Pending",          icon: CreditCard },
+  { key: "deposit_requested",   label: "Deposit",          icon: CreditCard },
+  { key: "deposit_paid",        label: "Paid",             icon: CheckCircle },
+  { key: "confirmed",           label: "Confirmed",        icon: CheckCircle },
+  { key: "sourcing",            label: "Sourcing",         icon: Package },
+  { key: "purchased",           label: "Purchased",        icon: CheckCircle },
+  { key: "preparing_shipment",  label: "Preparing",        icon: Package },
+  { key: "shipped",             label: "Shipped",          icon: Ship },
+  { key: "arrived_port",        label: "At Port",          icon: Anchor },
+  { key: "in_customs",          label: "Customs",          icon: ShieldCheck },
+  { key: "customs_cleared",     label: "Cleared",          icon: CheckCircle },
+  { key: "inspection",          label: "Inspection",       icon: ShieldCheck },
+  { key: "ready",               label: "Ready",            icon: Truck },
+  { key: "delivered",           label: "Delivered",        icon: Home },
+];
+
+type OrderStatus = import("@/lib/types").OrderStatus;
+
+const STATUS_ORDER_MAP: Record<string, number> = Object.fromEntries(
+  STATUS_STEPS.map((s, i) => [s.key, i])
+);
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:            "bg-yellow-100 text-yellow-700",
+  deposit_requested:  "bg-yellow-100 text-yellow-800",
+  deposit_paid:       "bg-blue-100 text-blue-700",
+  confirmed:          "bg-blue-100 text-blue-700",
+  sourcing:           "bg-accent/10 text-accent",
+  purchased:          "bg-accent/10 text-accent",
+  preparing_shipment: "bg-[#f3f4f6] text-[#0a0a0a]",
+  shipped:            "bg-[#f3f4f6] text-[#0a0a0a]",
+  arrived_port:       "bg-purple-100 text-purple-700",
+  in_customs:         "bg-orange-100 text-orange-700",
+  customs_cleared:    "bg-[#f3f4f6] text-[#0a0a0a]",
+  inspection:         "bg-orange-100 text-orange-700",
+  ready:              "bg-green-100 text-green-700",
+  delivered:          "bg-green-100 text-green-700",
+  completed:          "bg-green-100 text-green-700",
+  cancelled:          "bg-red-100 text-red-600",
+  refunded:           "bg-slate-100 text-slate-600",
+  disputed:           "bg-red-100 text-red-700",
+};
+
+const DOC_ICONS: Record<string, React.ElementType> = {
+  bill_of_lading:     Ship,
+  inspection_report:  ShieldCheck,
+  customs_document:   FileText,
+  payment_receipt:    CreditCard,
+  title_transfer:     FileText,
+};
+
+// ---------------------------------------------------------------------------
+// Timeline
+// ---------------------------------------------------------------------------
+function TimelineView({ events, currentStatus }: { events: OrderTimelineEvent[]; currentStatus: string }) {
+  const currentStep = STATUS_ORDER_MAP[currentStatus] ?? 0;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+      <h2 className="text-base font-semibold text-slate-900 mb-6 flex items-center gap-2">
+        <Clock className="w-5 h-5 text-slate-400" />
+        Order Timeline
+      </h2>
+
+      <div className="space-y-0">
+        {events.length > 0 ? (
+          events.map((event, i) => {
+            const isLast = i === events.length - 1;
+            return (
+              <div key={event.id} className="flex gap-4">
+                {/* Spine */}
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    event.is_current
+                      ? "bg-accent text-white ring-4 ring-accent/20"
+                      : "bg-green-500 text-white"
+                  }`}>
+                    {event.is_current ? (
+                      <span className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4" />
+                    )}
+                  </div>
+                  {!isLast && <div className="w-0.5 h-full bg-slate-100 my-1 min-h-[2rem]" />}
+                </div>
+                {/* Content */}
+                <div className={`pb-6 flex-1 min-w-0 ${isLast ? "pb-0" : ""}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className={`text-sm font-semibold ${event.is_current ? "text-accent" : "text-slate-800"}`}>
+                        {event.title}
+                      </p>
+                      {event.description && (
+                        <p className="text-sm text-slate-500 mt-0.5">{event.description}</p>
+                      )}
+                      {event.location && (
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                          <MapPin className="w-3 h-3" />
+                          {event.location}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400 flex-shrink-0 mt-0.5">
+                      {formatDateTime(event.created_at)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          /* No events yet — show projected stepper */
+          <div>
+            <p className="text-sm text-slate-400 mb-4">Tracking events will appear here as your order progresses.</p>
+            <div className="space-y-3">
+              {STATUS_STEPS.filter(s => s.key !== "cancelled" && s.key !== "refunded").map((step, i) => {
+                const done = i < currentStep;
+                const active = i === currentStep;
+                const StepIcon = step.icon;
+                return (
+                  <div key={step.key} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      done ? "bg-green-500 text-white"
+                        : active ? "bg-accent text-white ring-4 ring-accent/20"
+                        : "bg-slate-100 text-slate-400"
+                    }`}>
+                      {done ? <CheckCircle className="w-4 h-4" /> : <StepIcon className="w-4 h-4" />}
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      active ? "text-accent" : done ? "text-slate-700" : "text-slate-400"
+                    }`}>
+                      {step.label}
+                    </span>
+                    {active && (
+                      <span className="text-xs px-2 py-0.5 bg-accent/10 text-accent rounded-full font-semibold">
+                        Current
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+function DocumentsSection({ orderId }: { orderId: string }) {
+  const { data: docs, isLoading } = useApiQuery<OrderDocument[]>(
+    `/api/orders/${orderId}/documents/`,
+    { enabled: !!orderId }
+  );
+
+  if (isLoading) return null;
+  if (!docs || docs.length === 0) return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+      <h2 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+        <FileText className="w-5 h-5 text-slate-400" />
+        Documents
+      </h2>
+      <p className="text-sm text-slate-400">No documents uploaded yet. They will appear here as your order progresses.</p>
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+      <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+        <FileText className="w-5 h-5 text-slate-400" />
+        Documents
+        <span className="ml-auto text-xs text-slate-400">{docs.length} file{docs.length !== 1 ? "s" : ""}</span>
+      </h2>
+      <div className="space-y-3">
+        {docs.map((doc) => {
+          const DocIcon = DOC_ICONS[doc.document_type] ?? FileText;
+          return (
+            <div key={doc.id} className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors group">
+              <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center flex-shrink-0">
+                <DocIcon className="w-5 h-5 text-slate-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">{doc.title}</p>
+                <p className="text-xs text-slate-400">
+                  {doc.document_type_display} · {formatDate(doc.uploaded_at)}
+                </p>
+              </div>
+              <a
+                href={doc.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-600 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+export default function OrderDetailPage() {
+  const params = useParams();
+  const orderId = params.id as string;
+  const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
+
+  const { data: order, isLoading, refetch: refetchOrder } = useApiQuery<Order>(
+    `/api/orders/${orderId}/`,
+    { enabled: !!orderId && isAuthenticated }
+  );
+
+  const { data: timeline, isLoading: timelineLoading } = useApiQuery<OrderTimelineEvent[]>(
+    `/api/orders/${orderId}/timeline/`,
+    { enabled: !!orderId && isAuthenticated }
+  );
+
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  const handleCancel = async () => {
+    if (!order) return;
+    setIsCancelling(true);
+    try {
+      await api.post(`/api/orders/${orderId}/cancel/`);
+      refetchOrder();
+      setShowCancelConfirm(false);
+      showToast("success", "Order cancellation requested.");
+    } catch {
+      showToast("error", "Could not cancel order. Please contact support.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-24 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-500 mb-4">Please sign in to view your orders.</p>
+          <Link href="/auth/signin" className="px-6 py-2.5 bg-accent text-white rounded-xl font-medium hover:bg-accent-600 transition-colors">
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-24 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-24 pb-12">
+        <div className="max-w-4xl mx-auto px-4 text-center py-20">
+          <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Order Not Found</h1>
+          <p className="text-slate-500 mb-6">This order doesn't exist or you don't have access to it.</p>
+          <Link href="/orders" className="px-6 py-2.5 bg-accent text-white rounded-xl font-medium hover:bg-accent-600 transition-colors">
+            My Orders
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const listing = order.car;
+  const countryFlag = COUNTRY_FLAGS[listing?.source_country?.toLowerCase() ?? ""] ?? "🌍";
+  const statusColor = STATUS_COLORS[order.status] ?? "bg-slate-100 text-slate-600";
+  const rawImage = listing?.primary_image;
+  const imageUrl = rawImage
+    ? (rawImage.startsWith("http") ? rawImage : getImageUrl(rawImage))
+    : "/images/car-placeholder.jpg";
+
+  return (
+    <div className="min-h-screen bg-slate-50 pt-24 pb-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back */}
+        <Link href="/orders" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 text-sm">
+          <ArrowLeft className="w-4 h-4" />
+          My Orders
+        </Link>
+
+        {/* Header */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-xl font-bold text-slate-900">{order.order_number}</h1>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                  {order.status_display}
+                </span>
+              </div>
+              <p className="text-sm text-slate-400">Placed {formatDate(order.created_at)}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{countryFlag}</span>
+              <div>
+                <div className="font-semibold text-slate-900">
+                  {listing.year} {listing.make} {listing.model}
+                </div>
+                {listing.source_country && (
+                  <div className="text-xs text-slate-400 capitalize">
+                    Imported from {listing.source_country}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Car thumbnail strip */}
+          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-50">
+            <div className="relative w-24 h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+              <Image src={imageUrl} alt={`${listing.make} ${listing.model}`} fill className="object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <div className="text-xs text-slate-400">Final Price</div>
+                <div className="text-sm font-semibold text-slate-800">{formatSAR(listing.final_price_sar ?? listing.price)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Reservation Fee</div>
+                <div className="text-sm font-semibold text-slate-800">{formatSAR(order.reservation_fee)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Payment</div>
+                <div className={`text-sm font-semibold capitalize ${
+                  order.payment_status === "paid" ? "text-green-600"
+                    : order.payment_status === "refunded" ? "text-slate-500"
+                    : "text-yellow-600"
+                }`}>{order.payment_status}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">Est. Delivery</div>
+                <div className="text-sm font-semibold text-slate-800">{formatDate(order.estimated_delivery_date)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Shipping map — visible during transit statuses ── */}
+        {["purchased", "preparing_shipment", "shipped", "arrived_port",
+          "in_customs", "customs_cleared", "inspection", "ready", "delivered"
+        ].includes(order.status) && (
+          <div className="relative z-[1] mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Ship className="w-4 h-4 text-slate-400" />
+              <h2 className="text-sm font-semibold text-slate-700">Shipping Route</h2>
+              {listing.vessel_name && (
+                <span className="text-xs text-slate-400">· {listing.vessel_name}</span>
+              )}
+            </div>
+            <OrderTrackingMap
+              portOfOrigin={listing.port_of_origin}
+              portOfEntry={listing.port_of_entry}
+              currentStatus={order.status}
+              vesselName={listing.vessel_name}
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Timeline + Docs */}
+          <div className="lg:col-span-2 space-y-6">
+            {timelineLoading ? (
+              <div className="bg-white rounded-2xl border border-slate-100 p-6 flex items-center justify-center h-40">
+                <Loader2 className="w-6 h-6 animate-spin text-accent" />
+              </div>
+            ) : (
+              <TimelineView
+                events={timeline ?? []}
+                currentStatus={order.status}
+              />
+            )}
+            <DocumentsSection orderId={orderId} />
+          </div>
+
+          {/* Right: Sidebar */}
+          <div className="space-y-4">
+            {/* Order Summary Card */}
+            <div className="bg-white rounded-2xl border border-slate-100 p-5">
+              <h2 className="text-sm font-semibold text-slate-700 mb-4">Order Summary</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Car Price</span>
+                  <span className="font-medium text-slate-800">{formatSAR(listing.final_price_sar ?? listing.price)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Reservation Fee</span>
+                  <span className="font-medium text-slate-800">{formatSAR(order.reservation_fee)}</span>
+                </div>
+                {order.total_price != null && (
+                  <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
+                    <span className="text-slate-700">Total</span>
+                    <span className="text-slate-900">{formatSAR(order.total_price)}</span>
+                  </div>
+                )}
+              </div>
+
+              {order.estimated_delivery_date && (
+                <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <div>
+                    <div className="text-xs text-slate-400">Estimated Delivery</div>
+                    <div className="font-medium text-slate-700">{formatDate(order.estimated_delivery_date)}</div>
+                  </div>
+                </div>
+              )}
+              {order.actual_delivery_date && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <div>
+                    <div className="text-xs">Delivered</div>
+                    <div className="font-medium">{formatDate(order.actual_delivery_date)}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Importer Card */}
+            {order.importer && (
+              <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                <h2 className="text-sm font-semibold text-slate-700 mb-4">Your Importer</h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {order.importer.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={order.importer.avatar_url} alt={order.importer.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-900">{order.importer.name}</div>
+                    {order.importer.phone && (
+                      <a href={`tel:${order.importer.phone}`} className="text-sm text-accent hover:underline" dir="ltr">
+                        {order.importer.phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Link
+                    href={`/messages?order=${order.id}`}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Message Importer
+                  </Link>
+                  <Link
+                    href={`/importers/${order.importer.id}`}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    View Profile
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Car Link */}
+            <Link
+              href={`/car/${listing.id}`}
+              className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors group"
+            >
+              <span className="text-sm font-medium text-slate-700">View Car Listing</span>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+            </Link>
+
+            {/* Cancel */}
+            {order.can_cancel && order.status !== "cancelled" && order.status !== "refunded" && (
+              <div>
+                {!showCancelConfirm ? (
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="w-full py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-red-100"
+                  >
+                    Cancel Order
+                  </button>
+                ) : (
+                  <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-red-700">Cancel this order?</p>
+                        <p className="text-xs text-red-500 mt-0.5">Cancellation may be subject to fees depending on order stage.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowCancelConfirm(false)}
+                        className="flex-1 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                      >
+                        Keep Order
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        disabled={isCancelling}
+                        className="flex-1 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1"
+                      >
+                        {isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        Confirm
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {order.notes && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-amber-700 mb-1">Note from Importer</p>
+                <p className="text-sm text-amber-700">{order.notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
