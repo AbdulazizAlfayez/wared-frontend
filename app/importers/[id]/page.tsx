@@ -346,7 +346,7 @@ export default function ImporterProfilePage() {
 
                   {/* CTA — in-app messaging only */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Link href={`/messages?importer=${importer.id}`}
+                    <Link href={`/messages?importer_user=${importer.user_id}`}
                       className="flex items-center gap-1.5 px-5 py-2.5 bg-[#0A0A0A] text-white rounded-xl text-sm font-medium hover:bg-black transition-colors">
                       <MessageSquare className="w-4 h-4" /> مراسلة المستورد / Message importer
                     </Link>
@@ -491,7 +491,7 @@ export default function ImporterProfilePage() {
                 <span>Usually responds within <strong className="text-slate-700">2 hours</strong></span>
               </div>
               <Link
-                href={`/messages?importer=${importer.id}`}
+                href={`/messages?importer_user=${importer.user_id}`}
                 className="flex items-center justify-center gap-2 w-full py-3 bg-[#0A0A0A] text-white rounded-xl text-sm font-medium hover:bg-black transition-colors"
               >
                 <MessageSquare className="w-4 h-4" />

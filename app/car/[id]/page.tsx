@@ -1439,7 +1439,7 @@ export default function CarDetailPage() {
                   <span className="hidden sm:inline">{isFav ? "Saved" : "Save"}</span>
                 </button>
                 <Link
-                  href={isAuthenticated && ownerId ? `/messages?importer=${ownerId}&car_id=${listingId}` : "/auth/signin"}
+                  href={isAuthenticated && ownerId ? `/messages?importer_user=${ownerId}&car_id=${listingId}` : "/auth/signin"}
                   className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
                 >
                   <MessageSquare className="w-5 h-5" />
