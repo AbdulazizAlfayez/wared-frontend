@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Outfit } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { AuthProvider } from "@/lib/auth-context";
@@ -37,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body
-        className={`${bricolage.variable} ${outfit.variable} antialiased min-h-screen flex flex-col bg-white text-slate-900 transition-colors`}
+        className={`${bricolage.variable} ${outfit.variable} ${GeistSans.variable} antialiased min-h-screen flex flex-col bg-white text-slate-900 transition-colors`}
       >
           <AuthProvider>
             <ToastProvider>

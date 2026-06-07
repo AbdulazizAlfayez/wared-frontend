@@ -148,7 +148,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/dashboard/promotions",   label: "Promotions",           icon: Zap },
     ...(hasShowroom ? [{ href: "/dashboard/showroom", label: "My Showroom", icon: Store }] : []),
     ...(hasWorkshop ? [{ href: "/dashboard/workshop", label: "My Workshop", icon: Wrench }] : []),
-    { href: "/dashboard/subscription", label: "Manage Subscription",  icon: CreditCard },
+    // DEPRECATED: Subscription nav link hidden — commission-only model
+    // { href: "/dashboard/subscription", label: "Manage Subscription",  icon: CreditCard },
     { href: "/dashboard/verification", label: "Verification",          icon: ShieldCheck, showDot: verifIncomplete },
     { href: "/dashboard/reviews",      label: "My Reviews",            icon: Star },
     { href: "/dashboard/reports",      label: "My Reports",            icon: Flag },

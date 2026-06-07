@@ -70,8 +70,7 @@ const BADGE_ICONS: Record<string, React.ElementType> = {
 function StepIndicator({ step }: { step: number }) {
   const steps = [
     { n: 1, label: "Business Info" },
-    { n: 2, label: "Choose Plan" },
-    { n: 3, label: "Review" },
+    { n: 2, label: "Review" },
   ];
 
   return (
@@ -201,7 +200,8 @@ export default function BecomeDealerPage() {
 
   const canCreateListings = role === "dealer" || role === "admin";
 
-  // Wizard step (1 = business info, 2 = choose plan, 3 = review & submit)
+  // Wizard step (1 = business info, 2 = review & submit)
+  // NOTE: Plan selection step removed — commission-only model
   const [step, setStep] = useState(1);
 
   // Step 1 state
@@ -217,7 +217,7 @@ export default function BecomeDealerPage() {
   });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  // Step 2 state
+  // DEPRECATED: Plan selection removed — commission-only model (kept for hidden step 2 dead code)
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [chosenPlan, setChosenPlan] = useState<SubscriptionPlan | null>(null);
 
@@ -228,11 +228,9 @@ export default function BecomeDealerPage() {
 
   const isWorkshop = formData.businessType === "workshop";
 
-  const { data: plans, isLoading: plansLoading } = useApiQuery<SubscriptionPlan[]>(
-    "/api/subscription-plans/",
-    { enabled: step >= 2 }
-  );
-  const sortedPlans = [...(plans ?? [])].sort((a, b) => a.display_order - b.display_order);
+  // DEPRECATED: Plan fetching disabled — commission-only model (kept for hidden step 2 dead code)
+  const plansLoading = false;
+  const sortedPlans: SubscriptionPlan[] = [];
 
   const updateField = (field: string, value: string) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -268,12 +266,7 @@ export default function BecomeDealerPage() {
         expected_listings: !isWorkshop ? formData.expectedListings || undefined : undefined,
       });
 
-      // Store plan preference in localStorage so dashboard can show upgrade banner
-      if (chosenPlan && chosenPlan.slug !== "free") {
-        localStorage.setItem("pending_plan_slug", chosenPlan.slug);
-        localStorage.setItem("pending_plan_name", chosenPlan.name);
-        localStorage.setItem("pending_billing_cycle", billing);
-      }
+      // DEPRECATED: No plan storage — commission-only model
 
       setSubmitSuccess(true);
     } catch (error) {
@@ -335,12 +328,7 @@ export default function BecomeDealerPage() {
               <Car className="w-5 h-5" />
               <span>{t("dealerApplication.startSelling")}</span>
             </Link>
-            <Link
-              href="/dashboard/subscription"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold"
-            >
-              View My Plan
-            </Link>
+            {/* DEPRECATED: "View My Plan" link removed — commission-only model */}
           </div>
         </div>
       </div>
@@ -358,11 +346,7 @@ export default function BecomeDealerPage() {
             {t("dealerApplication.successTitle")}
           </h1>
           <p className="text-slate-500 mb-3">{t("dealerApplication.successMessage")}</p>
-          {chosenPlan && chosenPlan.slug !== "free" && (
-            <p className="text-sm text-accent font-medium mb-6">
-              You selected the <strong>{chosenPlan.name}</strong> plan. It will be available to activate from your dashboard once your application is approved.
-            </p>
-          )}
+          {/* DEPRECATED: Plan selection message removed */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-800">
             ⏱ Your application will be reviewed within <strong>24–48 hours</strong>.
           </div>
@@ -595,14 +579,14 @@ export default function BecomeDealerPage() {
               disabled={!step1Valid}
               className="w-full py-3 bg-accent hover:bg-accent-600 disabled:bg-accent/40 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
             >
-              Next: Choose Your Plan
+              Next: Review & Submit
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        {/* ── STEP 2: Choose Plan ── */}
-        {step === 2 && (
+        {/* DEPRECATED: Plan selection step hidden — commission-only model */}
+        {false && (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-slate-100 p-6 sm:p-8">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Choose Your Plan</h2>
@@ -673,7 +657,7 @@ export default function BecomeDealerPage() {
                   disabled={!chosenPlan}
                   className="flex-1 py-3 bg-accent hover:bg-accent-600 disabled:bg-accent/40 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                 >
-                  {chosenPlan ? `Continue with ${chosenPlan.name}` : "Select a Plan to Continue"}
+                  {chosenPlan ? `Continue with ${chosenPlan?.name}` : "Select a Plan to Continue"}
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
@@ -681,8 +665,8 @@ export default function BecomeDealerPage() {
           </div>
         )}
 
-        {/* ── STEP 3: Review & Submit ── */}
-        {step === 3 && (
+        {/* ── STEP 2: Review & Submit ── */}
+        {step === 2 && (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-slate-100 p-6 sm:p-8">
               <h2 className="text-lg font-bold text-slate-900 mb-6">Review & Submit</h2>
@@ -741,58 +725,16 @@ export default function BecomeDealerPage() {
                 </dl>
               </div>
 
-              {/* Plan summary */}
-              {chosenPlan && (
-                <div className={`rounded-xl p-4 mb-4 ${
-                  chosenPlan.slug === "pro"
-                    ? "bg-yellow-50 border border-yellow-200"
-                    : "bg-accent/5 border border-accent/20"
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className={`text-sm font-semibold uppercase tracking-wide ${
-                      chosenPlan.slug === "pro" ? "text-yellow-600" : "text-accent/70"
-                    }`}>
-                      Selected Plan
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="text-xs text-accent hover:underline font-medium"
-                    >
-                      Change
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className={`text-lg font-bold ${chosenPlan.slug === "pro" ? "text-white" : "text-slate-900"}`}>
-                        {chosenPlan.name} Plan
-                      </p>
-                      <p className={`text-xs ${chosenPlan.slug === "pro" ? "text-slate-400" : "text-slate-500"}`}>
-                        {billing === "annual" ? "Annual" : "Monthly"} billing
-                      </p>
-                    </div>
-                    <p className={`text-xl font-bold ${chosenPlan.slug === "pro" ? "text-yellow-400" : "text-accent"}`}>
-                      {parseFloat(billing === "annual" ? chosenPlan.annual_price : chosenPlan.monthly_price) === 0
-                        ? "Free"
-                        : `SAR ${parseFloat(billing === "annual" ? chosenPlan.annual_price : chosenPlan.monthly_price).toLocaleString()}/${billing === "annual" ? "yr" : "mo"}`
-                      }
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* DEPRECATED: Plan summary removed — commission-only model */}
 
               {/* Info note */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
                 <p className="font-semibold mb-1">What happens next?</p>
                 <ul className="space-y-1 text-xs">
                   <li>• Your application will be reviewed within <strong>24–48 hours</strong></li>
-                  <li>• Once approved, your dealer account will be activated</li>
-                  {chosenPlan && chosenPlan.slug !== "free" ? (
-                    <li>• You can activate your <strong>{chosenPlan.name}</strong> plan from your dashboard after approval</li>
-                  ) : (
-                    <li>• You&apos;ll start on the Free plan and can upgrade anytime</li>
-                  )}
-                  <li>• No payment is required</li>
+                  <li>• Once approved, your importer account will be activated</li>
+                  <li>• You can start listing cars immediately with no limits</li>
+                  <li>• No payment is required to get started</li>
                 </ul>
               </div>
 
@@ -808,7 +750,7 @@ export default function BecomeDealerPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(1)}
                   className="flex items-center gap-2 px-5 py-3 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />

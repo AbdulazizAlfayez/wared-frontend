@@ -144,14 +144,33 @@ function MessagesIcon() {
 
 export default function Header() {
   const { isAuthenticated, isLoading, role, user, logout } = useAuth();
-  const { t, dir } = useTranslation();
+  const { t, dir, locale } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const [isDark, setIsDark] = useState(false);
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12);
+
+      // Detect if nav overlaps a dark section
+      const header = document.querySelector(".site-header");
+      if (!header) return;
+      const navBottom = header.getBoundingClientRect().bottom;
+      const darkSections = document.querySelectorAll(
+        ".section.dark, .mk-bigstats, .hero-section, [style*=\"background: var(--mk-ink)\"], [style*=\"background:var(--mk-ink)\"]"
+      );
+      let overDark = false;
+      darkSections.forEach((s) => {
+        const r = s.getBoundingClientRect();
+        if (r.top < navBottom && r.bottom > navBottom) overDark = true;
+      });
+      setIsDark(overDark);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll(); // run once on mount
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -163,17 +182,25 @@ export default function Header() {
   return (
     <header
       className={`site-header fixed top-0 left-0 right-0 z-[9999] transition-all duration-300
-        ${scrolled
+        ${isDark ? "is-dark" : ""}
+        ${scrolled && !isDark
           ? "bg-white/96 backdrop-blur-xl border-b border-slate-100 shadow-[0_1px_24px_rgba(0,0,0,0.06)]"
-          : "bg-white/90 backdrop-blur-md border-b border-transparent shadow-none"
+          : !isDark ? "bg-white/90 backdrop-blur-md border-b border-transparent shadow-none" : ""
         }`}
       style={{ direction: dir, zIndex: 9999 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex items-center gap-6 transition-all duration-300 ${scrolled ? "h-16" : "h-20"}`}>
+          {/* Logo */}
+          <Link href="/" className="nav-logo flex-shrink-0">
+            <span className="mark" />
+            <span>Markabah</span>
+          </Link>
+
           {/* Desktop Navigation */}
           <nav className="nav hidden md:flex items-center gap-6 flex-shrink-0">
             <NavLink href="/browse">{t("nav.browse")}</NavLink>
+            <NavLink href="/browse/map">{locale === "ar" ? "خريطة العالم" : "World Map"}</NavLink>
             <NavLink href="/importers">Importers</NavLink>
             <NavLink href="/calculator">Calculator</NavLink>
             <NavLink href="/how-it-works">How It Works</NavLink>

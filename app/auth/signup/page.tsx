@@ -21,6 +21,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showOtp, setShowOtp] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
 
@@ -57,6 +58,7 @@ export default function SignUpPage() {
     }
 
     setIsLoading(true);
+    setFieldErrors({});
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
@@ -76,9 +78,25 @@ export default function SignUpPage() {
         window.location.href = "/";
       }
     } catch (err: unknown) {
-      setError(
-        parseApiError(err, "Failed to create account. Please try again.")
-      );
+      // Try to extract field-level errors from the API response
+      const raw = err instanceof Error ? err.message : String(err);
+      try {
+        const body = JSON.parse(raw);
+        const fields: Record<string, string> = {};
+        let topError = "";
+        for (const [field, messages] of Object.entries(body)) {
+          const msg = Array.isArray(messages) ? String(messages[0]) : String(messages);
+          if (field === "detail" || field === "error" || field === "non_field_errors") {
+            topError = msg;
+          } else {
+            fields[field] = msg;
+          }
+        }
+        setFieldErrors(fields);
+        setError(topError || (Object.keys(fields).length > 0 ? "Please fix the errors below." : ""));
+      } catch {
+        setError(parseApiError(err, "Failed to create account. Please try again."));
+      }
       setIsLoading(false);
     }
   };
@@ -129,14 +147,16 @@ export default function SignUpPage() {
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
+                    name="firstName"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="First"
                     required
                     autoComplete="given-name"
-                    className="w-full pl-9 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                    className={`w-full pl-9 pr-3 py-3 border rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent ${fieldErrors.name ? "border-red-300" : "border-slate-200"}`}
                   />
                 </div>
+                {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
@@ -146,6 +166,7 @@ export default function SignUpPage() {
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
+                    name="lastName"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Last"
@@ -166,14 +187,16 @@ export default function SignUpPage() {
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type="email"
+                  name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
                   autoComplete="email"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent ${fieldErrors.email ? "border-red-300" : "border-slate-200"}`}
                 />
               </div>
+              {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
             </div>
 
             {/* Phone (optional) */}
@@ -186,13 +209,15 @@ export default function SignUpPage() {
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type="tel"
+                  name="phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+966 5X XXX XXXX"
                   autoComplete="tel"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent ${fieldErrors.phone ? "border-red-300" : "border-slate-200"}`}
                 />
               </div>
+              {fieldErrors.phone && <p className="text-xs text-red-500">{fieldErrors.phone}</p>}
             </div>
 
             {/* Password */}
@@ -204,13 +229,14 @@ export default function SignUpPage() {
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="w-full pl-10 pr-12 py-3 border border-slate-200 rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent ${fieldErrors.password ? "border-red-300" : "border-slate-200"}`}
                 />
                 <button
                   type="button"
@@ -224,7 +250,7 @@ export default function SignUpPage() {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-slate-400">Must be at least 8 characters</p>
+              {fieldErrors.password ? <p className="text-xs text-red-500">{fieldErrors.password}</p> : <p className="text-xs text-slate-400">Must be at least 8 characters</p>}
             </div>
 
             {/* Confirm Password */}
@@ -236,14 +262,16 @@ export default function SignUpPage() {
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="confirmPassword"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your password"
                   required
                   autoComplete="new-password"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent ${fieldErrors.password2 ? "border-red-300" : "border-slate-200"}`}
                 />
               </div>
+              {fieldErrors.password2 && <p className="text-xs text-red-500">{fieldErrors.password2}</p>}
             </div>
 
             {/* Terms */}

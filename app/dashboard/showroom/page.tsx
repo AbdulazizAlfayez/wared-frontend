@@ -227,11 +227,11 @@ function ProfileTab({
 // ---------------------------------------------------------------------------
 function HoursTab({ showroom, onSaved }: { showroom: ShowroomDetail; onSaved: (u: ShowroomDetail) => void }) {
   const initialHours = DAYS.map((day) => {
-    const existing = showroom.working_hours?.find((h) => h.day === day);
+    const existing = showroom.working_hours?.find((h) => String(h.day) === String(day));
     return existing ?? { day, opening_time: "09:00", closing_time: "18:00", is_closed: false };
   });
 
-  const [hours, setHours] = useState<ShowroomWorkingHours[]>(initialHours);
+  const [hours, setHours] = useState<ShowroomWorkingHours[]>(initialHours as ShowroomWorkingHours[]);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");

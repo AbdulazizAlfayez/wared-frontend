@@ -2,45 +2,39 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import type { PaginatedResponse } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Search, MapPin, Star, BadgeCheck, Loader2, X, Globe, Package,
-  ChevronRight, SlidersHorizontal, Users,
+  Search, BadgeCheck, Loader2, X, ChevronRight,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 interface ImporterCard {
-  id:               number;
-  business_name:    string;
-  city:             string;
-  logo_url:         string | null;
-  cover_photo_url:  string | null;
-  is_verified:      boolean;
-  average_rating:   number | string;
-  review_count:     number;
-  source_countries: string[];
-  specializations:  string[];
-  total_imports:    number;
-  years_in_business: number | string | null;
-  active_listings:  number;
-  description?:     string;
-  success_rate?:    number | string | null;
+  id:                  number;
+  business_name:       string;
+  business_name_ar?:   string;
+  city:                string | null;
+  logo:                string | null;
+  logo_url?:           string | null;
+  is_verified:         boolean;
+  average_rating:      number | string;
+  total_reviews:       number;
+  review_count?:       number;
+  source_countries:    string[];
+  specializations:     string[];
+  total_cars_imported: number;
+  total_imports?:      number;
+  avg_delivery_days?:  number | null;
+  years_in_business:   number | string | null;
+  active_listings?:    number;
+  success_rate?:       number | string | null;
 }
-
-// ---------------------------------------------------------------------------
-// Gradient palette — 3 premium options cycled by index
-// ---------------------------------------------------------------------------
-const CARD_GRADIENTS = [
-  "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)",  // black
-  "linear-gradient(135deg, #1E293B 0%, #334155 100%)",  // slate-dark
-  "linear-gradient(135deg, #262626 0%, #404040 100%)",  // charcoal
-];
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -51,38 +45,83 @@ const COUNTRY_FLAGS: Record<string, string> = {
   germany: "🇩🇪", de: "🇩🇪", uk: "🇬🇧", gb: "🇬🇧",
   canada: "🇨🇦", ca: "🇨🇦", europe: "🇪🇺", eu: "🇪🇺",
   china: "🇨🇳", cn: "🇨🇳", australia: "🇦🇺", au: "🇦🇺",
+  qatar: "🇶🇦", qa: "🇶🇦",
 };
 
 const COUNTRY_LABELS: Record<string, string> = {
   usa: "USA", japan: "Japan", uae: "UAE", korea: "Korea",
   germany: "Germany", uk: "UK", canada: "Canada", europe: "Europe",
-  china: "China", australia: "Australia",
+  china: "China", australia: "Australia", qatar: "Qatar",
 };
 
-const SAUDI_CITIES = [
-  "Riyadh", "Jeddah", "Dammam", "Khobar", "Jubail", "Makkah",
-  "Madinah", "Taif", "Abha", "Tabuk", "Hail", "Buraidah",
+const SOURCE_PILLS = [
+  { code: "usa",    flag: "🇺🇸", label: "USA" },
+  { code: "japan",  flag: "🇯🇵", label: "Japan" },
+  { code: "korea",  flag: "🇰🇷", label: "Korea" },
+  { code: "uae",    flag: "🇦🇪", label: "UAE" },
+  { code: "europe", flag: "🇪🇺", label: "Europe" },
 ];
 
-const SOURCE_FILTER_OPTIONS = ["USA", "Japan", "Korea", "UAE", "Germany", "Canada", "UK", "Europe"];
+type SortKey = "experienced" | "rated" | "imports" | "newest";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "experienced", label: "Most experienced" },
+  { value: "rated",       label: "Highest rated" },
+  { value: "imports",     label: "Most imports" },
+  { value: "newest",      label: "Newest" },
+];
 
 // ---------------------------------------------------------------------------
-// Star Rating (inline, no count — used inside card)
+// Helpers (preserved)
 // ---------------------------------------------------------------------------
-function StarRow({ rating, count }: { rating: number | string; count: number }) {
-  const r = Number(rating);
+function getInitials(name: string): string {
+  if (!name) return "?";
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!/[a-zA-Z]/.test(name)) return name.substring(0, 2);
+  return words.slice(0, 2).map(w => w[0]).join("").toUpperCase();
+}
+
+const AVATAR_PALETTE = [
+  { bg: "#E8F5F0", text: "#0B8470" },
+  { bg: "#E8ECF4", text: "#1E2A44" },
+  { bg: "#F2EDDC", text: "#856F3F" },
+  { bg: "#F5E6DD", text: "#8B4513" },
+  { bg: "#E8EFE6", text: "#4A6B3A" },
+];
+
+function getPillColor(text: string): string {
+  const t = text.toLowerCase();
+  if (t.includes("uae") || t.includes("gcc") || t.includes("qatar")) return "bg-[#E8F5F0] text-[#0B8470]";
+  if (t.includes("usa") || t.includes("american") || t.includes("copart")) return "bg-[#E8ECF4] text-[#1E2A44]";
+  if (t.includes("japan") || t.includes("jdm")) return "bg-[#F5E6DD] text-[#8B4513]";
+  if (t.includes("korea")) return "bg-[#F2EDDC] text-[#856F3F]";
+  if (t.includes("europ")) return "bg-[#E8EFE6] text-[#4A6B3A]";
+  return "bg-[#0B1424]/5 text-[#0B1424]/70";
+}
+
+function isArabicName(name: string): boolean {
+  return /[\u0600-\u06FF]/.test(name);
+}
+
+// ---------------------------------------------------------------------------
+// Star Rating
+// ---------------------------------------------------------------------------
+function StarRow({ rating, count }: { rating: number; count: number }) {
+  if (count === 0) {
+    return <span className="text-[12px] text-ink-300">No reviews yet</span>;
+  }
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((n) => (
-          <svg key={n} className={`w-3.5 h-3.5 ${n <= Math.round(r) ? "text-yellow-400" : "text-slate-200"}`}
+          <svg key={n} className={`w-3.5 h-3.5 ${n <= Math.round(rating) ? "text-yellow-400" : "text-ink-200"}`}
             viewBox="0 0 20 20" fill="currentColor">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
         ))}
       </div>
-      <span className="text-xs font-semibold text-slate-700">{r > 0 ? r.toFixed(1) : "—"}</span>
-      {count > 0 && <span className="text-xs text-slate-400">({count} reviews)</span>}
+      <span className="text-[12.5px] font-semibold text-ink-700">{rating.toFixed(1)}</span>
+      <span className="text-[12px] text-ink-400">({count} reviews)</span>
     </div>
   );
 }
@@ -90,142 +129,139 @@ function StarRow({ rating, count }: { rating: number | string; count: number }) 
 // ---------------------------------------------------------------------------
 // Importer Card
 // ---------------------------------------------------------------------------
-function ImporterCardItem({ importer, index }: { importer: ImporterCard; index: number }) {
-  const words    = importer.business_name.split(" ").filter(Boolean);
-  const initials = words.slice(0, 2).map(w => w[0]).join("").toUpperCase();
-  const rating   = Number(importer.average_rating);
-  const years    = importer.years_in_business ? Number(importer.years_in_business) : null;
-  const success  = importer.success_rate != null ? Number(importer.success_rate) : null;
-  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteRTL: boolean }) {
+  const initials  = getInitials(importer.business_name);
+  const rating    = Number(importer.average_rating);
+  const reviews   = importer.total_reviews ?? importer.review_count ?? 0;
+  const years     = importer.years_in_business ? Number(importer.years_in_business) : null;
+  const imported  = importer.total_cars_imported ?? importer.total_imports ?? 0;
+  const avgDays   = importer.avg_delivery_days ?? null;
+  const successRate = importer.success_rate ? Number(importer.success_rate) : null;
+  const palette   = AVATAR_PALETTE[importer.id % AVATAR_PALETTE.length];
+  const cardRTL   = siteRTL || isArabicName(importer.business_name);
+  const hasStats  = imported > 0;
+  const logoSrc   = importer.logo_url || importer.logo || null;
 
   return (
     <Link
       href={`/importers/${importer.id}`}
-      className="group bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
+      dir={cardRTL ? "rtl" : "ltr"}
+      className="group relative flex flex-col rounded-2xl border border-ink-100 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-[0_20px_50px_-25px_rgba(11,20,36,0.25)] hover:-translate-y-1 hover:border-ink-200"
+      style={{ backgroundColor: "var(--mk-paper)" }}
     >
-      {/* ── Gradient header strip (shorter so logo initials are visible) ── */}
-      <div className="relative h-16 overflow-hidden flex-shrink-0"
-        style={{ background: gradient }}
-      >
-        {/* subtle dot texture */}
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "18px 18px" }}
-        />
-        {importer.cover_photo_url && (
-          <Image src={importer.cover_photo_url} alt="" fill className="object-cover opacity-25 mix-blend-overlay" />
-        )}
+      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-ink-200 to-transparent" />
 
-        {/* Verified badge */}
-        {importer.is_verified && (
-          <div className="absolute top-2.5 right-3 flex items-center gap-1 bg-white/95 px-2 py-1 rounded-full shadow-sm">
-            <BadgeCheck className="w-3 h-3 text-accent" />
-            <span className="text-[10px] font-bold text-accent">Verified</span>
+      <div className="p-6 flex flex-col flex-1 gap-3">
+
+        {/* Header row: avatar + name + verified */}
+        <div className="flex items-start gap-3.5">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 border border-ink-100"
+            style={{ backgroundColor: palette.bg }}
+          >
+            {logoSrc ? (
+              <Image src={logoSrc} alt={importer.business_name} width={56} height={56} className="object-contain rounded-xl p-1" />
+            ) : (
+              <span className="text-[18px] font-medium tracking-tight leading-none" style={{ color: palette.text }}>{initials}</span>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* ── Logo circle overlapping strip ── */}
-      <div className="px-5 -mt-8 mb-1 flex-shrink-0">
-        <div className="w-16 h-16 rounded-full border-4 border-white shadow-lg bg-white overflow-hidden flex items-center justify-center">
-          {importer.logo_url ? (
-            <Image src={importer.logo_url} alt={importer.business_name} width={64} height={64} className="object-contain p-1" />
-          ) : (
-            <span className="text-xl font-bold text-[#0a0a0a] leading-none">{initials}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-[15px] text-ink-900 leading-snug group-hover:text-teal-700 transition-colors truncate">
+                {importer.business_name}
+              </h3>
+              {importer.is_verified && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[11px] font-medium border border-teal-200/50 flex-shrink-0">
+                  <BadgeCheck className="w-3 h-3" />
+                  Verified
+                </span>
+              )}
+            </div>
+            {importer.city && (
+              <p className="text-[12px] text-ink-400 mt-0.5">{importer.city}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Trust row: rating + years */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <StarRow rating={rating} count={reviews} />
+          {years != null && years > 0 && (
+            <>
+              <span className="text-ink-200">&middot;</span>
+              <span className="text-[12px] text-ink-400">{years} years in business</span>
+            </>
           )}
         </div>
-      </div>
 
-      {/* ── Body ── */}
-      <div className="px-5 pb-5 flex flex-col flex-1 gap-2.5">
-
-        {/* Name + city + flags */}
-        <div>
-          <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-accent transition-colors">
-            {importer.business_name}
-          </h3>
-          <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5 flex-wrap">
-            {importer.city && (
-              <>
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span>{importer.city}</span>
-              </>
-            )}
-            {importer.source_countries.length > 0 && (
-              <>
-                {importer.city && <span className="text-slate-300">·</span>}
-                {importer.source_countries.slice(0, 3).map((c) => {
-                  const key = c.toLowerCase();
-                  return (
-                    <span key={c} title={COUNTRY_LABELS[key] ?? c} className="text-lg leading-none">
-                      {COUNTRY_FLAGS[key] ?? "🌍"}
-                    </span>
-                  );
-                })}
-                {importer.source_countries.length > 3 && (
-                  <span className="text-[10px] font-semibold text-slate-400">
-                    +{importer.source_countries.length - 3}
+        {/* Sources from */}
+        {importer.source_countries.length > 0 && (
+          <div>
+            <p className="text-[11px] text-ink-400 font-medium mb-1.5">Sources from</p>
+            <div className="flex flex-wrap gap-1.5">
+              {importer.source_countries.map((c) => {
+                const key = c.toLowerCase();
+                return (
+                  <span key={c} className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 bg-ink-50 text-ink-600 border border-ink-100">
+                    <span className="text-[13px] leading-none">{COUNTRY_FLAGS[key] ?? "🌍"}</span>
+                    {COUNTRY_LABELS[key] ?? c}
                   </span>
-                )}
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="h-px bg-ink-100" />
+
+        {/* Stats row or "New" */}
+        {hasStats ? (
+          <div className="flex items-center gap-3 text-[12.5px] text-ink-500 flex-wrap">
+            <span className="font-medium text-ink-700">{imported} imported</span>
+            {successRate != null && successRate > 0 && (
+              <>
+                <span className="text-ink-200">&middot;</span>
+                <span>{successRate}% on-time</span>
               </>
             )}
-          </p>
-        </div>
-
-        {/* Stars + rating + review count */}
-        <StarRow rating={importer.average_rating} count={importer.review_count} />
-
-        {/* Description */}
-        {importer.description && (
-          <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
-            {importer.description}
-          </p>
+            {avgDays != null && avgDays > 0 && (
+              <>
+                <span className="text-ink-200">&middot;</span>
+                <span>Avg {avgDays} days</span>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="text-[12px] text-ink-400">
+            New on Markabah{years ? ` · ${years} years in the business` : ""}
+          </div>
         )}
 
         {/* Specializations */}
         {importer.specializations.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {importer.specializations.slice(0, 3).map((s) => (
-              <span key={s} className="text-xs bg-slate-100 text-slate-700 rounded-full px-3 py-1">
+            {importer.specializations.slice(0, 2).map((s) => (
+              <span key={s} className={`text-[11px] font-medium rounded-full px-2.5 py-1 max-w-[120px] truncate ${getPillColor(s)}`}>
                 {s}
               </span>
             ))}
-            {importer.specializations.length > 3 && (
-              <span className="text-xs bg-slate-100 text-slate-400 rounded-full px-3 py-1">
-                +{importer.specializations.length - 3}
+            {importer.specializations.length > 2 && (
+              <span className="text-[11px] text-ink-400 bg-ink-50 rounded-full px-2.5 py-1">
+                +{importer.specializations.length - 2} more
               </span>
             )}
           </div>
         )}
 
-        {/* Stats row — pushed to bottom */}
-        <div className="mt-auto pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-sm font-bold text-slate-900">
-              {importer.active_listings ?? 0}
-            </p>
-            <p className="text-[10px] text-slate-400 leading-tight">Cars Listed</p>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900">
-              {importer.total_imports > 0 ? importer.total_imports : "—"}
-            </p>
-            <p className="text-[10px] text-slate-400 leading-tight">Imported</p>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900">
-              {years ? `${years}y` : (success != null && success > 0 ? `${Number(success).toFixed(0)}%` : (rating > 0 ? `${rating.toFixed(1)}★` : "—"))}
-            </p>
-            <p className="text-[10px] text-slate-400 leading-tight">
-              {years ? "Experience" : (success != null && success > 0 ? "Success" : "Rating")}
-            </p>
+        {/* CTA */}
+        <div className="mt-auto pt-1 border-t border-ink-100">
+          <div className="flex items-center gap-1 py-2 text-[13px] font-medium text-ink-500 group-hover:text-teal-700 transition-colors">
+            {cardRTL ? "عرض الملف" : "View profile"}
+            <ChevronRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${cardRTL ? "rotate-180 group-hover:-translate-x-1" : ""}`} />
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-2 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#f3f4f6] text-[#0a0a0a] hover:bg-[#e5e7eb] font-medium text-xs transition-colors">
-          View Inventory
-          <ChevronRight className="w-3.5 h-3.5" />
-        </div>
       </div>
     </Link>
   );
@@ -235,10 +271,12 @@ function ImporterCardItem({ importer, index }: { importer: ImporterCard; index: 
 // Page
 // ---------------------------------------------------------------------------
 export default function ImportersPage() {
+  const { dir } = useTranslation();
+  const siteRTL = dir === "rtl";
+
   const [search, setSearch] = useState("");
-  const [cityFilter, setCityFilter] = useState("");
-  const [countryFilter, setCountryFilter] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortKey>("experienced");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -250,160 +288,175 @@ export default function ImportersPage() {
 
   const params = new URLSearchParams();
   if (debouncedSearch) params.set("search", debouncedSearch);
-  if (cityFilter)       params.set("city", cityFilter);
-  if (countryFilter)    params.set("source_country", countryFilter.toLowerCase());
 
   const { data, isLoading } = useApiQuery<PaginatedResponse<ImporterCard> | ImporterCard[]>(
     `/api/importers/?${params.toString()}`,
-    { deps: [debouncedSearch, cityFilter, countryFilter] }
+    { deps: [debouncedSearch] }
   );
 
-  const importers: ImporterCard[] = Array.isArray(data) ? data : (data?.results ?? []);
-  const hasFilters = !!(search || cityFilter || countryFilter);
+  const rawImporters: ImporterCard[] = Array.isArray(data) ? data : (data?.results ?? []);
 
-  const clearFilters = () => { setSearch(""); setCityFilter(""); setCountryFilter(""); };
+  // Client-side filter by selected source countries
+  const filtered = useMemo(() => {
+    if (selectedCountries.length === 0) return rawImporters;
+    return rawImporters.filter(imp =>
+      imp.source_countries.some(c => selectedCountries.includes(c.toLowerCase()))
+    );
+  }, [rawImporters, selectedCountries]);
 
-  const totalListings = importers.reduce((s, i) => s + (i.active_listings ?? 0), 0);
-  const avgRating = importers.length > 0
-    ? importers.reduce((s, i) => s + Number(i.average_rating), 0) / importers.length
-    : 0;
+  // Client-side sort
+  const importers = useMemo(() => {
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case "experienced":
+        sorted.sort((a, b) => (Number(b.years_in_business) || 0) - (Number(a.years_in_business) || 0));
+        break;
+      case "rated":
+        sorted.sort((a, b) => {
+          const diff = Number(b.average_rating) - Number(a.average_rating);
+          if (diff !== 0) return diff;
+          return (b.total_reviews ?? 0) - (a.total_reviews ?? 0);
+        });
+        break;
+      case "imports":
+        sorted.sort((a, b) => (b.total_cars_imported ?? 0) - (a.total_cars_imported ?? 0));
+        break;
+      case "newest":
+        sorted.sort((a, b) => (Number(a.years_in_business) || 0) - (Number(b.years_in_business) || 0));
+        break;
+    }
+    return sorted;
+  }, [filtered, sortBy]);
+
+  const hasFilters = !!(search || selectedCountries.length > 0);
+
+  const toggleCountry = (code: string) => {
+    setSelectedCountries(prev =>
+      prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setSelectedCountries([]);
+  };
+
+  // Collect active source country names for summary
+  const activeCountryNames = selectedCountries.length > 0
+    ? selectedCountries.map(c => COUNTRY_LABELS[c] ?? c).join(", ")
+    : "all countries";
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen pb-16" style={{ background: "var(--mk-paper)" }}>
 
-      {/* ── Hero header ── */}
-      <div className="bg-slate-50 border-b border-slate-100 pt-24 pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-2">Marketplace</p>
-          <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-3">Verified Importers</h1>
-          <p className="text-slate-500 max-w-xl text-base">
-            Every importer is vetted — commercial registration, customs license, and track record confirmed before listing.
+      {/* Hero */}
+      <section className="px-8 pt-12 pb-8 lg:pt-16 lg:pb-10 border-b border-ink-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-[11px] uppercase tracking-[0.15em] text-ink-400 font-medium mb-3">
+            Marketplace &middot; {rawImporters.length} importers
+          </div>
+          <h1
+            className="leading-[1.05] tracking-tight font-light mb-3 max-w-2xl text-ink-900"
+            style={{ fontSize: "clamp(32px, 5vw, 48px)" }}
+          >
+            Every importer is
+            <span className="font-serif italic"> vetted.</span>
+          </h1>
+          <p className="text-[15.5px] text-ink-400 max-w-xl leading-relaxed">
+            Commercial registration, customs broker license, and track record confirmed before they can list a single car.
           </p>
+        </div>
+      </section>
 
-          {/* Stat pills */}
-          {!isLoading && importers.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 mt-6">
-              <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm">
-                <BadgeCheck className="w-4 h-4 text-accent" />
-                {importers.length} Verified Importers
-              </span>
-              {totalListings > 0 && (
-                <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm">
-                  <Package className="w-4 h-4 text-slate-400" />
-                  {totalListings}+ Cars Listed
-                </span>
-              )}
-              {avgRating > 0 && (
-                <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm">
-                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  {avgRating.toFixed(1)} Avg Rating
-                </span>
+      <div className="max-w-6xl mx-auto px-8 pt-8">
+
+        {/* Filter bar */}
+        <div className="space-y-4 mb-8">
+          {/* Row 1: Search + Sort */}
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-300" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search importers..."
+                className="w-full pl-10 pr-10 py-3 border border-ink-100 rounded-xl text-ink-900 placeholder-ink-300 text-sm focus:border-ink-400 focus:outline-none transition"
+                style={{ background: "var(--mk-paper)" }}
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-300 hover:text-ink-700">
+                  <X className="w-4 h-4" />
+                </button>
               )}
             </div>
-          )}
-        </div>
-      </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="px-4 py-3 border border-ink-100 rounded-xl text-ink-700 text-sm focus:border-ink-400 focus:outline-none transition"
+              style={{ background: "var(--mk-paper)" }}
+            >
+              {SORT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-
-        {/* Search + Filters Bar */}
-        <div className="flex items-center gap-3 mb-6 flex-wrap sm:flex-nowrap">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search importers…"
-              className="w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl bg-white text-slate-800 placeholder-slate-400 text-sm focus:border-accent focus:ring-1 focus:ring-accent/20 focus:outline-none"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
-                <X className="w-4 h-4" />
+          {/* Row 2: Source country pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[12px] text-ink-400 font-medium">Source markets:</span>
+            {SOURCE_PILLS.map(p => {
+              const active = selectedCountries.includes(p.code);
+              return (
+                <button
+                  key={p.code}
+                  onClick={() => toggleCountry(p.code)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-medium border transition ${
+                    active
+                      ? "bg-ink-900 text-white border-ink-900"
+                      : "bg-ink-50 text-ink-700 border-ink-100 hover:border-ink-300"
+                  }`}
+                >
+                  <span className="text-[14px] leading-none">{p.flag}</span>
+                  {p.label}
+                </button>
+              );
+            })}
+            {hasFilters && (
+              <button onClick={clearAllFilters} className="text-[12px] text-ink-400 hover:text-red-500 flex items-center gap-1 transition-colors ms-2">
+                <X className="w-3.5 h-3.5" /> Clear
               </button>
             )}
           </div>
-
-          {/* Filter Toggle (mobile) / Inline filters (desktop) */}
-          <div className="hidden sm:flex items-center gap-2">
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-700 text-sm focus:border-accent focus:outline-none"
-            >
-              <option value="">All Cities</option>
-              {SAUDI_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-              className="px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-700 text-sm focus:border-accent focus:outline-none"
-            >
-              <option value="">All Countries</option>
-              {SOURCE_FILTER_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="sm:hidden flex items-center gap-2 px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-700 text-sm font-medium"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Filters
-            {hasFilters && <span className="w-2 h-2 bg-accent rounded-full" />}
-          </button>
-
-          {hasFilters && (
-            <button onClick={clearFilters} className="text-sm text-slate-500 hover:text-red-500 flex items-center gap-1 whitespace-nowrap transition-colors">
-              <X className="w-3.5 h-3.5" /> Clear
-            </button>
-          )}
         </div>
 
-        {/* Mobile filter panel */}
-        {showFilters && (
-          <div className="sm:hidden bg-white rounded-xl border border-slate-100 p-4 mb-5 grid grid-cols-2 gap-3">
-            <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}
-              className="px-3 py-2.5 border border-slate-200 rounded-lg bg-white text-slate-700 text-sm focus:border-accent focus:outline-none">
-              <option value="">All Cities</option>
-              {SAUDI_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}
-              className="px-3 py-2.5 border border-slate-200 rounded-lg bg-white text-slate-700 text-sm focus:border-accent focus:outline-none">
-              <option value="">All Countries</option>
-              {SOURCE_FILTER_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        )}
-
-        {/* Results count */}
+        {/* Results summary */}
         {!isLoading && (
-          <p className="text-sm text-slate-400 mb-4">
-            <span className="font-semibold text-slate-700">{importers.length}</span> importer{importers.length !== 1 ? "s" : ""} found
+          <p className="text-[13px] text-ink-400 mb-5">
+            <span className="font-medium text-ink-600">{importers.length}</span> importer{importers.length !== 1 ? "s" : ""} &middot; sourcing from {activeCountryNames}
           </p>
         )}
 
         {/* Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
           </div>
         ) : importers.length === 0 ? (
-          <div className="text-center py-24">
-            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-slate-700 mb-2">No importers found</h2>
-            <p className="text-slate-400 text-sm mb-6">Try adjusting your search or filters.</p>
-            {hasFilters && (
-              <button onClick={clearFilters} className="px-5 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent-600 transition-colors">
-                Clear Filters
-              </button>
-            )}
+          <div className="text-center py-16">
+            <svg className="w-10 h-10 text-ink-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+            </svg>
+            <div className="text-[16px] font-medium text-ink-700 mb-1">No importers match these filters</div>
+            <div className="text-[13.5px] text-ink-400 mb-5">Try removing a source country or clearing your search.</div>
+            <button onClick={clearAllFilters} className="text-[13px] font-medium text-teal-600 hover:text-teal-700">
+              Clear all filters
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {importers.map((imp, idx) => (
-              <ImporterCardItem key={imp.id} importer={imp} index={idx} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {importers.map((imp) => (
+              <ImporterCardItem key={imp.id} importer={imp} siteRTL={siteRTL} />
             ))}
           </div>
         )}

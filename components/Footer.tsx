@@ -8,12 +8,12 @@ import { useTranslation } from "@/lib/i18n";
 export default function Footer() {
   const { t, dir, locale } = useTranslation();
 
-  // City names stay in their local form for both languages
-  const cities = [
-    { key: "riyadh", en: "Riyadh", ar: "الرياض" },
-    { key: "jeddah", en: "Jeddah", ar: "جدة" },
-    { key: "dammam", en: "Dammam", ar: "الدمام" },
-    { key: "mecca", en: "Mecca", ar: "مكة" },
+  const sourceCountries = [
+    { code: "usa",    flag: "🇺🇸", en: "United States", ar: "الولايات المتحدة" },
+    { code: "japan",  flag: "🇯🇵", en: "Japan",         ar: "اليابان" },
+    { code: "korea",  flag: "🇰🇷", en: "South Korea",   ar: "كوريا الجنوبية" },
+    { code: "uae",    flag: "🇦🇪", en: "UAE",           ar: "الإمارات" },
+    { code: "europe", flag: "🇪🇺", en: "Europe",        ar: "أوروبا" },
   ];
 
   return (
@@ -61,16 +61,16 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Popular Cities */}
+          {/* Source Countries */}
           <div>
             <h3 className="text-white font-semibold mb-4">
-              {locale === "ar" ? "مدن شائعة" : "Popular Cities"}
+              {locale === "ar" ? "دول الاستيراد" : "Source countries"}
             </h3>
             <ul className="space-y-2">
-              {cities.map((city) => (
-                <li key={city.key}>
-                  <Link href={`/browse?city=${city.en}`} className="text-slate-300 hover:text-white text-sm">
-                    {locale === "ar" ? city.ar : city.en}
+              {sourceCountries.map((c) => (
+                <li key={c.code}>
+                  <Link href={`/browse?source_country=${c.code}`} className="text-slate-300 hover:text-white text-sm">
+                    {c.flag} {locale === "ar" ? c.ar : c.en}
                   </Link>
                 </li>
               ))}

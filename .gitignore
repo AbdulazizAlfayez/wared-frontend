@@ -36,3 +36,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Secrets & credentials
+*.key
+*.p12
+credentials*.json
+serviceAccount*.json
+
+# production
+/dist

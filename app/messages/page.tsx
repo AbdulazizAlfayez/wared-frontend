@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -45,6 +45,30 @@ function Avatar({ name, size = "sm" }: { name?: string | null; size?: "sm" | "md
       {initials}
     </span>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Contact-pattern detector (mirrors backend masking patterns)
+// ---------------------------------------------------------------------------
+const _CONTACT_RE = new RegExp(
+  [
+    String.raw`(?:\+966|00966|05\d)[\d\s\-]{6,12}`,          // Saudi phones
+    String.raw`\d[\d\s\-]{6,}\d`,                             // 7+ digit runs
+    String.raw`[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}`,// emails
+    String.raw`https?://\S+`,                                  // URLs
+    String.raw`www\.\S+`,                                      // www domains
+    String.raw`(?:wa\.me|t\.me|instagram\.com|snapchat\.com|tiktok\.com)/\S*`,
+    String.raw`\S+\.(?:com|sa|net|org|io|me|co)\b`,           // bare domains
+    String.raw`@[a-zA-Z0-9_]{2,}`,                            // @handles
+    'whatsapp', String.raw`whats\s*app`, 'واتساب', 'واتس',
+    'اتصل', 'رقمي', String.raw`رقم\s*جوال`, String.raw`تواصل\s*خارج`,
+    'سناب', 'انستا', 'تليجرام', 'ايميل',
+  ].join('|'),
+  'iu',
+);
+
+function hasContactInfo(text: string): boolean {
+  return _CONTACT_RE.test(text);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +181,7 @@ function MessageThread({
   const [isLoading, setIsLoading] = useState(true);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [contactWarning, setContactWarning] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -203,6 +228,11 @@ function MessageThread({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Show warning when draft contains contact info
+  useEffect(() => {
+    setContactWarning(input.length > 3 && hasContactInfo(input));
+  }, [input]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -328,6 +358,11 @@ function MessageThread({
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-slate-100 bg-white">
+        {contactWarning && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+            للحماية، أبقِ التواصل داخل مركبة — أرقام الهاتف وروابط التواصل تُخفى تلقائياً.
+          </p>
+        )}
         {!conversation.is_active ? (
           <p className="text-center text-sm text-slate-400 py-1">
             This conversation is no longer active.
@@ -368,6 +403,7 @@ function MessageThread({
 export default function MessagesPage() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -375,6 +411,7 @@ export default function MessagesPage() {
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [showThread, setShowThread] = useState(false);
   const [search, setSearch] = useState("");
+  const deepLinkHandled = useRef(false);
 
   // Auth guard
   useEffect(() => {
@@ -401,6 +438,75 @@ export default function MessagesPage() {
     if (isAuthenticated) fetchConversations();
     else if (!authLoading) setIsLoading(false);
   }, [isAuthenticated, authLoading, fetchConversations]);
+
+  // Deep-link: ?importer=<user_id>&car_id=<listing_id>
+  // Get-or-create conversation with that importer for that car, then auto-select
+  useEffect(() => {
+    const importerParam = searchParams.get("importer");
+    const carIdParam = searchParams.get("car_id");
+
+    console.log("[MSG deep-link] effect fired", {
+      deepLinkHandled: deepLinkHandled.current,
+      isAuthenticated,
+      isLoading,
+      importerParam,
+      carIdParam,
+      conversationsCount: conversations.length,
+    });
+
+    if (deepLinkHandled.current) return;
+    if (!isAuthenticated || isLoading) return;
+    if (!importerParam || !carIdParam) return;
+
+    deepLinkHandled.current = true;
+
+    // First check if we already have a matching conversation loaded
+    const importerId = Number(importerParam);
+    const existing = conversations.find(
+      (c) => c.other_party?.id === importerId && c.listing?.id === Number(carIdParam)
+    );
+
+    console.log("[MSG deep-link] existing conv match:", existing?.id ?? "none", "importerId:", importerId, "carId:", carIdParam);
+
+    if (existing) {
+      setSelected(existing);
+      setShowThread(true);
+      setConversations((prev) =>
+        prev.map((x) => (x.id === existing.id ? { ...x, unread_count: 0 } : x))
+      );
+      router.replace("/messages", { scroll: false });
+      return;
+    }
+
+    // Otherwise, call the get-or-create endpoint
+    console.log("[MSG deep-link] calling POST /api/conversations/ with car_id:", Number(carIdParam));
+    (async () => {
+      try {
+        const conv = await api.post<Conversation>("/api/conversations/", {
+          car_id: Number(carIdParam),
+        });
+        console.log("[MSG deep-link] POST success, conv:", conv);
+        // Add to conversations list if not already there
+        setConversations((prev) => {
+          const exists = prev.some((c) => c.id === conv.id);
+          return exists ? prev : [conv, ...prev];
+        });
+        setSelected(conv);
+        setShowThread(true);
+      } catch (err: unknown) {
+        console.error("[MSG deep-link] POST failed:", err);
+        // If get-or-create fails (e.g. reservation required), find any existing conv with this importer
+        const fallback = conversations.find((c) => c.other_party?.id === importerId);
+        console.log("[MSG deep-link] fallback conv:", fallback?.id ?? "none");
+        if (fallback) {
+          setSelected(fallback);
+          setShowThread(true);
+        }
+      } finally {
+        router.replace("/messages", { scroll: false });
+      }
+    })();
+  }, [isAuthenticated, isLoading, searchParams, conversations, router]);
 
   const handleSelect = (c: Conversation) => {
     setSelected(c);

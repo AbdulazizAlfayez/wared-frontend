@@ -2,29 +2,24 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  Calculator,
-  MapPin,
-  Shield,
-  BadgeCheck,
   Loader2,
   Globe,
-  TrendingUp,
   Clock,
-  ChevronRight,
   Car as CarIcon,
-  Search,
-  CreditCard,
+  MapPin,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import type { ImportedListing, PaginatedResponse } from "@/lib/types";
 import { getImageUrl } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { FadeIn, StaggerContainer, StaggerItem, AnimatedCounter, MagneticWrap } from "@/components/motion";
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (preserved from existing code)
 // ---------------------------------------------------------------------------
 const IMPORT_STATUS_STYLES: Record<string, { label: string; cls: string }> = {
   available:         { label: "Available",         cls: "bg-emerald-100 text-emerald-700" },
@@ -56,298 +51,783 @@ function formatSAR(n: number | string | null) {
   }).format(Number(n));
 }
 
+// Arrow SVG for buttons
+const ArrowSvg = () => (
+  <svg viewBox="0 0 10 10" fill="none" className="w-[10px] h-[10px]">
+    <path d="M2 5h6M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// ---------------------------------------------------------------------------
+// Reveal on scroll hook
+// ---------------------------------------------------------------------------
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const els = ref.current.querySelectorAll(".mk-reveal");
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+      { threshold: 0.05, rootMargin: "0px 0px -5% 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+    // Fallback: reveal above-fold elements immediately
+    requestAnimationFrame(() => {
+      els.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) el.classList.add("in");
+      });
+    });
+    setTimeout(() => els.forEach((el) => el.classList.add("in")), 1400);
+    return () => io.disconnect();
+  }, []);
+  return ref;
+}
+
 // ---------------------------------------------------------------------------
 // 1. Hero
 // ---------------------------------------------------------------------------
-const HERO_STATS_EN = [
-  { value: "50+",  label: "verified importers" },
-  { value: "320+", label: "cars listed" },
-  { value: "22",   label: "source markets" },
-];
-const HERO_STATS_AR = [
-  { value: "50+",  label: "مستورد موثق" },
-  { value: "320+", label: "سيارة" },
-  { value: "22",   label: "دولة مصدّرة" },
-];
-
 function Hero() {
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
-  const stats = isRTL ? HERO_STATS_AR : HERO_STATS_EN;
 
   return (
-    <section
-      className="hero-section-wrap"
-      style={{
-        position: "relative",
-        background: "#fafafa",
-        overflow: "hidden",
-        minHeight: 600,
-      }}
-    >
-      <style>{`
-        @keyframes heroFadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .hero-headline { animation: heroFadeUp 400ms ease forwards; }
-        .hero-subtitle { animation: heroFadeUp 400ms ease 200ms both; }
-        .hero-ctas     { animation: heroFadeUp 400ms ease 300ms both; }
-        .hero-stats    { animation: heroFadeUp 400ms ease 400ms both; }
-        .hero-cta-primary:hover  { opacity: 0.82 !important; }
-        .hero-cta-secondary:hover { background: rgba(10,10,10,0.04) !important; }
-        @media (max-width: 640px) {
-          .hero-hl-text        { font-size: 40px !important; }
-          .hero-subtitle-text  { max-width: 100% !important; }
-          .hero-stats-row      { max-width: 100% !important; gap: 16px !important; }
-          .hero-section-wrap   { min-height: 500px !important; }
-          .hero-content-pad    { padding: 32px 20px !important; }
-        }
-      `}</style>
-
-      {/* Layer 1 — Topographic sine-wave lines */}
-      <svg
+    <section className="hero-section relative overflow-hidden" style={{ minHeight: "100vh", paddingBottom: 60, background: "var(--mk-ink)" }}>
+      {/* Background video */}
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <img
+        src="/videos/hero-poster.jpg"
+        alt=""
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: 0.4,
-          pointerEvents: "none",
-        }}
-        preserveAspectRatio="none"
-        viewBox="0 0 1200 600"
-      >
-        {[0, 1, 2, 3, 4, 5, 6].map((i) => {
-          const y = 60 + i * 78;
-          const amp = 28 + i * 4;
-          const op = Math.max(0.05, 0.15 - i * 0.014);
-          const d = `M 0,${y} C 150,${y - amp} 300,${y + amp} 450,${y} S 750,${y - amp} 900,${y} S 1100,${y + amp} 1200,${y}`;
-          return (
-            <path key={i} d={d} fill="none" stroke="#0a0a0a" strokeWidth="0.4" opacity={op} />
-          );
-        })}
-      </svg>
-
-      {/* Layer 2 — Radial glow (bottom-right) */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "radial-gradient(ellipse at 80% 100%, rgba(10,10,10,0.06) 0%, transparent 60%)",
-          pointerEvents: "none",
-        }}
+        className="hero-video-fallback hidden absolute inset-0 w-full h-full object-cover z-0"
       />
-
-      {/* Content */}
-      <div
-        className="hero-content-pad"
-        style={{
-          position: "relative",
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "48px 32px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          minHeight: 600,
-        }}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster="/videos/hero-poster.jpg"
+        preload="metadata"
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover z-0"
       >
+        <source src="/videos/hero-mobile.mp4" media="(max-width: 767px)" type="video/mp4" />
+        <source src="/videos/hero-desktop.mp4" type="video/mp4" />
+      </video>
+
+      {/* Dark gradient overlay */}
+      <div aria-hidden="true" className="absolute inset-0 z-10 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+
+      {/* Content — above video + overlay */}
+      <div className="hero-wrap relative z-20">
+        {/* Eyebrow */}
+        <FadeIn delay={0.1}>
+          <div className="flex items-center gap-[14px] mb-7">
+            <span className="mk-btn hero-pill font-geist" style={{ padding: "6px 12px", fontSize: 12, cursor: "default" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" strokeWidth="1.6" /></svg>
+              {isRTL ? "مستوردة إلى السعودية · موثقة جمركياً" : "Imported to Saudi Arabia · Verified by customs"}
+            </span>
+            <span className="mk-eyebrow hero-eyebrow font-geist"><span className="dot" />{isRTL ? "نوفر من 22 سوق" : "Now sourcing in 22 markets"}</span>
+          </div>
+        </FadeIn>
+
         {/* Headline */}
-        <h1
-          className="hero-headline hero-hl-text"
-          style={{
-            fontSize: 64,
-            fontWeight: 500,
-            letterSpacing: "-2px",
-            lineHeight: 0.98,
-            color: "#0a0a0a",
-            marginBottom: 16,
-            textAlign: isRTL ? "right" : "left",
-          }}
-        >
-          {isRTL ? (
-            <>
-              <span style={{ display: "block" }}>أي سيارة.</span>
-              <span style={{ display: "block" }}>من أي مكان.</span>
-              <span style={{ display: "block", color: "#999" }}>توصلك لباب بيتك.</span>
-            </>
-          ) : (
-            <>
-              <span style={{ display: "block" }}>Any car.</span>
-              <span style={{ display: "block" }}>Anywhere.</span>
-              <span style={{ display: "block", color: "#999" }}>Delivered to you.</span>
-            </>
-          )}
-        </h1>
+        <FadeIn delay={0.25} y={40} duration={0.9}>
+          <h1 className="font-geist font-extrabold text-white" style={{ letterSpacing: "-0.045em", lineHeight: 0.92, fontSize: "clamp(64px, 11.5vw, 200px)", maxWidth: "11ch" }}>
+            {isRTL ? (
+              <>أي سيارة.<br />من أي مكان.<br /><span className="text-white/40">توصلك <span className="font-light">لبابك</span>.</span></>
+            ) : (
+              <>Any car.<br />Anywhere.<br /><span className="text-white/40">Delivered <span className="font-light">to&nbsp;you</span>.</span></>
+            )}
+          </h1>
+        </FadeIn>
 
-        {/* Subtitle */}
-        <p
-          className="hero-subtitle hero-subtitle-text"
-          style={{
-            fontSize: 14,
-            color: "#555",
-            lineHeight: 1.6,
-            maxWidth: "50%",
-            margin: "16px 0 24px",
-            textAlign: isRTL ? "right" : "left",
-          }}
-        >
-          {isRTL
-            ? "سيارات مستوردة بعناية من شركاء موثوقين حول العالم. تابع كل خطوة من الميناء إلى باب بيتك."
-            : "Hand-picked imports from verified partners worldwide. Track every step from port to your door."
-          }
-        </p>
-
-        {/* CTAs */}
-        <div
-          className="hero-ctas"
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap" as const,
-            justifyContent: isRTL ? "flex-end" : "flex-start",
-          }}
-        >
-          <Link
-            href="/browse"
-            className="hero-cta-primary"
-            style={{
-              background: "#0a0a0a",
-              color: "white",
-              padding: "12px 20px",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 500,
-              textDecoration: "none",
-              transition: "opacity 0.15s",
-              display: "inline-block",
-            }}
-          >
-            {isRTL ? "تصفّح السيارات ←" : "Browse cars →"}
-          </Link>
-          <Link
-            href="/how-it-works"
-            className="hero-cta-secondary"
-            style={{
-              background: "transparent",
-              color: "#0a0a0a",
-              padding: "12px 20px",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 500,
-              border: "0.5px solid rgba(10,10,10,0.2)",
-              textDecoration: "none",
-              transition: "background 0.15s",
-              display: "inline-block",
-            }}
-          >
-            {isRTL ? "كيف تعمل المنصة" : "How it works"}
-          </Link>
-        </div>
-
-        {/* Stats row */}
-        <div
-          className="hero-stats hero-stats-row"
-          style={{
-            display: "flex",
-            gap: 32,
-            marginTop: 32,
-            paddingTop: 20,
-            borderTop: "0.5px solid rgba(10,10,10,0.1)",
-            maxWidth: "60%",
-            flexWrap: "wrap" as const,
-            justifyContent: isRTL ? "flex-end" : "flex-start",
-          }}
-        >
-          {stats.map(({ value, label }) => (
-            <div key={label} style={{ textAlign: isRTL ? "right" : "left" }}>
-              <div style={{ fontSize: 22, fontWeight: 500, color: "#0a0a0a", lineHeight: 1 }}>{value}</div>
-              <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>{label}</div>
+        {/* Subtitle + CTAs */}
+        <FadeIn delay={0.45} duration={0.8}>
+          <div className="mt-9" style={{ maxWidth: "52ch" }}>
+            <p className="font-geist text-white/75" style={{ fontSize: 18, lineHeight: 1.45 }}>
+              {isRTL
+                ? "سيارات مستوردة بعناية من شركاء موثوقين حول العالم. تابع كل خطوة من الميناء إلى باب بيتك — الأوراق، الجمارك والشحن في مكان واحد."
+                : "Hand-picked imports from verified partners worldwide. Track every step from port to your door — paperwork, duties and shipping handled in one place."}
+            </p>
+            <div className="flex gap-3 mt-7">
+              <MagneticWrap strength={0.15}>
+                <Link href="/browse" className="mk-btn hero-btn-primary" style={{ padding: "16px 22px", fontSize: 15 }}>
+                  {isRTL ? "تصفّح السيارات" : "Browse cars"}
+                  <span className="arr"><ArrowSvg /></span>
+                </Link>
+              </MagneticWrap>
+              <MagneticWrap strength={0.15}>
+                <Link href="/how-it-works" className="mk-btn hero-btn-outline" style={{ padding: "16px 22px", fontSize: 15 }}>
+                  {isRTL ? "كيف تعمل المنصة" : "How it works"}
+                </Link>
+              </MagneticWrap>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+          </div>
+        </FadeIn>
 
-// ---------------------------------------------------------------------------
-// 2. Stats Strip
-// ---------------------------------------------------------------------------
-const STATS = [
-  { value: "500+",  label: "Verified Importers"    },
-  { value: "3,200+", label: "Cars Imported"         },
-  { value: "13",    label: "Saudi Cities Covered"  },
-  { value: "98%",   label: "On-time Delivery Rate" },
-];
-
-function StatsStrip() {
-  return (
-    <section className="bg-slate-900">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {STATS.map(({ value, label }) => (
-            <div key={label} className="text-center">
-              <div className="text-3xl font-black text-white tracking-tight">
-                {value}
+        {/* Stats — animated counters */}
+        <FadeIn delay={0.6} duration={0.8}>
+          <div className="flex gap-[54px] max-sm:gap-6 max-sm:flex-wrap mt-16 pt-7" style={{ borderTop: "1px solid rgba(255,255,255,.15)" }}>
+            {[
+              { target: 3200, suffix: "+", l: isRTL ? "سيارة مستوردة" : "cars imported" },
+              { target: 500, suffix: "+", l: isRTL ? "مستورد موثق" : "verified importers" },
+              { target: 22, suffix: "", l: isRTL ? "دولة مصدّرة" : "source markets" },
+              { target: 98, suffix: "%", l: isRTL ? "تسليم في الموعد" : "on-time delivery" },
+            ].map(({ target, suffix, l }) => (
+              <div key={l} className="flex flex-col">
+                <div className="font-display font-bold text-[34px] tracking-tight text-white">
+                  <AnimatedCounter target={target} suffix={suffix} duration={1.8} />
+                </div>
+                <div className="text-xs tracking-[.14em] uppercase mt-1 text-white/50">{l}</div>
               </div>
-              <div className="text-sm text-slate-400 font-medium mt-1">{label}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </FadeIn>
       </div>
+
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------
-// 3. Source Countries
+// 2. Marquee
 // ---------------------------------------------------------------------------
-const SOURCE_COUNTRIES = [
-  { key: "usa",    label: "USA",        sub: "Copart · IAAI",  flag: "🇺🇸" },
-  { key: "uae",    label: "UAE",        sub: "Dubai · Sharjah", flag: "🇦🇪" },
-  { key: "japan",  label: "Japan",      sub: "USS · TAA · JAA", flag: "🇯🇵" },
-  { key: "korea",  label: "South Korea", sub: "Hyundai · Kia", flag: "🇰🇷" },
-  { key: "europe", label: "Europe",     sub: "Germany · UK",   flag: "🇪🇺" },
-];
-
-function SourceCountries() {
-  const router = useRouter();
+function Marquee() {
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10">
-          <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-2">
-            Source Markets
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-            Browse by Country
+    <div className="mk-marquee" aria-hidden="true">
+      <div className="track">
+        {[0, 1].map((i) => (
+          <span key={i}>
+            {["UAE", "Qatar", "USA", "Japan", "South Korea", "Germany", "Canada", "GCC", "EU", "UK"].map((market) => (
+              <span key={`${i}-${market}`}>{market}<span className="dot" /></span>
+            ))}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 3. Browse Cars (with real API data + demo fallback)
+// ---------------------------------------------------------------------------
+const DEMO_CARS = [
+  { id: "demo-1", make: "Mercedes-Benz", model: "G 63", year: 2024, mileage: 4200, price: 1084000, final_price_sar: 1084000, source_country: "europe", city: "Stuttgart", import_status: "available", sub: "Petrol · LHD", images: [], primary_image: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1400&q=80&auto=format&fit=crop" },
+  { id: "demo-2", make: "Porsche", model: "911 GT3", year: 2023, mileage: 8900, price: 892000, final_price_sar: 892000, source_country: "europe", city: "Munich", import_status: "available", sub: "Petrol", images: [], primary_image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200&q=80&auto=format&fit=crop" },
+  { id: "demo-3", make: "Lexus", model: "LX 600", year: 2024, mileage: 1400, price: 478000, final_price_sar: 478000, source_country: "japan", city: "Tokyo", import_status: "available", sub: "Petrol", images: [], primary_image: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1200&q=80&auto=format&fit=crop" },
+  { id: "demo-4", make: "Cadillac", model: "Escalade V", year: 2024, mileage: 3100, price: 612000, final_price_sar: 612000, source_country: "usa", city: "Detroit", import_status: "available", sub: "Petrol", images: [], primary_image: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=1200&q=80&auto=format&fit=crop" },
+  { id: "demo-5", make: "Lamborghini", model: "Urus", year: 2023, mileage: 6600, price: 1260000, final_price_sar: 1260000, source_country: "europe", city: "Modena", import_status: "available", sub: "Petrol", images: [], primary_image: "https://images.unsplash.com/photo-1542362567-b07e54358753?w=1200&q=80&auto=format&fit=crop" },
+  { id: "demo-6", make: "Toyota", model: "Land Cruiser", year: 2024, mileage: 2200, price: 338000, final_price_sar: 338000, source_country: "japan", city: "Yokohama", import_status: "available", sub: "Petrol", images: [], primary_image: "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?w=1200&q=80&auto=format&fit=crop" },
+] as unknown as ImportedListing[];
+
+const DEMO_BADGES: Record<string, string> = {
+  "demo-1": "From Stuttgart",
+  "demo-2": "From Munich",
+  "demo-3": "From Tokyo",
+  "demo-4": "From Detroit",
+  "demo-5": "From Modena",
+  "demo-6": "From Yokohama",
+};
+
+function BrowseCars() {
+  const { data, isLoading } = useApiQuery<PaginatedResponse<ImportedListing>>(
+    "/api/imported-cars/?ordering=-created_at&page_size=6"
+  );
+  const apiListings = Array.isArray(data) ? data : (data?.results ?? []);
+  const listings = apiListings.length > 0 ? apiListings : DEMO_CARS;
+  const isDemo = apiListings.length === 0 && !isLoading;
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
+
+  return (
+    <section className="relative py-[140px]" style={{ background: "var(--mk-paper)" }}>
+      <div className="max-w-[1440px] mx-auto px-9 max-md:px-[22px]">
+        {/* Section header */}
+        <FadeIn className="mk-sec-head">
+          <h2 className="font-display font-bold tracking-tighter leading-[.92]" style={{ fontSize: "clamp(48px, 7vw, 112px)" }}>
+            {isRTL ? <>ابحث <span className="mk-serif-it">عنها.</span><br /><span style={{ color: "var(--mk-mute-2)" }}>في أي مكان.</span></> : <>Find <span className="mk-serif-it">it.</span><br /><span style={{ color: "var(--mk-mute-2)" }}>Anywhere.</span></>}
           </h2>
-          <p className="text-slate-500 mt-2">
-            We work with auction houses and importers across these markets.
-          </p>
+          <div className="text-[17px] leading-relaxed" style={{ color: "#3a3a36", maxWidth: "46ch" }}>
+            <span className="mk-eyebrow"><span className="dot" />{isRTL ? "تصفح" : "Browse"}</span>
+            <p className="mt-[18px]">
+              {isRTL
+                ? "تصفح أكثر من 320 سيارة من مستوردين موثقين في اليابان، ألمانيا، أمريكا، الإمارات وغيرها."
+                : "Filter through 320+ live listings sourced by vetted importers in Japan, Germany, USA, UAE and more. Every car arrives with full inspection, history and customs paperwork."}
+            </p>
+          </div>
+        </FadeIn>
+
+        {/* Filter pills */}
+        <div className="mk-filter-pills">
+          {["All", "Sedan", "SUV", "Coupe", "Pickup", "Electric", "Hybrid", isRTL ? "أقل من 200K" : "Under 200K SAR", "2024+"].map((label, i) => (
+            <span key={label} className={`p ${i === 0 ? "active" : ""}`}>{label}</span>
+          ))}
+          <span className="p">RHD <span className="x">×</span></span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {SOURCE_COUNTRIES.map(({ key, label, sub, flag }) => (
+        {/* Car grid */}
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--mk-mute)" }} />
+          </div>
+        ) : (
+          <StaggerContainer stagger={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {listings.map((listing, i) => {
+              const primaryImage = listing.images?.find((img: any) => img.is_primary) ?? listing.images?.[0];
+              const imageUrl = listing.primary_image || primaryImage?.image_url || (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
+              const finalPrice = listing.final_price_sar ?? listing.price;
+              const demoBadge = isDemo ? DEMO_BADGES[listing.id as string] : null;
+              const statusInfo = !isDemo && listing.import_status ? (IMPORT_STATUS_STYLES[listing.import_status] ?? null) : null;
+              const flag = !isDemo && listing.source_country ? (SOURCE_COUNTRY_FLAG[listing.source_country] ?? "🌐") : null;
+              const badgeText = demoBadge || (statusInfo ? statusInfo.label : (flag ? `${flag} ${listing.source_country?.toUpperCase()}` : null));
+              const cardHref = isDemo ? "/browse" : `/car/${listing.id}`;
+              const sub = (listing as unknown as { sub?: string }).sub;
+
+              return (
+                <StaggerItem key={listing.id} className="mk-car-card">
+                  <Link href={cardHref} className="block">
+                    <div className="ph relative">
+                      {imageUrl ? (
+                        <Image src={imageUrl} alt={`${listing.year} ${listing.make} ${listing.model}`} fill className="object-cover rounded-[14px] transition-transform duration-700 ease-out hover:scale-105" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <CarIcon className="w-10 h-10 text-slate-300" />
+                        </div>
+                      )}
+                      {badgeText && <span className="badge">{badgeText}</span>}
+                    </div>
+                    <div className="flex justify-between items-end mt-[14px]">
+                      <div>
+                        <h3 className="font-display font-semibold tracking-tight text-[20px]">
+                          {listing.make} {listing.model}
+                        </h3>
+                        <div className="text-[13px] mt-1" style={{ color: "var(--mk-mute)" }}>
+                          {[listing.year, listing.mileage > 0 ? `${Number(listing.mileage).toLocaleString()} km` : null, sub, listing.city].filter(Boolean).join(" · ")}
+                        </div>
+                      </div>
+                      {finalPrice && (
+                        <div className="font-display font-bold text-[22px] tracking-tight">
+                          <span className="text-[13px] font-medium mr-1" style={{ color: "var(--mk-mute)" }}>SAR</span>
+                          {Number(finalPrice).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+        )}
+
+        {/* View all link */}
+        <div className="text-center mt-10">
+          <Link href="/browse" className="mk-btn primary" style={{ padding: "16px 22px", fontSize: 15 }}>
+            {isRTL ? "عرض الكل" : "View all cars"}
+            <span className="arr"><ArrowSvg /></span>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 4. Price Calculator
+// ---------------------------------------------------------------------------
+function PriceCalculator() {
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
+
+  return (
+    <section className="py-[140px]" style={{ background: "var(--mk-ink)", color: "var(--mk-paper)" }}>
+      <div className="max-w-[1440px] mx-auto px-9 max-md:px-[22px]">
+        <FadeIn className="mk-sec-head">
+          <h2 className="font-display font-bold tracking-tighter leading-[.92]" style={{ fontSize: "clamp(48px, 7vw, 112px)" }}>
+            {isRTL ? <>كل رسم، <span className="mk-serif-it">قبل الشحن.</span></> : <>Every fee, <span className="mk-serif-it">before it ships.</span></>}
+          </h2>
+          <div className="text-[17px] leading-relaxed" style={{ color: "#bdbdb6", maxWidth: "46ch" }}>
+            <span className="mk-eyebrow" style={{ color: "#9b9b96" }}><span className="dot" style={{ background: "#fff" }} />{isRTL ? "حاسبة مباشرة" : "Live calculator"}</span>
+            <p className="mt-[18px]">
+              {isRTL
+                ? "بدون رسوم خفية. نوضح سعر المصدر، الشحن، الجمارك، الضريبة، الفحص، وهامش المستورد — كل شيء مفصّل بالريال."
+                : "No hidden costs. We surface the source price, freight, customs, VAT, inspection, and the importer\u2019s margin \u2014 everything you\u2019d pay, itemized down to the riyal."}
+            </p>
+          </div>
+        </FadeIn>
+
+        <div className="grid max-md:grid-cols-1 gap-[72px] items-start" style={{ gridTemplateColumns: "1fr 1.05fr" }}>
+          {/* Left: breakdown */}
+          <FadeIn delay={0.1}>
+            {/* Vehicle + origin header */}
+            {[
+              { l: isRTL ? "السيارة" : "Vehicle", v: "Porsche 911 GT3" },
+              { l: isRTL ? "المصدر" : "Origin", v: "Munich → Jeddah" },
+            ].map(({ l, v }, i) => (
+              <div key={i} className="flex justify-between py-[22px] items-center" style={{ borderBottom: "1px solid rgba(255,255,255,.12)", ...(i === 0 ? { borderTop: "1px solid rgba(255,255,255,.12)" } : {}) }}>
+                <span className="text-sm" style={{ color: "#a8a8a3" }}>{l}</span>
+                <span className="font-display font-semibold text-[22px] tracking-tight">{v}</span>
+              </div>
+            ))}
+
+            {/* Cost lines */}
+            {[
+              { l: isRTL ? "سعر FOB (المصدر)" : "FOB price (source)", v: "SAR 720,000" },
+              { l: isRTL ? "شحن وتأمين" : "Freight & insurance", v: "SAR 28,400" },
+              { l: isRTL ? "مناولة الميناء" : "Port handling", v: "SAR 800" },
+              { l: isRTL ? "نقل (جدة → الرياض)" : "Transportation (Jeddah → Riyadh)", v: "SAR 1,500" },
+            ].map(({ l, v }, i) => (
+              <div key={i} className="flex justify-between py-[18px] items-center" style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+                <span className="text-sm" style={{ color: "#a8a8a3" }}>{l}</span>
+                <span className="font-display font-medium text-[18px] tracking-tight tabular-nums">{v}</span>
+              </div>
+            ))}
+
+            {/* Government fees header */}
+            <div className="pt-6 pb-2">
+              <span className="text-[10.5px] uppercase tracking-[.18em]" style={{ color: "rgba(250,250,247,.45)" }}>{isRTL ? "رسوم حكومية" : "Government fees"}</span>
+            </div>
+            {[
+              { l: isRTL ? "جمارك (5%)" : "Customs duty (5%)", v: "SAR 36,000" },
+              { l: isRTL ? "ضريبة (15%)" : "VAT (15%)", v: "SAR 117,660" },
+              { l: isRTL ? "فحص SASO" : "SASO inspection", v: "SAR 1,200" },
+            ].map(({ l, v }, i) => (
+              <div key={i} className="flex justify-between py-[18px] items-center" style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+                <span className="text-sm" style={{ color: "#a8a8a3" }}>{l}</span>
+                <span className="font-display font-medium text-[18px] tracking-tight tabular-nums">{v}</span>
+              </div>
+            ))}
+
+            {/* Total landed cost */}
+            <div className="mt-6 pt-5" style={{ borderTop: "1px solid rgba(255,255,255,.25)" }}>
+              <div className="flex justify-between items-center">
+                <span className="text-[13px] tracking-[.14em] uppercase" style={{ color: "#a8a8a3" }}>{isRTL ? "إجمالي التكلفة" : "Total landed cost"}</span>
+                <span className="font-display font-semibold text-[24px] tracking-tight tabular-nums">SAR 905,560</span>
+              </div>
+            </div>
+
+            {/* Importer margin */}
+            <div className="flex justify-between py-[18px] items-center" style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+              <span className="text-sm" style={{ color: "#a8a8a3" }}>{isRTL ? "هامش المستورد" : "Importer margin"}</span>
+              <span className="font-display font-medium text-[18px] tracking-tight tabular-nums">SAR 90,000</span>
+            </div>
+
+            {/* Final price */}
+            <div className="mt-6 pt-7 pb-2" style={{ borderTop: "2px solid rgba(255,255,255,.4)" }}>
+              <span className="text-[13px] tracking-[.14em] uppercase" style={{ color: "#a8a8a3" }}>{isRTL ? "السعر النهائي (ما تدفعه)" : "Final price (what you pay)"}</span>
+              <div className="font-display font-bold tracking-tighter leading-[.95] mt-1" style={{ fontSize: "clamp(56px, 7vw, 108px)", color: "#0FA68A" }}>
+                <span style={{ color: "#7d7d78", fontSize: ".32em", verticalAlign: "top", marginRight: ".08em", display: "inline-block", transform: "translateY(.6em)" }}>SAR</span>
+                995,560
+              </div>
+            </div>
+
+            {/* Footnote */}
+            <p className="mt-6 text-[12.5px] leading-relaxed" style={{ color: "rgba(250,250,247,.45)", maxWidth: "48ch" }}>
+              {isRTL
+                ? "مركبة تفرض رسوم حجز SAR 99 فقط عند حجز السيارة — مستردة بالكامل حتى فوز المستورد بالمزاد. هذا هو الرسم الوحيد الذي نحصّله من المشترين."
+                : "Markabah charges a SAR 99 holding fee when you reserve a car \u2014 fully refundable until the importer wins the auction. That\u2019s the only fee we charge buyers."}
+            </p>
+          </FadeIn>
+
+          {/* Right: form card */}
+          <div className="mk-reveal delay-2 relative overflow-hidden" style={{ background: "#0F0F0F", border: "1px solid rgba(255,255,255,.06)", borderRadius: 28, padding: 32 }}>
+            <div className="absolute" style={{ top: -100, right: -100, width: 300, height: 300, background: "radial-gradient(circle, rgba(255,255,255,.06), transparent 60%)" }} />
+            <h4 className="font-display font-semibold text-2xl tracking-tight mb-6 flex items-center gap-[10px]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.4" /><path d="M8 9h8M8 13h5M8 17h3" stroke="currentColor" strokeWidth="1.4" /></svg>
+              {isRTL ? "ابنِ عرض سعرك" : "Build your quote"}
+            </h4>
+            <div className="text-center mt-8">
+              <Link href="/calculator" className="mk-btn primary" style={{ padding: "16px 28px", fontSize: 15 }}>
+                {isRTL ? "افتح الحاسبة" : "Open full calculator"}
+                <span className="arr"><ArrowSvg /></span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 5. Ship It — Timeline
+// ---------------------------------------------------------------------------
+function ShipIt() {
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
+
+  const steps = isRTL
+    ? [
+        { n: "01", title: "التوريد", desc: "تاجر أو مزاد موثق. فحص قبل الشراء بواسطة وكيلنا.", when: "يوم 0–3", active: true },
+        { n: "02", title: "التصدير", desc: "الملكية، لوحة التصدير، حجز الشحن.", when: "يوم 4–9", active: true },
+        { n: "03", title: "في البحر", desc: "تتبع السفينة. تحديثات كل 12 ساعة.", when: "يوم 10–26", active: false },
+        { n: "04", title: "الجمارك", desc: "فحص هيئة المواصفات (ساسو). تخليص الجمارك والضريبة.", when: "يوم 27–30", active: false },
+        { n: "05", title: "التوصيل", desc: "نقل لعنوانك — الرياض، جدة، الدمام و10 مدن أخرى.", when: "يوم 31–34", active: false },
+      ]
+    : [
+        { n: "01", title: "Source", desc: "Verified dealer or auction. Pre-purchase inspection by our local agent.", when: "Day 0–3", active: true },
+        { n: "02", title: "Export", desc: "Title, export plate, freight booked. RoRo or container — your choice.", when: "Day 4–9", active: true },
+        { n: "03", title: "At sea", desc: "Track the vessel. ETA updates every 12h, tied to AIS feeds.", when: "Day 10–26", active: false },
+        { n: "04", title: "Customs", desc: "Saudi Standards (SASO) check. Duty + VAT cleared with one signature.", when: "Day 27–30", active: false },
+        { n: "05", title: "Delivered", desc: "Trucked to your address — Riyadh, Jeddah, Dammam and 10 more cities.", when: "Day 31–34", active: false },
+      ];
+
+  return (
+    <section className="relative py-[140px] overflow-hidden" style={{ background: "var(--mk-paper-2)" }}>
+      <div className="max-w-[1440px] mx-auto px-9 max-md:px-[22px]">
+        <div className="mk-sec-head mk-reveal">
+          <h2 className="font-display font-bold tracking-tighter leading-[.92]" style={{ fontSize: "clamp(48px, 7vw, 112px)" }}>
+            {isRTL ? <>اشحنها <span className="mk-serif-it">لبابك.</span><br /><span style={{ color: "var(--mk-mute-2)" }}>من الميناء للباب.</span></> : <>Ship <span className="mk-serif-it">it.</span><br /><span style={{ color: "var(--mk-mute-2)" }}>Port to door.</span></>}
+          </h2>
+          <div className="text-[17px] leading-relaxed" style={{ color: "#3a3a36", maxWidth: "46ch" }}>
+            <span className="mk-eyebrow"><span className="dot" />{isRTL ? "الرحلة" : "The journey"}</span>
+            <p className="mt-[18px]">
+              {isRTL
+                ? "بمجرد الحجز، ننسق الفحص والتصدير والشحن البحري والتخليص الجمركي والتوصيل. ستتابع كل خطوة لحظة بلحظة."
+                : "Once you reserve, we coordinate inspection, export, ocean freight, Saudi customs clearance and last-mile delivery. You\u2019ll see every milestone in real time."}
+            </p>
+          </div>
+        </div>
+
+        <div className="mk-journey mk-reveal delay-1">
+          <div className="mk-journey-track">
+            {steps.map(({ n, title, desc, when, active }) => (
+              <div key={n} className={`mk-j-step ${active ? "active" : ""}`}>
+                <div className="num">{n}</div>
+                <h4 className="font-display font-semibold text-xl tracking-tight mb-1.5">{title}</h4>
+                <p className="text-sm leading-relaxed" style={{ color: "#3a3a36" }}>{desc}</p>
+                <span className="block text-[11px] tracking-[.14em] uppercase mt-[10px]" style={{ color: "var(--mk-mute)" }}>{when}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 6. Track It — Phone mockup
+// ---------------------------------------------------------------------------
+function TrackIt() {
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
+
+  return (
+    <section className="py-[140px]" style={{ background: "var(--mk-ink)", color: "var(--mk-paper)" }}>
+      <div className="max-w-[1440px] mx-auto px-9 max-md:px-[22px]">
+        <div className="grid max-md:grid-cols-1 gap-20 items-center" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {/* Phone */}
+          <div className="mk-reveal">
+            <div className="mk-phone">
+              <div className="screen">
+                <div className="flex justify-between px-6 pt-3 text-xs text-white font-semibold">
+                  <span>9:41</span><span>●●● 5G</span>
+                </div>
+                <div className="px-[22px] pt-12 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+                  <div className="text-[13px] tracking-[.14em] uppercase" style={{ color: "#9b9b96" }}>Shipment · MK-204</div>
+                  <div className="font-display font-semibold text-[22px] tracking-tight mt-0.5">Porsche 911 GT3</div>
+                </div>
+                <div className="flex-1 flex flex-col gap-[14px] px-[22px] py-[18px]">
+                  {/* Map placeholder */}
+                  <div className="h-[140px] rounded-[14px] relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1a1a, #0e0e0e)", border: "1px solid rgba(255,255,255,.06)" }}>
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 320 140" preserveAspectRatio="none">
+                      <path d="M20 110 Q120 0 200 80 T300 40" stroke="#fff" strokeWidth="1.4" fill="none" strokeDasharray="3 4" />
+                      <circle cx="20" cy="110" r="4" fill="#fff" />
+                      <circle cx="200" cy="80" r="6" fill="#fff" stroke="#0a0a0a" strokeWidth="2" />
+                      <circle cx="300" cy="40" r="4" fill="none" stroke="#fff" strokeWidth="1.4" />
+                    </svg>
+                  </div>
+                  {/* Progress */}
+                  <div>
+                    <div className="h-[3px] rounded-sm overflow-hidden" style={{ background: "rgba(255,255,255,.12)" }}>
+                      <div className="h-full rounded-sm bg-white" style={{ width: "64%", animation: "mk-progress-fill 4s ease-in-out infinite alternate" }} />
+                    </div>
+                    <div className="font-display font-bold text-[38px] tracking-tight mt-2">64%</div>
+                    <div className="text-xs mt-[-4px]" style={{ color: "#9b9b96" }}>Eta Jeddah · Mar 14</div>
+                  </div>
+                  {/* Events */}
+                  <div className="flex flex-col gap-[10px]">
+                    {[
+                      { label: "In transit · Suez Canal", time: "Today, 14:22 GST", muted: false },
+                      { label: "Departed Hamburg", time: "Mar 02 · 09:05", muted: false },
+                      { label: "Inspection passed", time: "Feb 27", muted: true },
+                    ].map(({ label, time, muted }) => (
+                      <div key={label} className="flex gap-3 items-start py-2" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                        <div className="w-2 h-2 rounded-full mt-1.5" style={{ background: muted ? "#444" : "#fff" }} />
+                        <div className="text-[13px] font-medium">
+                          {label}
+                          <small className="block text-[11px] mt-0.5 font-normal" style={{ color: "#9b9b96" }}>{time}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right text */}
+          <div className="mk-reveal delay-1">
+            <span className="mk-eyebrow" style={{ color: "#9b9b96" }}><span className="dot" style={{ background: "#fff" }} />{isRTL ? "تطبيق واحد" : "One app"}</span>
+            <h2 className="font-display font-bold tracking-tighter leading-[.92] mt-3" style={{ fontSize: "clamp(48px, 7vw, 112px)" }}>
+              {isRTL ? <>تتبعها <span className="mk-serif-it">مباشرة.</span><br /><span style={{ color: "#5a5a55" }}>كل كيلومتر.</span></> : <>Track <span className="mk-serif-it">it.</span><br /><span style={{ color: "#5a5a55" }}>Live, every mile.</span></>}
+            </h2>
+            <p className="text-[17px] leading-relaxed mt-[18px]" style={{ color: "#bdbdb6", maxWidth: "42ch" }}>
+              {isRTL
+                ? "موقع السفينة، حالة الجمارك، مراحل الدفع — كلها في جوالك. إشعارات عندما تحتاج توقيعك."
+                : "Vessel position, customs status, payment milestones — all in your pocket. Push notifications when something needs your signature."}
+            </p>
+
+            <div className="flex flex-col gap-[18px] mt-8">
+              {(isRTL
+                ? [
+                    { n: "01", title: "تتبع AIS مباشر", desc: "من جهاز السفينة مباشرة، يتحدث كل 12 ساعة." },
+                    { n: "02", title: "مستنداتك في مكان واحد", desc: "بوليصة الشحن، شهادة ساسو، الفاتورة — كلها رقمية." },
+                    { n: "03", title: "دفع متعدد العملات", desc: "ادفع بالريال أو الدولار أو اليورو أو الين بسعر ساما المباشر." },
+                  ]
+                : [
+                    { n: "01", title: "Live AIS tracking", desc: "Pulled directly from the vessel transponder, refreshed every 12 hours." },
+                    { n: "02", title: "Documents in one place", desc: "Bill of lading, SASO certificate, invoice — signed digitally, stored forever." },
+                    { n: "03", title: "Multi-currency payments", desc: "Pay in SAR, USD, EUR or JPY at the live SAMA rate. Split into milestones." },
+                  ]
+              ).map(({ n, title, desc }) => (
+                <div key={n} className="flex gap-4 py-[18px]" style={{ borderTop: "1px solid rgba(255,255,255,.12)" }}>
+                  <div className="font-display font-bold text-sm w-7 tracking-wide" style={{ color: "#9b9b96" }}>{n}</div>
+                  <div>
+                    <h4 className="font-display font-semibold text-lg tracking-tight mb-1">{title}</h4>
+                    <p className="text-sm leading-relaxed" style={{ color: "#bdbdb6" }}>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 7. Big Stats
+// ---------------------------------------------------------------------------
+function BigStats() {
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
+
+  const stats = isRTL
+    ? [
+        { n: "3,200+", l: "سيارة مستوردة" },
+        { n: "22", l: "دولة مصدّرة" },
+        { n: "98%", l: "تسليم في الموعد" },
+        { n: "99", l: "ريال رسوم حجز فقط" },
+      ]
+    : [
+        { n: "3,200+", l: "cars imported" },
+        { n: "22", l: "source markets" },
+        { n: "98%", l: "on-time delivery" },
+        { n: "99", l: "SAR reservation fee" },
+      ];
+
+  return (
+    <section className="mk-bigstats py-[120px]" style={{ background: "var(--mk-ink)", color: "var(--mk-paper)" }}>
+      <div className="max-w-[1440px] mx-auto px-9 max-md:px-[22px]">
+        <div className="row mk-reveal">
+          {stats.map(({ n, l }) => (
+            <div key={l} className="cell">
+              <div className="font-display font-bold tracking-tighter leading-[.95]" style={{ fontSize: "clamp(56px, 7vw, 104px)" }}>
+                {n.includes("+") ? <>{n.replace("+", "")}<span style={{ color: "#7d7d78" }}>+</span></> : n}
+              </div>
+              <div className="text-[13px] tracking-[.14em] uppercase mt-[10px]" style={{ color: "#bdbdb6" }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 8. Why Markabah — Interactive Showcase
+// ---------------------------------------------------------------------------
+
+const REASONS = [
+  {
+    id: "savings",
+    label: "Lower prices",
+    image: "https://images.unsplash.com/photo-1493238792000-8113da705763?w=1920&q=80&auto=format&fit=crop",
+  },
+  {
+    id: "transparency",
+    label: "See every fee",
+    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1920&q=80&auto=format&fit=crop",
+  },
+  {
+    id: "trust",
+    label: "Verified importers only",
+    image: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=1920&q=80&auto=format&fit=crop",
+  },
+];
+
+function SavingsCard({ active }: { active: boolean }) {
+  return (
+    <div className="bg-white/[0.12] backdrop-blur-xl border border-white/20 rounded-3xl p-8 w-[420px] text-white text-center">
+      <div className="text-[11px] uppercase tracking-[0.15em] text-white/60 mb-5">Average savings per import</div>
+      <div className="mb-1">
+        <span className="text-[16px] text-white/60">SAR </span>
+        <span className="text-[56px] font-medium tracking-tight tabular-nums">
+          {active ? <AnimatedCounter target={18400} duration={1.8} /> : "18,400"}
+        </span>
+      </div>
+      <div className="text-[12.5px] text-white/65 mb-6">based on 142 completed imports in 2026</div>
+      <div className="border-t border-white/15 pt-5 space-y-3 text-left">
+        {["Direct from international auctions", "No showroom overhead in the price", "Transparent margin — you see what we make"].map((text) => (
+          <div key={text} className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+              <span className="text-[10px]">✓</span>
+            </div>
+            <span className="text-[13.5px] text-white/80">{text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BreakdownCard() {
+  const lines = [
+    { label: "Source price", value: "95,000" },
+    { label: "Shipping", value: "6,200" },
+    { label: "Customs duty (5%)", value: "4,750" },
+    { label: "VAT (15%)", value: "15,400" },
+    { label: "Inspection · SASO", value: "1,200" },
+    { label: "Importer margin", value: "19,450" },
+  ];
+
+  return (
+    <div className="bg-white/[0.12] backdrop-blur-xl border border-white/20 rounded-3xl p-8 w-[420px] text-white">
+      <div className="text-[11px] uppercase tracking-[0.15em] text-white/60 mb-5 text-center">Full cost breakdown</div>
+      <div className="space-y-2.5 text-[14px]">
+        {lines.map((line) => (
+          <div key={line.label} className="flex justify-between">
+            <span className="text-white/70">{line.label}</span>
+            <span className="tabular-nums font-medium text-white">SAR {line.value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-white/20 mt-5 pt-4 flex justify-between items-baseline">
+        <span className="text-[13px] uppercase tracking-wider text-white/60">Final price</span>
+        <span className="text-[26px] font-medium tabular-nums">SAR 142,000</span>
+      </div>
+      <div className="text-center mt-4 text-[11.5px] text-white/55">Every fee shown before you pay. No surprises.</div>
+    </div>
+  );
+}
+
+function VerifiedCard() {
+  return (
+    <div className="bg-white/[0.12] backdrop-blur-xl border border-white/20 rounded-3xl p-8 w-[420px] text-white">
+      <div className="text-[11px] uppercase tracking-[0.15em] text-white/60 mb-5 text-center">Every importer is vetted</div>
+      <div className="flex items-center gap-4 mb-5">
+        <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-[18px] font-medium">GI</div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="font-medium text-[15px]">Gulf Imports Trading</span>
+            <span className="text-teal-300 text-[14px]">✓</span>
+          </div>
+          <div className="text-[12px] text-white/60">13 years · Dammam, Eastern Province</div>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        {[
+          { value: "142", label: "Imported" },
+          { value: "99%", label: "On-time" },
+          { value: "4.9★", label: "127 reviews" },
+        ].map(({ value, label }) => (
+          <div key={label} className="text-center">
+            <div className="text-[20px] font-medium tabular-nums">{value}</div>
+            <div className="text-[10.5px] text-white/55 uppercase tracking-wider">{label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5 justify-center">
+        {["CR licensed", "SASO certified", "MOC licensed"].map((b) => (
+          <span key={b} className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[11px]">{b}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WhyMarkabahSection() {
+  const [active, setActive] = useState(REASONS[0]);
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
+
+  useEffect(() => {
+    REASONS.forEach((r) => {
+      const img = new window.Image();
+      img.src = r.image;
+    });
+  }, []);
+
+  return (
+    <section className="section dark relative w-full overflow-hidden min-h-[820px]">
+      {REASONS.map((r) => (
+        <div
+          key={r.id}
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${active.id === r.id ? "opacity-100" : "opacity-0"}`}
+          style={{ backgroundImage: `url(${r.image})` }}
+        />
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/45 to-black/65" />
+
+      <div className="relative w-full max-w-6xl mx-auto grid grid-rows-[auto_1fr_auto] gap-10 py-16 px-8 text-white min-h-[820px] z-10">
+        {/* ROW 1 — Headline */}
+        <FadeIn className="text-center max-w-3xl mx-auto">
+          <h2 className="font-geist font-light tracking-tight leading-[1.05] text-[48px] md:text-[56px]">
+            {isRTL ? (
+              <>لماذا آلاف السعوديين<br /><span className="mk-serif-it font-normal">يستوردون بأنفسهم.</span></>
+            ) : (
+              <>Why thousands of Saudis<br /><span className="mk-serif-it font-normal">are importing instead.</span></>
+            )}
+          </h2>
+          <p className="mt-4 text-[15px] text-white/80 max-w-md mx-auto">
+            {isRTL ? "ثلاثة أسباب لاختيار مَركَبة." : "Three reasons buyers choose Markabah."}
+          </p>
+        </FadeIn>
+
+        {/* ROW 2 — Card (centered in middle area) */}
+        <div className="flex items-center justify-center">
+          <div className="relative w-[420px] max-w-full min-h-[380px] flex items-center justify-center">
+            {REASONS.map((r) => (
+              <div
+                key={r.id}
+                className={`absolute transition-all duration-500 ease-out ${
+                  active.id === r.id ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+                }`}
+              >
+                {r.id === "savings" && <SavingsCard active={active.id === r.id} />}
+                {r.id === "transparency" && <BreakdownCard />}
+                {r.id === "trust" && <VerifiedCard />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ROW 3 — Chips */}
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          {REASONS.map((r) => (
             <button
-              key={key}
-              onClick={() => router.push(`/browse?source_country=${key}`)}
-              className="group flex flex-col items-center gap-4 p-7 rounded-2xl border-2 border-slate-100 bg-white hover:border-accent/50 hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg transition-all duration-200 text-center"
+              key={r.id}
+              onClick={() => setActive(r)}
+              className={`px-6 py-3 rounded-full text-[14px] font-medium border transition-all duration-300 ${
+                active.id === r.id
+                  ? "bg-white text-navy-900 border-white"
+                  : "bg-white/10 backdrop-blur-sm text-white border-white/25 hover:bg-white/20"
+              }`}
             >
-              <span className="text-5xl leading-none">{flag}</span>
-              <div>
-                <p className="font-bold text-slate-800 group-hover:text-accent transition-colors text-sm">
-                  {label}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">{sub}</p>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-accent font-semibold bg-accent/10 px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                Browse <ChevronRight className="w-3 h-3" />
-              </div>
+              {r.label}
             </button>
           ))}
         </div>
@@ -357,502 +837,53 @@ function SourceCountries() {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Imported Car Card
+// 9. Download App CTA
 // ---------------------------------------------------------------------------
-function ImportedCarCard({ listing }: { listing: ImportedListing }) {
-  const primaryImage =
-    listing.images?.find((img) => img.is_primary) ?? listing.images?.[0];
-  const imageUrl =
-    listing.primary_image ||
-    primaryImage?.image_url ||
-    (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
 
-  const statusInfo = listing.import_status
-    ? (IMPORT_STATUS_STYLES[listing.import_status] ??
-       { label: listing.import_status, cls: "bg-slate-100 text-slate-600" })
-    : null;
-
-  const flag = listing.source_country
-    ? (SOURCE_COUNTRY_FLAG[listing.source_country] ?? "🌐")
-    : null;
-
-  const finalPrice = listing.final_price_sar ?? listing.price;
+function DownloadAppCTA() {
+  const { dir } = useTranslation();
+  const isRTL = dir === "rtl";
 
   return (
-    <Link href={`/car/${listing.id}`}>
-      <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-accent/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
-        {/* Image */}
-        <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 flex-shrink-0">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={`${listing.year} ${listing.make} ${listing.model}`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-              <CarIcon className="w-10 h-10 text-slate-300" />
-              <span className="text-xs text-slate-400">No Image</span>
-            </div>
-          )}
-
-          {/* Status badge */}
-          {statusInfo && (
-            <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${statusInfo.cls}`}>
-              {statusInfo.label}
-            </div>
-          )}
-
-          {/* Country flag */}
-          {flag && (
-            <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow flex items-center justify-center text-base">
-              {flag}
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-4 flex flex-col gap-2 flex-grow">
-          <h3 className="font-bold text-slate-900 text-sm leading-snug">
-            {listing.year} {listing.make} {listing.model}
-          </h3>
-
-          {/* Price row */}
-          <div className="flex items-end gap-1.5 mt-auto pt-2">
-            <span className="text-lg font-black text-accent leading-none">
-              {formatSAR(finalPrice)}
-            </span>
-            {listing.source_price && listing.source_currency && (
-              <span className="text-xs text-slate-400 leading-none pb-0.5">
-                ({listing.source_currency.toUpperCase()}{" "}
-                {Number(listing.source_price).toLocaleString()})
-              </span>
+    <section className="py-24 px-8" style={{ background: "var(--mk-paper-2)", borderTop: "1px solid rgba(10,10,10,.06)" }}>
+      <div className="max-w-5xl mx-auto text-center">
+        <FadeIn>
+          <h2 className="font-geist font-light tracking-tight leading-[1.1]" style={{ fontSize: "clamp(36px, 4.5vw, 48px)", color: "var(--mk-ink)" }}>
+            {isRTL ? (
+              <>تابع استيرادك<br /><span className="mk-serif-it font-normal">من راحة يدك.</span></>
+            ) : (
+              <>Track your import<br /><span className="mk-serif-it font-normal">from the palm of your hand.</span></>
             )}
-          </div>
-
-          {/* Meta row */}
-          <div className="flex items-center gap-3 text-xs text-slate-400 border-t border-slate-100 pt-2 mt-1">
-            {listing.mileage > 0 && (
-              <span>{Number(listing.mileage).toLocaleString()} km</span>
-            )}
-            {listing.city && (
-              <span className="flex items-center gap-0.5">
-                <MapPin className="w-3 h-3" />
-                {listing.city}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 5. Featured Imported Cars
-// ---------------------------------------------------------------------------
-function FeaturedImportedCars() {
-  const { data, isLoading } = useApiQuery<PaginatedResponse<ImportedListing>>(
-    "/api/imported-cars/?ordering=-created_at&page_size=6"
-  );
-  const listings = Array.isArray(data) ? data : (data?.results ?? []);
-
-  return (
-    <section className="py-20 bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-2">
-              Available Now
-            </p>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-              Featured Imports
-            </h2>
-          </div>
-          <Link
-            href="/browse"
-            className="hidden sm:inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-700 font-semibold transition-colors group"
-          >
-            View all
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
-          </div>
-        ) : listings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((l) => (
-              <ImportedCarCard key={l.id} listing={l} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Globe className="w-10 h-10 mb-3 opacity-40" />
-            <p className="text-sm">No imported cars listed yet.</p>
-          </div>
-        )}
-
-        <div className="mt-8 sm:hidden text-center">
-          <Link
-            href="/browse"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent text-white font-semibold text-sm"
-          >
-            View all cars <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 6. Arriving Soon
-// ---------------------------------------------------------------------------
-function ArrivingSoon() {
-  const { data, isLoading } = useApiQuery<PaginatedResponse<ImportedListing>>(
-    "/api/imported-cars/arriving/"
-  );
-  const listings = Array.isArray(data) ? data : (data?.results ?? []);
-
-  if (!isLoading && listings.length === 0) return null;
-
-  return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-slate-500 font-semibold text-sm uppercase tracking-widest mb-2">
-              In Transit
-            </p>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-              Arriving Soon
-            </h2>
-            <p className="text-slate-500 mt-1 text-sm">
-              Reserve before they land.
-            </p>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {listings.slice(0, 8).map((l) => {
-              const primaryImage =
-                l.images?.find((img: { is_primary: boolean }) => img.is_primary) ?? l.images?.[0];
-              const imageUrl =
-                l.primary_image ||
-                primaryImage?.image_url ||
-                (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
-
-              return (
-                <Link key={l.id} href={`/car/${l.id}`}>
-                  <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-slate-400 hover:shadow-lg transition-all duration-300">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                      {imageUrl ? (
-                        <Image
-                          src={imageUrl}
-                          alt={`${l.year} ${l.make} ${l.model}`}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <CarIcon className="w-10 h-10 text-slate-300" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <p className="text-white font-bold text-sm leading-tight">
-                          {l.year} {l.make} {l.model}
-                        </p>
-                        {l.estimated_arrival_date && (
-                          <p className="text-white/70 text-xs mt-0.5 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            ETA {new Date(l.estimated_arrival_date).toLocaleDateString("en-SA", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="p-3 flex items-center justify-between">
-                      <span className="text-sm font-black text-slate-900">
-                        {formatSAR(l.final_price_sar ?? l.price)}
-                      </span>
-                      <span className="text-xs text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
-                        {l.source_country
-                          ? (SOURCE_COUNTRY_FLAG[l.source_country] ?? "🌐") +
-                            " " +
-                            l.source_country.toUpperCase()
-                          : "Arriving Soon"}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 7. How It Works
-// ---------------------------------------------------------------------------
-const STEPS = [
-  {
-    n: "01",
-    Icon: Search,
-    color: "bg-accent/10 text-accent",
-    title: "Browse & Choose",
-    desc: "Browse cars from USA, Japan, Korea, UAE, and Europe. Full specs and auction reports upfront.",
-  },
-  {
-    n: "02",
-    Icon: Calculator,
-    color: "bg-blue-100 text-blue-600",
-    title: "See Total Cost",
-    desc: "Instant landed cost: car price + shipping + customs 5% + VAT 15%. Zero surprises.",
-  },
-  {
-    n: "03",
-    Icon: CreditCard,
-    color: "bg-violet-100 text-violet-600",
-    title: "Place Your Order",
-    desc: "SAR 99 reservation connects you directly with a verified importer. No middlemen.",
-  },
-  {
-    n: "04",
-    Icon: MapPin,
-    color: "bg-emerald-100 text-emerald-600",
-    title: "Track Live",
-    desc: "10-stage live tracking from auction → vessel → Saudi port → customs → your door.",
-  },
-];
-
-function HowItWorks() {
-  return (
-    <section className="py-20 bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-2">
-            Simple Process
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-            How It Works
           </h2>
-          <p className="text-slate-500 mt-3 max-w-xl mx-auto">
-            From browsing to delivery — four steps to get your dream imported car in Saudi Arabia.
+          <p className="mt-5 text-[17px] leading-relaxed max-w-xl mx-auto" style={{ color: "var(--mk-mute)" }}>
+            {isRTL
+              ? "احجز سيارات، تواصل مع المستوردين، وتابع كل خطوة من شحنتك مباشرة عبر تطبيق مَركَبة."
+              : "Reserve cars, message importers, and follow every step of your shipment in real-time on the Markabah mobile app."}
           </p>
-        </div>
+        </FadeIn>
 
-        {/* Steps grid with connector lines on desktop */}
-        <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Connector line (desktop only) */}
-          <div className="hidden lg:block absolute top-10 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" aria-hidden />
-
-          {STEPS.map(({ n, Icon, color, title, desc }) => (
-            <div key={n} className="relative bg-white rounded-2xl p-7 border border-slate-100 hover:border-accent/40 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group">
-              {/* Step number */}
-              <div className="text-[64px] font-black text-slate-50 select-none leading-none absolute top-4 right-5 group-hover:text-accent/10 transition-colors">
-                {n}
+        <FadeIn delay={0.15}>
+          <div className="mt-10 flex items-center justify-center gap-4 flex-wrap">
+            <a href="#" className="inline-flex items-center gap-3 px-6 py-3.5 bg-[#0B1424] text-white rounded-xl hover:bg-black transition-colors">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
+              <div className="text-left">
+                <div className="text-[10px] text-white/60 leading-none">{isRTL ? "حمّل من" : "Download on the"}</div>
+                <div className="text-[15px] font-medium leading-tight">App Store</div>
               </div>
-              {/* Icon */}
-              <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center mb-5 ${color}`}>
-                <Icon className="w-6 h-6" />
+            </a>
+            <a href="#" className="inline-flex items-center gap-3 px-6 py-3.5 bg-[#0B1424] text-white rounded-xl hover:bg-black transition-colors">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.48c.32.38.82.52 1.32.32l9.5-4.3-2.96-2.96-7.86 6.94zM.67 2.22C.26 2.63 0 3.26 0 4.01v15.98c0 .75.26 1.38.67 1.79L12 10.5.67 2.22zM21.81 9.64l-3.27-1.86-3.35 3.02 3.72 3.72 2.9-1.65c.94-.53.94-1.9 0-2.43v-.8zM14.5 10.5l3.2-2.88L5.18.43C4.78.21 4.34.19 3.97.36l10.53 10.14z" /></svg>
+              <div className="text-left">
+                <div className="text-[10px] text-white/60 leading-none">{isRTL ? "احصل عليه من" : "Get it on"}</div>
+                <div className="text-[15px] font-medium leading-tight">Google Play</div>
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-2">{title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center mt-10">
-          <Link href="/how-it-works"
-            className="inline-flex items-center gap-2 text-sm text-accent hover:text-accent-600 font-semibold transition-colors"
-          >
-            Learn more about the process <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 8. Cost Calculator Teaser
-// ---------------------------------------------------------------------------
-function CalculatorTeaser() {
-  const router = useRouter();
-  return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%)",
-          }}
-        >
-          <div className="px-8 sm:px-16 py-16 flex flex-col lg:flex-row items-center gap-10">
-            <div className="flex-1 text-white">
-              <p className="text-white/70 font-semibold text-sm uppercase tracking-widest mb-3">
-                Free Tool
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-black leading-tight mb-4">
-                How much will it really cost?
-              </h2>
-              <p className="text-white/80 text-lg leading-relaxed mb-8 max-w-md">
-                Calculate the full landed cost in SAR — car price, shipping,
-                customs duty, VAT, port fees — for any car from any country.
-              </p>
-              <button
-                onClick={() => router.push("/calculator")}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-accent font-bold hover:bg-slate-50 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <Calculator className="w-5 h-5" />
-                Open Calculator
-              </button>
-            </div>
-
-            {/* Example breakdown card */}
-            <div className="flex-shrink-0 w-full lg:w-72 bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/20 text-white">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-4">
-                Example: 2022 Toyota from USA
-              </p>
-              {[
-                { l: "Car price (USD 16,000)", v: "SAR 60,000" },
-                { l: "Customs duty (5%)",      v: "SAR 3,000"  },
-                { l: "VAT (15%)",              v: "SAR 9,450"  },
-                { l: "Shipping",               v: "SAR 4,000"  },
-                { l: "Inspection + handling",  v: "SAR 1,800"  },
-              ].map(({ l, v }) => (
-                <div key={l} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0 text-sm">
-                  <span className="text-white/70">{l}</span>
-                  <span className="font-bold">{v}</span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/20">
-                <span className="text-white/80 font-semibold text-sm">Total</span>
-                <span className="text-xl font-black">≈ SAR 78,250</span>
-              </div>
-            </div>
+            </a>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// 9. Why Choose Us
-// ---------------------------------------------------------------------------
-const TRUST_POINTS = [
-  {
-    icon: <Shield className="w-6 h-6" />,
-    title: "Verified Importers Only",
-    desc: "Every importer is vetted. Commercial registration, import license, and track record — all verified.",
-  },
-  {
-    icon: <BadgeCheck className="w-6 h-6" />,
-    title: "Zero Hidden Fees",
-    desc: "The total landed cost shown is what you pay. Customs, VAT, shipping — all included upfront.",
-  },
-  {
-    icon: <TrendingUp className="w-6 h-6" />,
-    title: "Live Shipment Tracking",
-    desc: "Track your car from the auction house through the port and customs to your door.",
-  },
-  {
-    icon: <Globe className="w-6 h-6" />,
-    title: "Saudi Compliance",
-    desc: "All imports are SASO-certified and fully customs-cleared before delivery.",
-  },
-];
-
-function TrustSection() {
-  return (
-    <section className="py-20 bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-2">
-            Our Promise
+          <p className="mt-4 text-[12px]" style={{ color: "var(--mk-mute)" }}>
+            {isRTL ? "التطبيق قيد الإطلاق قريباً" : "App launching soon — join the waitlist"}
           </p>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-            Why MARKABA
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {TRUST_POINTS.map(({ icon, title, desc }) => (
-            <div
-              key={title}
-              className="bg-white rounded-2xl p-7 border border-slate-200 hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5 transition-all"
-            >
-              <div className="w-12 h-12 rounded-xl bg-accent text-white flex items-center justify-center mb-5">
-                {icon}
-              </div>
-              <h3 className="font-bold text-slate-900 mb-2 text-base">{title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 10. Importer CTA
-// ---------------------------------------------------------------------------
-function ImporterCTA() {
-  return (
-    <section className="py-4 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl text-white px-8 sm:px-16 py-16 text-center"
-          style={{ background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #1a1a1a 100%)" }}
-        >
-          {/* Background decoration */}
-          <div aria-hidden className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-10 pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(192,192,192,0.25), transparent 70%)", transform: "translate(30%, -30%)" }} />
-          <div aria-hidden className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
-            style={{ background: "radial-gradient(circle, white, transparent 70%)", transform: "translate(-30%, 30%)" }} />
-
-          <div className="relative">
-            <p className="font-semibold text-sm uppercase tracking-widest mb-4 text-slate-300">
-              For Importers
-            </p>
-            <h2 className="text-4xl sm:text-5xl font-black leading-tight mb-5">
-              Are you an importer?
-            </h2>
-            <p className="text-white/70 text-lg mb-10 max-w-2xl mx-auto">
-              List your inventory, manage orders, and connect with thousands of Saudi buyers looking for imported cars every day.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/become-importer"
-                className="inline-flex items-center gap-2 px-9 py-4 bg-white hover:bg-slate-100 text-slate-900 rounded-2xl font-bold text-base transition-all hover:-translate-y-0.5 hover:shadow-xl"
-              >
-                Apply as Importer
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/browse"
-                className="inline-flex items-center gap-2 px-9 py-4 border border-white/30 hover:border-white/60 text-white rounded-2xl font-semibold text-base transition-all hover:-translate-y-0.5 hover:bg-white/10"
-              >
-                Browse Cars
-              </Link>
-            </div>
-          </div>
-        </div>
+        </FadeIn>
       </div>
     </section>
   );
@@ -862,17 +893,19 @@ function ImporterCTA() {
 // Root page
 // ---------------------------------------------------------------------------
 export default function Home() {
+  const pageRef = useReveal();
+
   return (
-    <div className="min-h-screen bg-white">
+    <div ref={pageRef} className="mk-page" style={{ background: "var(--mk-paper)" }}>
       <Hero />
-      <StatsStrip />
-      <SourceCountries />
-      <FeaturedImportedCars />
-      <ArrivingSoon />
-      <HowItWorks />
-      <CalculatorTeaser />
-      <TrustSection />
-      <ImporterCTA />
+      <Marquee />
+      <BrowseCars />
+      <PriceCalculator />
+      <ShipIt />
+      <TrackIt />
+      <BigStats />
+      <WhyMarkabahSection />
+      <DownloadAppCTA />
     </div>
   );
 }

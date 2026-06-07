@@ -811,5 +811,26 @@
       "extendedWarranty": "Extended Warranty",
       "testDrive": "Test Drive"
     }
+  },
+  "map": {
+    "title": "Browse Imports by Origin Country",
+    "subtitle": "Pick a country to explore available cars",
+    "totalStats": "{count} cars from {countries} countries",
+    "carsCount": "{count} cars",
+    "available": "Available",
+    "arrivingSoon": "Arriving Soon",
+    "reserved": "Reserved",
+    "fromPrice": "From SAR {price}",
+    "shippingDays": "~{days} days",
+    "popularMakes": "Popular",
+    "carsFromCountry": "Cars from {country}",
+    "viewAllFrom": "View all from {country}",
+    "noCars": "No cars currently available from this country",
+    "legend": {
+      "few": "1–5",
+      "medium": "6–15",
+      "many": "16–30",
+      "most": "30+"
+    }
   }
 }

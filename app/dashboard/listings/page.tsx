@@ -302,11 +302,11 @@ export default function DealerListingsPage() {
     deps: [url],
   });
 
-  const { data: mySubscription } = useApiQuery<DealerSubscription>("/api/my-subscription/", {
-    enabled: isAuthenticated,
-  });
-
-  const canBulkUpload = mySubscription?.plan?.can_bulk_upload === true;
+  // DEPRECATED: Subscription check disabled — commission-only model
+  // const { data: mySubscription } = useApiQuery<DealerSubscription>("/api/my-subscription/", {
+  //   enabled: isAuthenticated,
+  // });
+  const canBulkUpload = true; // All importers can bulk upload now
   const listings = data?.results ?? [];
 
   // ---------------------------------------------------------------------------
@@ -361,7 +361,7 @@ export default function DealerListingsPage() {
   const toggleSelect = (id: number) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
     setBulkResult(null);
@@ -988,25 +988,7 @@ export default function DealerListingsPage() {
               {/* ── Upload tab ── */}
               {modalTab === "upload" && (
                 <div className="space-y-6">
-                  {/* Subscription gate */}
-                  {!canBulkUpload && mySubscription && (
-                    <div className="border-2 border-dashed border-accent/40 rounded-2xl p-8 text-center bg-accent/5">
-                      <Lock className="w-10 h-10 text-accent mx-auto mb-3" />
-                      <h3 className="text-base font-semibold text-slate-900 mb-1">Pro Plan Required</h3>
-                      <p className="text-sm text-slate-500 mb-5">
-                        Bulk upload is available on the Pro plan. Upgrade to upload multiple listings at once.
-                      </p>
-                      <Link
-                        href="/dashboard/subscription"
-                        onClick={closeModal}
-                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                      >
-                        Upgrade Plan
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Upload form — only shown for Pro users */}
+                  {/* DEPRECATED: Subscription gate removed — all importers can bulk upload */}
                   {canBulkUpload && (
                     <>
                       {/* Step 1 — Template */}

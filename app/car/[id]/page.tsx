@@ -148,6 +148,47 @@ const STATUS_ORDER: Record<string, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Status display config + badge
+// ---------------------------------------------------------------------------
+const STATUS_DISPLAY: Record<string, { label: string; bg: string; text: string; border: string; dot: string; pulse: boolean }> = {
+  available:         { label: "Available",                  bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
+  reserved:          { label: "Reserved",                   bg: "bg-amber-50",      text: "text-amber-800",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: false },
+  sourcing:          { label: "Importer sourcing",          bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  purchased:         { label: "Purchased — preparing",      bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  preparing_shipment:{ label: "Preparing shipment",         bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  shipped:           { label: "In transit",                 bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  in_transit:        { label: "In transit",                 bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  arrived_port:      { label: "Arrived at port",            bg: "bg-violet-50",     text: "text-violet-700",     border: "border-violet-200",     dot: "bg-violet-500",     pulse: true },
+  at_port:           { label: "At port",                    bg: "bg-violet-50",     text: "text-violet-700",     border: "border-violet-200",     dot: "bg-violet-500",     pulse: true },
+  in_customs:        { label: "In customs",                 bg: "bg-amber-50",      text: "text-amber-700",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: true },
+  customs_clearance: { label: "Customs clearance",          bg: "bg-amber-50",      text: "text-amber-700",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: true },
+  customs_cleared:   { label: "Customs cleared",            bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
+  inspection:        { label: "Inspection",                 bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  ready:             { label: "Ready for delivery",         bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
+  delivered:         { label: "Delivered",                  bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
+  completed:         { label: "Completed",                  bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
+  sold:              { label: "Sold",                       bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const config = STATUS_DISPLAY[status] ?? STATUS_DISPLAY.available;
+  return (
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12.5px] font-medium border ${config.bg} ${config.text} ${config.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${config.dot} ${config.pulse ? "animate-pulse" : ""}`} />
+      {config.label}
+    </span>
+  );
+}
+
+const NON_AVAILABLE_PIPELINE = new Set([
+  "purchased", "preparing_shipment", "shipped", "in_transit",
+  "arrived_port", "at_port", "in_customs", "customs_clearance",
+  "customs_cleared", "inspection", "ready", "ready_for_delivery",
+]);
+
+const SOLD_STATUSES = new Set(["delivered", "completed", "sold"]);
+
+// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
@@ -709,14 +750,9 @@ export default function CarDetailPage() {
 
   const [showReport, setShowReport] = useState(false);
 
-  const [showContactImporter, setShowContactImporter] = useState(false);
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
-  const [contactSuccess, setContactSuccess] = useState(false);
-
   const [isReserving, setIsReserving] = useState(false);
   const [reserveSuccess, setReserveSuccess] = useState(false);
+  const [reserveError, setReserveError] = useState("");
 
   const images =
     listing?.images
@@ -790,39 +826,29 @@ export default function CarDetailPage() {
   const handleReserve = async () => {
     if (!isAuthenticated || !listing) return;
     setIsReserving(true);
+    setReserveError("");
     try {
-      await api.post("/api/orders/", {
-        listing: listing.id,
-        reservation_fee: 99,
+      const result = await api.post<{ id: number; reservation_number: string }>("/api/reservations/", {
+        car_id: listing.id,
       });
-      setReserveSuccess(true);
-      showToast("success", "Reservation confirmed! The importer will contact you shortly.");
-    } catch {
-      showToast("error", "Failed to reserve. Please try again.");
+      window.location.href = `/checkout/${result.id}`;
+    } catch (err: any) {
+      let message = "Failed to reserve. Please try again.";
+      try {
+        const body = typeof err?.message === "string" ? JSON.parse(err.message) : err;
+        if (body.car_id) message = Array.isArray(body.car_id) ? body.car_id[0] : body.car_id;
+        else if (body.non_field_errors) message = Array.isArray(body.non_field_errors) ? body.non_field_errors[0] : body.non_field_errors;
+        else if (body.detail) message = body.detail;
+        else if (body.error) message = body.error;
+        else {
+          const first = Object.values(body)[0];
+          if (Array.isArray(first)) message = first[0];
+          else if (typeof first === "string") message = first;
+        }
+      } catch { /* use default */ }
+      setReserveError(message);
     } finally {
       setIsReserving(false);
-    }
-  };
-
-  const handleContactImporter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!listing) return;
-    setIsSubmittingContact(true);
-    try {
-      await api.post("/api/leads/", {
-        listing: listing.id,
-        message: contactMessage,
-        phone: contactPhone || undefined,
-        source: "listing_page",
-      });
-      setContactSuccess(true);
-      setShowContactImporter(false);
-      setContactMessage("");
-      setContactPhone("");
-    } catch {
-      showToast("error", "Failed to send message. Please try again.");
-    } finally {
-      setIsSubmittingContact(false);
     }
   };
 
@@ -948,15 +974,7 @@ export default function CarDetailPage() {
               />
               {/* Import status badge */}
               <div className="absolute top-4 left-4">
-                <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-                  listing.import_status === "delivered"
-                    ? "bg-green-500 text-white"
-                    : listing.import_status === "reserved" || listing.import_status === "sold"
-                    ? "bg-slate-500 text-white"
-                    : "bg-accent text-white"
-                }`}>
-                  {listing.import_status_display ?? listing.import_status?.replace(/_/g, " ") ?? "Available"}
-                </span>
+                <StatusBadge status={(listing as any).is_reserved ? "reserved" : (listing.import_status ?? "available")} />
               </div>
               {/* Country flag badge */}
               {listing.source_country && (
@@ -1248,11 +1266,7 @@ export default function CarDetailPage() {
                             Verified Importer
                           </span>
                         )}
-                        {ownerProfile.subscription_badge === "pro" && (
-                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-yellow-400/20 text-yellow-700 border border-yellow-300 rounded-full font-semibold">
-                            ★ Pro
-                          </span>
-                        )}
+                        {/* DEPRECATED: Subscription badge removed — commission-only model */}
                       </div>
                       <div className="flex items-center gap-2 flex-wrap mt-0.5">
                         {ownerProfile.city_name && (
@@ -1279,11 +1293,6 @@ export default function CarDetailPage() {
                       </span>
                     )}
                   </div>
-                  {ownerProfile.phone && (
-                    <a href={`tel:${ownerProfile.phone}`} className="text-sm text-accent hover:underline" dir="ltr">
-                      {ownerProfile.phone}
-                    </a>
-                  )}
                   {ownerId && (
                     <Link
                       href={`/importers/${ownerId}`}
@@ -1319,74 +1328,124 @@ export default function CarDetailPage() {
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Action Buttons — status-aware */}
             <div className="space-y-3">
-              {isAuthenticated ? (
-                <>
-                  {/* Primary CTA: Reserve */}
-                  {reserveSuccess ? (
-                    <div className="w-full py-4 bg-green-50 text-green-700 border border-green-200 rounded-xl font-semibold flex flex-col items-center justify-center gap-1">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5" />
-                        <span>Reservation Confirmed!</span>
+              {(() => {
+                const status = listing.import_status ?? "available";
+                const isReserved = status === "reserved" || !!(listing as any).is_reserved;
+
+                // Case: Reserved by someone else
+                if (isReserved) {
+                  return (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="w-5 h-5 text-amber-700" />
+                        <span className="font-medium text-amber-900">Currently reserved</span>
                       </div>
-                      <span className="text-xs font-normal text-green-600">The importer will contact you shortly.</span>
+                      <p className="text-[13.5px] text-amber-800/85 mb-4">
+                        Another buyer has placed a hold on this car. Contact the importer for similar options.
+                      </p>
+                      {listing.owner && (
+                        <Link
+                          href={`/importers/${listing.owner.id}`}
+                          className="block w-full text-center py-3 rounded-xl bg-white border border-amber-300 text-amber-900 text-[14px] font-medium hover:bg-amber-50 transition-colors"
+                        >
+                          See similar cars from this importer →
+                        </Link>
+                      )}
                     </div>
-                  ) : (
+                  );
+                }
+
+                // Case: In pipeline (shipping/customs/etc)
+                if (NON_AVAILABLE_PIPELINE.has(status)) {
+                  return (
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="w-5 h-5 text-blue-700" />
+                        <span className="font-medium text-blue-900">On its way to a buyer</span>
+                      </div>
+                      <p className="text-[13.5px] text-blue-800/85">
+                        This car is in the import pipeline for another buyer. Browse similar available cars from this importer.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Case: Sold / delivered
+                if (SOLD_STATUSES.has(status)) {
+                  return (
+                    <div className="rounded-2xl border border-[#0B1424]/10 bg-[#0B1424]/[0.03] p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="w-5 h-5 text-[#0B1424]/50" />
+                        <span className="font-medium text-[#0B1424]/70">No longer available</span>
+                      </div>
+                      <p className="text-[13.5px] text-[#0B1424]/55">
+                        This car has been delivered to its buyer. Check the importer&apos;s current inventory for similar options.
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Case: Available — show reserve CTA
+                if (!isAuthenticated) {
+                  return (
+                    <Link
+                      href="/auth/signin"
+                      className="block w-full py-4 bg-[#0B1424] hover:bg-black text-white rounded-xl font-medium text-[15px] text-center transition-colors"
+                    >
+                      Sign in to reserve — SAR 99
+                    </Link>
+                  );
+                }
+
+                return (
+                  <>
+                    {reserveError && (
+                      <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-[13px] text-red-800">
+                        {reserveError}
+                      </div>
+                    )}
                     <button
                       onClick={handleReserve}
-                      disabled={isReserving || listing.import_status === "sold" || listing.import_status === "reserved"}
-                      className="w-full py-4 bg-accent hover:bg-accent-600 disabled:opacity-50 text-white rounded-xl font-bold text-base flex flex-col items-center justify-center gap-0.5 transition-colors"
+                      disabled={isReserving}
+                      className="w-full py-4 bg-[#0B1424] hover:bg-black disabled:opacity-50 text-white rounded-2xl font-medium text-[15px] flex flex-col items-center justify-center gap-0.5 transition-colors"
                     >
                       {isReserving ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <>
-                          <span>Reserve This Car — SAR 99</span>
-                          <span className="text-xs font-normal text-white/80">Reservation connects you with the importer</span>
-                        </>
+                        <span>Reserve this car</span>
                       )}
                     </button>
-                  )}
+                    <p className="text-center text-[12.5px] text-[#0B1424]/55">
+                      SAR 99 holding fee · Fully refundable
+                    </p>
+                  </>
+                );
+              })()}
 
-                  {/* Secondary: Favorite + Contact */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleToggleFavorite}
-                      disabled={isTogglingFav}
-                      className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors border ${
-                        isFav
-                          ? "bg-red-50 text-red-500 border-red-200"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
-                      <span className="hidden sm:inline">{isFav ? "Saved" : "Save"}</span>
-                    </button>
-                    {contactSuccess ? (
-                      <div className="flex-1 py-3 bg-green-50 text-green-600 border border-green-200 rounded-xl font-semibold flex items-center justify-center gap-2">
-                        <CheckCircle className="w-5 h-5" />
-                        <span>Message Sent</span>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowContactImporter(true)}
-                        className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <MessageSquare className="w-5 h-5" />
-                        <span>Ask Importer</span>
-                      </button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <Link
-                  href="/auth/signin"
-                  className="block w-full py-4 bg-accent hover:bg-accent-600 text-white rounded-xl font-bold text-center transition-colors"
+              {/* Secondary: Favorite + Contact (always shown) */}
+              <div className="flex gap-3">
+                <button
+                  onClick={isAuthenticated ? handleToggleFavorite : undefined}
+                  disabled={!isAuthenticated || isTogglingFav}
+                  className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors border ${
+                    isFav
+                      ? "bg-red-50 text-red-500 border-red-200"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  }`}
                 >
-                  Sign in to Reserve — SAR 99
+                  <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
+                  <span className="hidden sm:inline">{isFav ? "Saved" : "Save"}</span>
+                </button>
+                <Link
+                  href={isAuthenticated && ownerId ? `/messages?importer=${ownerId}&car_id=${listingId}` : "/auth/signin"}
+                  className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span>مراسلة المستورد</span>
                 </Link>
-              )}
+              </div>
 
               {/* Report */}
               {isAuthenticated && ownerId && user?.id !== ownerId && (
@@ -1473,66 +1532,6 @@ export default function CarDetailPage() {
         </div>
       )}
 
-      {/* -------------------------------------------------------------------- */}
-      {/* Contact Importer Modal                                                */}
-      {/* -------------------------------------------------------------------- */}
-      {showContactImporter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowContactImporter(false)} />
-          <div className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900 mb-1">Ask the Importer</h2>
-            <p className="text-sm text-slate-500 mb-5">
-              About the {listing.year} {listing.make} {listing.model}
-            </p>
-            <form onSubmit={handleContactImporter} className="space-y-4">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">
-                  Message <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={contactMessage}
-                  onChange={(e) => setContactMessage(e.target.value)}
-                  placeholder="I'm interested in this car, can you tell me more about..."
-                  rows={4}
-                  required
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-accent focus:ring-1 focus:ring-accent/20 focus:outline-none resize-none text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">Your Phone</label>
-                <input
-                  type="tel"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder="+966 5X XXX XXXX"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-accent focus:ring-1 focus:ring-accent/20 focus:outline-none text-sm"
-                  dir="ltr"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowContactImporter(false)}
-                  className="flex-1 py-3 border border-slate-200 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingContact}
-                  className="flex-1 py-3 bg-accent hover:bg-accent-600 disabled:opacity-50 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {isSubmittingContact ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /><span>Sending…</span></>
-                  ) : (
-                    <span>Send Message</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

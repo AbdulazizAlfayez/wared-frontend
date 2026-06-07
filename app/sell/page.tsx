@@ -138,19 +138,19 @@ export default function SellPage() {
     ? role === "dealer" || role === "admin"
     : false;
 
-  // Subscription + active listing count (for limit enforcement)
-  const { data: mySubscription } = useApiQuery<DealerSubscription>(
-    "/api/my-subscription/",
-    { enabled: canCreateListings === true }
-  );
-  const { data: dealerDashData } = useApiQuery<{ approved_listings: number }>(
-    "/api/dashboard/dealer/",
-    { enabled: canCreateListings === true }
-  );
-  const activeCount = dealerDashData?.approved_listings ?? 0;
-  const maxListings = mySubscription?.plan?.max_listings ?? 0;
-  const isAtLimit = maxListings > 0 && activeCount >= maxListings;
-  const isNearLimit = maxListings > 0 && !isAtLimit && activeCount / maxListings >= 0.8;
+  // DEPRECATED: Subscription limits disabled — commission-only model
+  // const { data: mySubscription } = useApiQuery<DealerSubscription>(
+  //   "/api/my-subscription/",
+  //   { enabled: canCreateListings === true }
+  // );
+  // const { data: dealerDashData } = useApiQuery<{ approved_listings: number }>(
+  //   "/api/dashboard/dealer/",
+  //   { enabled: canCreateListings === true }
+  // );
+  // const activeCount = dealerDashData?.approved_listings ?? 0;
+  // const maxListings = mySubscription?.plan?.max_listings ?? 0;
+  const isAtLimit = false;
+  const isNearLimit = false;
 
   const [limitStatus, setLimitStatus] = useState<ListingLimitStatus | null>(null);
 
@@ -529,36 +529,7 @@ export default function SellPage() {
           </div>
         )}
 
-        {/* Subscription limit banner */}
-        {isAtLimit && (
-          <div className="mb-6 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-red-800">Listing limit reached ({activeCount}/{maxListings})</p>
-              <p className="text-sm text-red-600 mt-0.5">
-                You&apos;ve reached your plan&apos;s listing limit. Upgrade to add more.
-              </p>
-            </div>
-            <Link
-              href="/pricing"
-              className="flex-shrink-0 px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors"
-            >
-              Upgrade
-            </Link>
-          </div>
-        )}
-        {isNearLimit && (
-          <div className="mb-6 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-amber-800">Approaching listing limit ({activeCount}/{maxListings})</p>
-              <p className="text-sm text-amber-600 mt-0.5">
-                You&apos;re near your plan&apos;s limit.{" "}
-                <Link href="/pricing" className="underline font-semibold">Upgrade your plan</Link> to avoid interruptions.
-              </p>
-            </div>
-          </div>
-        )}
+        {/* DEPRECATED: Subscription limit banners removed — commission-only model */}
 
         {/* Progress Steps */}
         <div className="mb-8">

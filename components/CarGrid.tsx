@@ -43,13 +43,13 @@ export const sampleCars: SampleCar[] = [];
 // Helpers
 // ---------------------------------------------------------------------------
 const IMPORT_STATUS_STYLES: Record<string, { label: string; cls: string }> = {
-  available:         { label: "Available",         cls: "bg-[#f3f4f6] text-[#0a0a0a]"     },
-  arriving:          { label: "Arriving Soon",      cls: "bg-[#f3f4f6] text-[#0a0a0a]"     },
-  in_transit:        { label: "In Transit",         cls: "bg-[#f3f4f6] text-[#0a0a0a]"     },
-  at_port:           { label: "At Port",            cls: "bg-violet-100 text-violet-700"   },
-  customs_clearance: { label: "Customs",            cls: "bg-amber-100 text-amber-700"     },
-  reserved:          { label: "Reserved",           cls: "bg-orange-100 text-orange-700"   },
-  delivered:         { label: "Delivered",          cls: "bg-slate-100 text-slate-600"     },
+  available:         { label: "Available",         cls: "bg-white/95 backdrop-blur-sm text-[#0B1424] border border-white/40"   },
+  arriving:          { label: "Arriving soon",     cls: "bg-[#E8F5F0] text-[#0B8470]"     },
+  in_transit:        { label: "In transit",        cls: "bg-[#E8F5F0] text-[#0B8470]"     },
+  at_port:           { label: "At port",           cls: "bg-violet-50 text-violet-700"     },
+  customs_clearance: { label: "Customs",           cls: "bg-amber-50 text-amber-700"       },
+  reserved:          { label: "Reserved",          cls: "bg-amber-50 text-amber-800"       },
+  delivered:         { label: "Delivered",         cls: "bg-slate-100 text-slate-500"      },
 };
 
 const SOURCE_FLAG: Record<string, string> = {
@@ -118,54 +118,47 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
 
   return (
     <Link href={`/car/${listing.id}`}>
-      <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-accent/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
-        {/* Image */}
-        <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 flex-shrink-0">
+      <div className="group bg-white rounded-2xl overflow-hidden border border-[#0B1424]/8 hover:shadow-[0_20px_40px_-20px_rgba(11,20,36,0.2)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer">
+        {/* Image — locked 4:3 aspect */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 flex-shrink-0">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt={`${listing.year} ${listing.make} ${listing.model}`}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-              <CarIcon className="w-10 h-10 text-slate-300" />
-              <span className="text-xs text-slate-400">No Image</span>
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-[#F5F4F0]">
+              <span className="text-[22px] font-medium text-[#888780] tracking-tight">{listing.make}</span>
+              <span className="text-[13px] text-[#888780]/60">{listing.model}</span>
             </div>
           )}
 
-          {/* Status badge */}
+          {/* Status badge — sentence case, white pill */}
           {statusInfo && (
-            <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold ${statusInfo.cls}`}>
+            <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.cls}`}>
               {statusInfo.label}
-            </div>
-          )}
-
-          {/* Country flag */}
-          {flag && (
-            <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center text-base">
-              {flag}
-            </div>
+            </span>
           )}
 
           {/* Favorite */}
           <button
             onClick={handleFav}
             aria-label={isFav ? "Remove from favorites" : "Save"}
-            className="absolute bottom-3 left-3 w-8 h-8 rounded-full bg-white/85 shadow flex items-center justify-center hover:scale-110 transition-transform"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:scale-110 transition-transform"
           >
-            <Heart className={`w-4 h-4 ${isFav ? "fill-red-500 text-red-500" : "text-slate-500"}`} />
+            <Heart className={`w-4 h-4 ${isFav ? "fill-red-500 text-red-500" : "text-[#0B1424]/40"}`} />
           </button>
 
           {/* Compare */}
           <button
             onClick={handleCompare}
             aria-label={isInCompare ? "Remove from compare" : "Compare"}
-            className={`absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium shadow transition-all ${
+            className={`absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium shadow-sm transition-all ${
               isInCompare
-                ? "bg-accent text-white"
-                : "bg-white/85 text-slate-600 hover:text-accent"
+                ? "bg-[#0B1424] text-white"
+                : "bg-white/90 backdrop-blur-sm text-[#0B1424]/60 hover:text-[#0B1424]"
             }`}
           >
             {isInCompare ? <Check className="w-3 h-3" /> : <GitCompare className="w-3 h-3" />}
@@ -174,71 +167,46 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
         </div>
 
         {/* Body */}
-        <div className="p-4 flex flex-col gap-2 flex-grow">
-          {/* Title */}
-          <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-1">
-            {listing.year} {listing.make} {listing.model}
-          </h3>
-
-          {/* Source country + port */}
-          {(listing.source_country || listing.port_of_entry) && (
-            <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
-              {listing.source_country && (
-                <span className="flex items-center gap-1 font-medium text-slate-600">
-                  {flag} FROM {listing.source_country.toUpperCase()}
-                </span>
-              )}
-              {listing.port_of_entry && (
-                <>
-                  <span className="text-slate-300">·</span>
-                  <span className="flex items-center gap-0.5">
-                    <MapPin className="w-3 h-3" />
-                    {listing.port_of_entry}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Price section */}
-          <div className="mt-auto pt-2 border-t border-slate-100">
-            <div className="flex items-end justify-between gap-2">
-              <div>
-                <div className="text-xs text-slate-400 leading-none mb-0.5">Total landed cost</div>
-                <div className="text-base font-black text-[#0a0a0a] leading-none">
-                  {formatSAR(finalPrice) ?? "—"}
-                </div>
-              </div>
-              {listing.source_price && listing.source_currency && (
-                <div className="text-right">
-                  <div className="text-xs text-slate-400 leading-none mb-0.5">Source price</div>
-                  <div className="text-xs font-semibold text-slate-600 leading-none">
-                    {listing.source_currency.toUpperCase()}{" "}
-                    {Number(listing.source_price).toLocaleString()}
-                  </div>
-                </div>
-              )}
-            </div>
+        <div className="p-4 flex flex-col gap-1.5 flex-grow">
+          {/* Title + flag */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-[17px] font-medium text-[#0B1424] tracking-tight leading-snug line-clamp-1">
+              {listing.year} {listing.make} {listing.model}
+            </h3>
+            {flag && <span className="text-lg leading-none flex-shrink-0">{flag}</span>}
           </div>
 
-          {/* Mileage + arrival */}
-          <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
-            {listing.mileage > 0 && (
-              <span className="flex items-center gap-1">
-                <Gauge className="w-3 h-3" />
-                {Number(listing.mileage).toLocaleString()} km
-              </span>
-            )}
-            {showArrival && listing.estimated_arrival_date && (
-              <span className="flex items-center gap-1 text-slate-500 font-medium">
-                <Clock className="w-3 h-3" />
-                ETA{" "}
-                {new Date(listing.estimated_arrival_date).toLocaleDateString("en-SA", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            )}
+          {/* Meta row */}
+          <p className="text-[13px] text-[#0B1424]/55 flex items-center gap-1.5 flex-wrap">
+            {listing.mileage > 0 && <span>{Number(listing.mileage).toLocaleString()} km</span>}
+            {listing.city && <><span>·</span><span>{listing.city}</span></>}
+            {listing.spec_origin && <><span>·</span><span>{listing.spec_origin} spec</span></>}
+          </p>
+
+          {/* ETA for in-transit */}
+          {showArrival && listing.estimated_arrival_date && (
+            <p className="text-[12px] text-[#0B8470] font-medium flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Arriving {new Date(listing.estimated_arrival_date).toLocaleDateString("en-SA", { month: "short", day: "numeric" })}
+            </p>
+          )}
+
+          {/* Price + Reserve */}
+          <div className="mt-auto pt-3 flex items-end justify-between gap-2">
+            <div>
+              <p className="text-[20px] font-medium text-[#0B1424] tracking-tight tabular-nums leading-none">
+                {formatSAR(finalPrice) ?? "—"}
+              </p>
+              {listing.source_price && listing.source_currency && (
+                <p className="text-[11px] text-[#0B1424]/40 mt-1">
+                  {listing.source_currency.toUpperCase()} {Number(listing.source_price).toLocaleString()}
+                </p>
+              )}
+            </div>
+            <span className="inline-flex items-center gap-1 px-4 py-2 rounded-full border border-[#0B1424]/15 text-[13px] font-medium text-[#0B1424] group-hover:bg-[#0B1424] group-hover:text-white transition-colors">
+              Reserve
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
           </div>
         </div>
       </div>
@@ -406,7 +374,7 @@ export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm
     return (
       <>
         <div className="pb-20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: limit || 9 }).map((_, i) => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden border border-slate-200 animate-pulse">
                 <div className="aspect-[16/10] bg-slate-100" />
@@ -428,7 +396,7 @@ export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm
     return (
       <>
         <div className="pb-24">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {displayCars.map((listing) => (
               <ImportedCarCard key={listing.id} listing={listing} />
             ))}
