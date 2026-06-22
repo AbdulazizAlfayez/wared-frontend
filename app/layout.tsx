@@ -25,9 +25,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "مركبة | MARKABA",
+  title: "وارد | WARED",
   description: "استورد سيارتك من أي مكان في العالم مع ضمان التوثيق. Import verified cars from anywhere in the world.",
-  keywords: "markaba, مركبة, استيراد سيارات, import cars, saudi arabia, verified cars, riyadh, جدة, الرياض",
+  keywords: "wared, وارد, استيراد سيارات, import cars, saudi arabia, verified cars, riyadh, جدة, الرياض",
 };
 
 export default function RootLayout({

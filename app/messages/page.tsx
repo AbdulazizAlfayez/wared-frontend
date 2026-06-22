@@ -52,14 +52,14 @@ function Avatar({ name, size = "sm" }: { name?: string | null; size?: "sm" | "md
 // ---------------------------------------------------------------------------
 const _CONTACT_RE = new RegExp(
   [
-    String.raw`(?:\+966|00966|05\d)[\d\s\-]{6,12}`,          // Saudi phones
-    String.raw`\d[\d\s\-]{6,}\d`,                             // 7+ digit runs
-    String.raw`[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}`,// emails
-    String.raw`https?://\S+`,                                  // URLs
-    String.raw`www\.\S+`,                                      // www domains
+    String.raw`(?:\+966|00966|05\d)[\d\s\-]{6,12}`,
+    String.raw`\d[\d\s\-]{6,}\d`,
+    String.raw`[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}`,
+    String.raw`https?://\S+`,
+    String.raw`www\.\S+`,
     String.raw`(?:wa\.me|t\.me|instagram\.com|snapchat\.com|tiktok\.com)/\S*`,
-    String.raw`\S+\.(?:com|sa|net|org|io|me|co)\b`,           // bare domains
-    String.raw`@[a-zA-Z0-9_]{2,}`,                            // @handles
+    String.raw`\S+\.(?:com|sa|net|org|io|me|co)\b`,
+    String.raw`@[a-zA-Z0-9_]{2,}`,
     'whatsapp', String.raw`whats\s*app`, 'واتساب', 'واتس',
     'اتصل', 'رقمي', String.raw`رقم\s*جوال`, String.raw`تواصل\s*خارج`,
     'سناب', 'انستا', 'تليجرام', 'ايميل',
@@ -72,18 +72,30 @@ function hasContactInfo(text: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Draft thread target — used when opening a thread for an importer
+// with no existing conversation yet
+// ---------------------------------------------------------------------------
+interface DraftTarget {
+  importerUserId: number;
+  importerName: string;
+  carId?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Conversation list sidebar
 // ---------------------------------------------------------------------------
 
 function ConvList({
   conversations,
   selectedId,
+  isDraft,
   onSelect,
   search,
   onSearchChange,
 }: {
   conversations: Conversation[];
   selectedId: number | null;
+  isDraft: boolean;
   onSelect: (c: Conversation) => void;
   search: string;
   onSearchChange: (v: string) => void;
@@ -97,7 +109,6 @@ function ConvList({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search */}
       <div className="p-3 border-b border-slate-100">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -109,16 +120,14 @@ function ConvList({
           />
         </div>
       </div>
-
-      {/* List */}
       <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
+        {filtered.length === 0 && !isDraft ? (
           <div className="py-12 text-center text-slate-400 text-sm px-4">
             {search ? "No conversations match your search." : "No messages yet."}
           </div>
         ) : (
           filtered.map((c) => {
-            const isSelected = c.id === selectedId;
+            const isSelected = !isDraft && c.id === selectedId;
             const hasUnread = (c.unread_count ?? 0) > 0;
             const otherName = c.other_party?.name ?? "Unknown";
             const lastAt = c.last_message?.created_at ?? c.updated_at;
@@ -165,7 +174,7 @@ function ConvList({
 }
 
 // ---------------------------------------------------------------------------
-// Message thread panel
+// Message thread panel (for an existing conversation)
 // ---------------------------------------------------------------------------
 
 function MessageThread({
@@ -192,11 +201,11 @@ function MessageThread({
 
   const fetchMessages = useCallback(async () => {
     try {
-      const data = await api.get<PaginatedResponse<Message>>(
+      const resp = await api.get<Message[] | PaginatedResponse<Message>>(
         `/api/conversations/${conversation.id}/messages/?page_size=100`
       );
-      // API returns oldest-first (ordered by created_at), display as-is
-      setMessages(data.results ?? []);
+      const msgs = Array.isArray(resp) ? resp : (resp.results ?? []);
+      setMessages(msgs);
     } catch {
       // silently ignore polling errors
     } finally {
@@ -218,7 +227,6 @@ function MessageThread({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Close menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -229,7 +237,6 @@ function MessageThread({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Show warning when draft contains contact info
   useEffect(() => {
     setContactWarning(input.length > 3 && hasContactInfo(input));
   }, [input]);
@@ -246,7 +253,7 @@ function MessageThread({
       );
       setMessages((prev) => [...prev, msg]);
     } catch {
-      setInput(text); // restore on error
+      setInput(text);
     } finally {
       setIsSending(false);
     }
@@ -288,8 +295,6 @@ function MessageThread({
             </Link>
           )}
         </div>
-
-        {/* Menu */}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowMenu((v) => !v)}
@@ -360,7 +365,7 @@ function MessageThread({
       <div className="px-4 py-3 border-t border-slate-100 bg-white">
         {contactWarning && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
-            للحماية، أبقِ التواصل داخل مركبة — أرقام الهاتف وروابط التواصل تُخفى تلقائياً.
+            للحماية، أبقِ التواصل داخل وارد — أرقام الهاتف وروابط التواصل تُخفى تلقائياً.
           </p>
         )}
         {!conversation.is_active ? (
@@ -397,10 +402,149 @@ function MessageThread({
 }
 
 // ---------------------------------------------------------------------------
+// Draft thread panel — shows importer header + composer, no conversation yet
+// ---------------------------------------------------------------------------
+
+function DraftThread({
+  draft,
+  onBack,
+  onConversationCreated,
+}: {
+  draft: DraftTarget;
+  onBack: () => void;
+  onConversationCreated: (conv: Conversation) => void;
+}) {
+  const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [contactWarning, setContactWarning] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setContactWarning(input.length > 3 && hasContactInfo(input));
+  }, [input]);
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || isSending) return;
+    setIsSending(true);
+    setError("");
+
+    try {
+      // Step 1: Create the conversation via get-or-create
+      if (!draft.carId) {
+        setError("يجب اختيار سيارة محددة للتواصل مع المستورد. ارجع لصفحة السيارة واضغط 'مراسلة المستورد'.");
+        setIsSending(false);
+        return;
+      }
+      console.log("[DraftThread] Creating conversation with car_id:", draft.carId);
+      const conv = await api.post<Conversation>("/api/conversations/", {
+        car_id: draft.carId,
+      });
+      console.log("[DraftThread] Conversation created:", conv.id);
+
+      // Step 2: Send the first message
+      console.log("[DraftThread] Sending first message to conv:", conv.id);
+      await api.post(`/api/conversations/${conv.id}/messages/`, {
+        content: text,
+      });
+
+      // Step 3: Switch to the real conversation
+      setInput("");
+      onConversationCreated(conv);
+    } catch (err: unknown) {
+      const apiErr = err as { detail?: string; status?: number; message?: string };
+      console.error("[DraftThread] Error:", apiErr);
+      // Show the backend error to the user
+      if (apiErr.detail) {
+        setError(typeof apiErr.detail === "string" ? apiErr.detail : JSON.stringify(apiErr.detail));
+      } else if (apiErr.message) {
+        setError(apiErr.message);
+      } else {
+        setError("حدث خطأ. حاول مرة ثانية.");
+      }
+      setInput(text);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-slate-100 bg-white flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className="md:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <Avatar name={draft.importerName} size="md" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-900 text-sm">{draft.importerName}</p>
+          <p className="text-xs text-slate-400">New conversation</p>
+        </div>
+      </div>
+
+      {/* Empty thread area */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 bg-slate-50/30 flex items-center justify-center">
+        <div className="text-center text-slate-400 text-sm">
+          <MessageSquare className="w-10 h-10 mx-auto mb-2 text-slate-200" />
+          <p>Send a message to start the conversation.</p>
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="px-4 py-3 border-t border-slate-100 bg-white">
+        {contactWarning && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+            للحماية، أبقِ التواصل داخل وارد — أرقام الهاتف وروابط التواصل تُخفى تلقائياً.
+          </p>
+        )}
+        {error && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-2">
+            {error}
+          </p>
+        )}
+        <div className="flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message… (Enter to send)"
+            rows={1}
+            autoFocus
+            className="flex-1 resize-none px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-accent min-h-[42px] max-h-32"
+            onInput={(e) => {
+              const t = e.target as HTMLTextAreaElement;
+              t.style.height = "auto";
+              t.style.height = Math.min(t.scrollHeight, 128) + "px";
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isSending}
+            className="p-2.5 bg-accent hover:bg-accent-600 disabled:bg-accent/40 text-white rounded-xl transition-colors flex-shrink-0"
+          >
+            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
-export default function MessagesPage() {
+function MessagesPageInner() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -409,6 +553,7 @@ export default function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [selected, setSelected] = useState<Conversation | null>(null);
+  const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
   const [showThread, setShowThread] = useState(false);
   const [search, setSearch] = useState("");
   const deepLinkHandled = useRef(false);
@@ -439,37 +584,30 @@ export default function MessagesPage() {
     else if (!authLoading) setIsLoading(false);
   }, [isAuthenticated, authLoading, fetchConversations]);
 
-  // Deep-link: ?importer=<user_id>&car_id=<listing_id>
-  // Get-or-create conversation with that importer for that car, then auto-select
+  // Deep-link: ?importer_user=<user_id>[&car_id=<listing_id>]
   useEffect(() => {
-    const importerParam = searchParams.get("importer");
-    const carIdParam = searchParams.get("car_id");
-
-    console.log("[MSG deep-link] effect fired", {
-      deepLinkHandled: deepLinkHandled.current,
-      isAuthenticated,
-      isLoading,
-      importerParam,
-      carIdParam,
-      conversationsCount: conversations.length,
-    });
-
     if (deepLinkHandled.current) return;
     if (!isAuthenticated || isLoading) return;
-    if (!importerParam || !carIdParam) return;
+
+    const importerUserId = searchParams.get("importer_user") ?? searchParams.get("importer");
+    const carIdParam = searchParams.get("car_id");
+    if (!importerUserId) return;
 
     deepLinkHandled.current = true;
+    const targetUserId = Number(importerUserId);
 
-    // First check if we already have a matching conversation loaded
-    const importerId = Number(importerParam);
-    const existing = conversations.find(
-      (c) => c.other_party?.id === importerId && c.listing?.id === Number(carIdParam)
-    );
+    console.log("[MSG] Deep-link: importer_user=", targetUserId, "car_id=", carIdParam);
 
-    console.log("[MSG deep-link] existing conv match:", existing?.id ?? "none", "importerId:", importerId, "carId:", carIdParam);
+    // Check if we already have a conversation with this importer
+    const existing = carIdParam
+      ? conversations.find((c) => c.other_party?.id === targetUserId && c.listing?.id === Number(carIdParam))
+        ?? conversations.find((c) => c.other_party?.id === targetUserId)
+      : conversations.find((c) => c.other_party?.id === targetUserId);
 
     if (existing) {
+      console.log("[MSG] Found existing conversation:", existing.id);
       setSelected(existing);
+      setDraftTarget(null);
       setShowThread(true);
       setConversations((prev) =>
         prev.map((x) => (x.id === existing.id ? { ...x, unread_count: 0 } : x))
@@ -478,42 +616,47 @@ export default function MessagesPage() {
       return;
     }
 
-    // Otherwise, call the get-or-create endpoint
-    console.log("[MSG deep-link] calling POST /api/conversations/ with car_id:", Number(carIdParam));
+    // No existing conversation — fetch the importer's name and open a draft thread
+    console.log("[MSG] No existing conversation, opening draft thread");
     (async () => {
+      let importerName = "Importer";
       try {
-        const conv = await api.post<Conversation>("/api/conversations/", {
-          car_id: Number(carIdParam),
-        });
-        console.log("[MSG deep-link] POST success, conv:", conv);
-        // Add to conversations list if not already there
-        setConversations((prev) => {
-          const exists = prev.some((c) => c.id === conv.id);
-          return exists ? prev : [conv, ...prev];
-        });
-        setSelected(conv);
-        setShowThread(true);
-      } catch (err: unknown) {
-        console.error("[MSG deep-link] POST failed:", err);
-        // If get-or-create fails (e.g. reservation required), find any existing conv with this importer
-        const fallback = conversations.find((c) => c.other_party?.id === importerId);
-        console.log("[MSG deep-link] fallback conv:", fallback?.id ?? "none");
-        if (fallback) {
-          setSelected(fallback);
-          setShowThread(true);
-        }
-      } finally {
-        router.replace("/messages", { scroll: false });
+        const profile = await api.get<{ name?: string }>(`/api/users/${targetUserId}/profile/`);
+        importerName = profile?.name || "Importer";
+        console.log("[MSG] Fetched importer name:", importerName);
+      } catch {
+        console.log("[MSG] Could not fetch importer profile, using fallback name");
       }
+      setDraftTarget({
+        importerUserId: targetUserId,
+        importerName,
+        carId: carIdParam ? Number(carIdParam) : undefined,
+      });
+      setSelected(null);
+      setShowThread(true);
+      router.replace("/messages", { scroll: false });
     })();
   }, [isAuthenticated, isLoading, searchParams, conversations, router]);
 
   const handleSelect = (c: Conversation) => {
     setSelected(c);
+    setDraftTarget(null);
     setShowThread(true);
     setConversations((prev) =>
       prev.map((x) => (x.id === c.id ? { ...x, unread_count: 0 } : x))
     );
+  };
+
+  const handleDraftConversationCreated = (conv: Conversation) => {
+    console.log("[MSG] Draft -> real conversation:", conv.id);
+    setDraftTarget(null);
+    setSelected(conv);
+    setConversations((prev) => {
+      const exists = prev.some((c) => c.id === conv.id);
+      return exists ? prev : [conv, ...prev];
+    });
+    // Re-fetch to get properly serialized data
+    fetchConversations();
   };
 
   const handleBlock = async (conv: Conversation) => {
@@ -521,7 +664,6 @@ export default function MessagesPage() {
     if (!otherId) return;
     if (!confirm("Block this user? They will no longer be able to message you.")) return;
     try {
-      // Backend expects { user_id: N }
       await api.post("/api/blocked-users/", { user_id: otherId });
       setSelected(null);
       setShowThread(false);
@@ -531,7 +673,6 @@ export default function MessagesPage() {
     }
   };
 
-  // Show spinner while auth is loading OR while isAuthenticated but data not yet fetched
   if (authLoading || (isAuthenticated && isLoading && !fetchError)) {
     return (
       <div className="min-h-screen bg-slate-50 pt-24 flex items-center justify-center">
@@ -540,8 +681,9 @@ export default function MessagesPage() {
     );
   }
 
-  // Not logged in — redirect handled by useEffect, show nothing
   if (!isAuthenticated || !user) return null;
+
+  const threadActive = showThread && (selected || draftTarget);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -570,7 +712,7 @@ export default function MessagesPage() {
             {/* Left: Conversation list */}
             <div
               className={`w-full md:w-80 flex-shrink-0 border-r border-slate-100 flex flex-col ${
-                showThread ? "hidden md:flex" : "flex"
+                threadActive ? "hidden md:flex" : "flex"
               }`}
             >
               <div className="px-4 py-3 border-b border-slate-100">
@@ -590,6 +732,7 @@ export default function MessagesPage() {
                 <ConvList
                   conversations={conversations}
                   selectedId={selected?.id ?? null}
+                  isDraft={!!draftTarget}
                   onSelect={handleSelect}
                   search={search}
                   onSearchChange={setSearch}
@@ -597,18 +740,24 @@ export default function MessagesPage() {
               )}
             </div>
 
-            {/* Right: Message thread */}
+            {/* Right: Message thread or draft */}
             <div
               className={`flex-1 flex flex-col min-w-0 ${
-                showThread ? "flex" : "hidden md:flex"
+                threadActive ? "flex" : "hidden md:flex"
               }`}
             >
               {selected ? (
                 <MessageThread
                   key={selected.id}
                   conversation={selected}
-                  onBack={() => setShowThread(false)}
+                  onBack={() => { setShowThread(false); setSelected(null); }}
                   onBlock={handleBlock}
+                />
+              ) : draftTarget ? (
+                <DraftThread
+                  draft={draftTarget}
+                  onBack={() => { setShowThread(false); setDraftTarget(null); }}
+                  onConversationCreated={handleDraftConversationCreated}
                 />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
@@ -622,5 +771,17 @@ export default function MessagesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 pt-24 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    }>
+      <MessagesPageInner />
+    </Suspense>
   );
 }

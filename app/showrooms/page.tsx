@@ -7,7 +7,7 @@ import {
   Building2, Plus, ArrowRight,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
-import ShowroomMap from "@/components/ShowroomMap";
+import ShowroomMap, { type Showroom } from "@/components/ShowroomMap";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { useAuth } from "@/lib/auth-context";
 import type { PaginatedResponse } from "@/lib/types";
@@ -41,24 +41,6 @@ interface ShowroomApiItem {
   // Media
   logo?: string | null;
   cover_photo?: string | null;
-}
-
-// Internal display type used by map + cards
-interface Showroom {
-  id: string;
-  name: string;
-  city: string;
-  address: string;
-  lat: number;
-  lng: number;
-  phone: string;
-  services: string[];
-  rating: number;
-  isVerified: boolean;
-  logo: string | null;
-  activeListings: number;
-  totalReviews: number;
-  cars: [];
 }
 
 function djangoToShowroom(s: ShowroomApiItem): Showroom {

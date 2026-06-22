@@ -45,7 +45,7 @@ export default function ContactPage() {
     {
       icon: Mail,
       title: t("contactPage.email"),
-      value: "support@markaba.sa",
+      value: "support@wared.sa",
       description: t("contactPage.emailDesc"),
     },
     {

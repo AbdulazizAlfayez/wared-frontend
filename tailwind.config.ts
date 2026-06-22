@@ -52,7 +52,7 @@ export default {
           800: "#262626",
           900: "#0a0a0a",
         },
-        // MARKABA brand tokens
+        // WARED brand tokens
         brand: {
           DEFAULT: "#0a0a0a",
           hover: "#1a1a1a",

@@ -424,8 +424,8 @@ function PriceCalculator() {
             {/* Footnote */}
             <p className="mt-6 text-[12.5px] leading-relaxed" style={{ color: "rgba(250,250,247,.45)", maxWidth: "48ch" }}>
               {isRTL
-                ? "مركبة تفرض رسوم حجز SAR 99 فقط عند حجز السيارة — مستردة بالكامل حتى فوز المستورد بالمزاد. هذا هو الرسم الوحيد الذي نحصّله من المشترين."
-                : "Markabah charges a SAR 99 holding fee when you reserve a car \u2014 fully refundable until the importer wins the auction. That\u2019s the only fee we charge buyers."}
+                ? "وارد تفرض رسوم حجز SAR 99 فقط عند حجز السيارة — مستردة بالكامل حتى فوز المستورد بالمزاد. هذا هو الرسم الوحيد الذي نحصّله من المشترين."
+                : "Wared charges a SAR 99 holding fee when you reserve a car \u2014 fully refundable until the importer wins the auction. That\u2019s the only fee we charge buyers."}
             </p>
           </FadeIn>
 
@@ -648,7 +648,7 @@ function BigStats() {
 }
 
 // ---------------------------------------------------------------------------
-// 8. Why Markabah — Interactive Showcase
+// 8. Why Wared — Interactive Showcase
 // ---------------------------------------------------------------------------
 
 const REASONS = [
@@ -759,7 +759,7 @@ function VerifiedCard() {
   );
 }
 
-function WhyMarkabahSection() {
+function WhyWaredSection() {
   const [active, setActive] = useState(REASONS[0]);
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
@@ -793,7 +793,7 @@ function WhyMarkabahSection() {
             )}
           </h2>
           <p className="mt-4 text-[15px] text-white/80 max-w-md mx-auto">
-            {isRTL ? "ثلاثة أسباب لاختيار مَركَبة." : "Three reasons buyers choose Markabah."}
+            {isRTL ? "ثلاثة أسباب لاختيار وارد." : "Three reasons buyers choose Wared."}
           </p>
         </FadeIn>
 
@@ -857,8 +857,8 @@ function DownloadAppCTA() {
           </h2>
           <p className="mt-5 text-[17px] leading-relaxed max-w-xl mx-auto" style={{ color: "var(--mk-mute)" }}>
             {isRTL
-              ? "احجز سيارات، تواصل مع المستوردين، وتابع كل خطوة من شحنتك مباشرة عبر تطبيق مَركَبة."
-              : "Reserve cars, message importers, and follow every step of your shipment in real-time on the Markabah mobile app."}
+              ? "احجز سيارات، تواصل مع المستوردين، وتابع كل خطوة من شحنتك مباشرة عبر تطبيق وارد."
+              : "Reserve cars, message importers, and follow every step of your shipment in real-time on the Wared mobile app."}
           </p>
         </FadeIn>
 
@@ -904,7 +904,7 @@ export default function Home() {
       <ShipIt />
       <TrackIt />
       <BigStats />
-      <WhyMarkabahSection />
+      <WhyWaredSection />
       <DownloadAppCTA />
     </div>
   );

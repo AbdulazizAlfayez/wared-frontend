@@ -111,7 +111,7 @@ export default function SignUpPage() {
               Create Account
             </h1>
             <p className="text-slate-500">
-              Join MARKABA to buy and sell cars
+              Join WARED to buy and sell cars
             </p>
           </div>
 

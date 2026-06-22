@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -191,10 +192,23 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex items-center gap-6 transition-all duration-300 ${scrolled ? "h-16" : "h-20"}`}>
-          {/* Logo */}
-          <Link href="/" className="nav-logo flex-shrink-0">
-            <span className="mark" />
-            <span>Markabah</span>
+          {/* Logo — scroll-aware white/black swap */}
+          <Link href="/" aria-label="Wared" className="relative flex-shrink-0 block h-8">
+            <Image
+              src="/wared-logo-white.png"
+              alt="Wared"
+              width={831}
+              height={480}
+              priority
+              className={`h-8 w-auto transition-opacity duration-300 ${isDark ? "opacity-100" : "opacity-0"}`}
+            />
+            <Image
+              src="/wared-logo-black.png"
+              alt="Wared"
+              width={831}
+              height={480}
+              className={`absolute inset-0 h-8 w-auto transition-opacity duration-300 ${isDark ? "opacity-0" : "opacity-100"}`}
+            />
           </Link>
 
           {/* Desktop Navigation */}

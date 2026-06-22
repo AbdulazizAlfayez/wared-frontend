@@ -151,4 +151,4 @@ This project is for educational purposes. Feel free to use and modify as needed.
 
 ## Support
 
-For questions or support, please open an issue or contact us at support@markaba.sa
+For questions or support, please open an issue or contact us at support@wared.sa

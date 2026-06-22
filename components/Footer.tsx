@@ -24,14 +24,14 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className={`flex items-center gap-3 ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
               <Image
-                src="/markaba-logo.png"
-                alt="MARKABA"
+                src="/wared-logo-black.svg"
+                alt="WARED"
                 width={56}
                 height={56}
                 className="w-14 h-14 object-contain"
               />
               <span className="text-white font-semibold text-xl tracking-widest font-display">
-                MARKABA
+                WARED
               </span>
             </Link>
             <p className={`text-slate-300 text-sm ${dir === "rtl" ? "text-right" : ""}`}>
@@ -83,7 +83,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className={`flex items-center gap-2 text-slate-300 text-sm ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
                 <Mail className="w-4 h-4" />
-                <span>support@markaba.sa</span>
+                <span>support@wared.sa</span>
               </li>
               <li className={`flex items-center gap-2 text-slate-300 text-sm ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
                 <Phone className="w-4 h-4" />
@@ -100,7 +100,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className={`mt-12 pt-8 border-t border-slate-700/50 flex flex-col sm:flex-row justify-between items-center gap-4 ${dir === "rtl" ? "sm:flex-row-reverse" : ""}`}>
           <p className="text-slate-400 text-sm">
-            © {new Date().getFullYear()} MARKABA. {t("footer.allRightsReserved")}
+            © {new Date().getFullYear()} WARED. {t("footer.allRightsReserved")}
           </p>
           <div className={`flex items-center gap-6 ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
             <Link href="/privacy" className="text-slate-400 hover:text-white text-sm">

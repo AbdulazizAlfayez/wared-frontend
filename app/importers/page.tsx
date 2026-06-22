@@ -234,7 +234,7 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
           </div>
         ) : (
           <div className="text-[12px] text-ink-400">
-            New on Markabah{years ? ` · ${years} years in the business` : ""}
+            New on Wared{years ? ` · ${years} years in the business` : ""}
           </div>
         )}
 

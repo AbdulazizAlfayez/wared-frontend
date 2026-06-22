@@ -37,7 +37,7 @@ function RestrictedContent() {
             </h1>
             <p className="text-slate-500 text-sm mt-2">
               {isBanned
-                ? "Your account has been permanently banned from MARKABA."
+                ? "Your account has been permanently banned from WARED."
                 : `Your account has been temporarily suspended${until ? ` until ${until}` : ""}.`}
             </p>
           </div>
@@ -90,7 +90,7 @@ function RestrictedContent() {
               If you believe this {isBanned ? "ban" : "suspension"} was issued in error, please contact our support team.
             </p>
             <a
-              href="mailto:support@markaba.sa"
+              href="mailto:support@wared.sa"
               className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors text-sm"
             >
               <Mail className="w-4 h-4" />

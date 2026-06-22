@@ -2,8 +2,8 @@
 
 import { MapPin, ExternalLink, Star, Navigation } from "lucide-react";
 
-// Showroom type for the map
-interface Showroom {
+// Canonical Showroom type — used by both ShowroomMap and the showrooms page
+export interface Showroom {
   id: string;
   name: string;
   city: string;
@@ -13,6 +13,10 @@ interface Showroom {
   phone: string;
   services: string[];
   rating: number;
+  isVerified: boolean;
+  logo: string | null;
+  activeListings: number;
+  totalReviews: number;
   cars: Array<{
     id: string;
     title: string;

@@ -245,13 +245,13 @@ export default function CalculatorPage() {
                 className="block w-full py-3.5 rounded-full text-[14px] font-medium text-center transition hover:opacity-90"
                 style={{ background: 'var(--mk-paper)', color: 'var(--mk-ink)' }}
               >
-                Find a car like this on Markabah &rarr;
+                Find a car like this on Wared &rarr;
               </Link>
             </div>
 
             <p className="text-[11.5px] text-ink-300 text-center mt-4 px-4 leading-relaxed">
               Estimate only. Actual cost varies by importer, vessel, and customs assessment.
-              Listed cars on Markabah show the importer&apos;s exact final price.
+              Listed cars on Wared show the importer&apos;s exact final price.
             </p>
           </div>
         </div>

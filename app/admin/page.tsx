@@ -32,7 +32,6 @@ import {
   MailCheck,
   Phone,
   UserX,
-  CreditCard,
   TrendingUp,
   Flag,
   Ban,
@@ -44,27 +43,7 @@ import {
 import { useTranslation } from "@/lib/i18n";
 import { getImageUrl } from "@/lib/utils";
 
-type TabType = "listings" | "orders" | "importers" | "pipeline" | "users" | "applications" | "audit" | "subscriptions" | "verifications" | "moderation" | "reviews" | "fraud";
-
-interface SubscriptionStats {
-  by_plan: { plan__name: string; plan__slug: string; count: number }[];
-  revenue_this_month: number;
-  new_subscribers_this_week: number;
-  status_counts: Record<string, number>;
-  churn_rate_pct: number;
-}
-
-interface AdminDealerSubscription {
-  id: number;
-  dealer_name: string;
-  dealer_email: string;
-  plan: { id: number; name: string; slug: string; badge_type: string } | null;
-  billing_cycle: string;
-  status: string;
-  expires_at: string | null;
-  days_remaining: number;
-  is_expired: boolean;
-}
+type TabType = "listings" | "orders" | "importers" | "pipeline" | "users" | "applications" | "audit" | "verifications" | "moderation" | "reviews" | "fraud";
 
 interface AuditLogEntry {
   id: number;
@@ -475,19 +454,6 @@ export default function AdminPage() {
   const { data: auditResult } = useApiQuery<PaginatedResponse<AuditLogEntry>>(
     "/api/audit-logs/?page_size=100",
     { enabled: isAdmin && activeTab === "audit" }
-  );
-
-  // ── Subscriptions ──────────────────────────────────────────────────────────
-  const subsParams = new URLSearchParams();
-  if (searchQuery) subsParams.set("search", searchQuery);
-  subsParams.set("page_size", "50");
-  const { data: subsResult } = useApiQuery<PaginatedResponse<AdminDealerSubscription>>(
-    `/api/admin/subscriptions/?${subsParams.toString()}`,
-    { enabled: isAdmin && activeTab === "subscriptions" }
-  );
-  const { data: subsStats } = useApiQuery<SubscriptionStats>(
-    "/api/admin/subscriptions/stats/",
-    { enabled: isAdmin && activeTab === "subscriptions" }
   );
 
   // ── Verifications ──────────────────────────────────────────────────────────
@@ -1054,7 +1020,6 @@ export default function AdminPage() {
             { id: "pipeline",      icon: Clock,       label: "Pipeline",      count: undefined },
             { id: "users",         icon: Users,       label: "Users",         count: usersResult?.count ?? stats?.total_users },
             { id: "applications",  icon: ShieldCheck, label: "Applications",  count: pendingAppsCount || undefined },
-            { id: "subscriptions", icon: CreditCard,  label: "Subscriptions", count: subsResult?.count },
             { id: "audit",         icon: History,     label: "Audit Log",     count: undefined },
             { id: "verifications", icon: ShieldCheck, label: "Verifications", count: verifications.filter((v) => v.status === "pending").length || undefined },
             { id: "moderation",    icon: Flag,        label: "Moderation",    count: reportStats?.pending_count || undefined },
@@ -1606,84 +1571,6 @@ export default function AdminPage() {
         )}
 
         {/* ═══════════════ SUBSCRIPTIONS TAB ═══════════════ */}
-        {activeTab === "subscriptions" && (
-          <div className="space-y-6">
-            {/* Stats cards */}
-            {subsStats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {(subsStats.by_plan ?? []).map((p) => (
-                  <div key={p.plan__slug} className="bg-white rounded-xl p-4 border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-accent/10 rounded-lg"><CreditCard className="w-5 h-5 text-accent" /></div>
-                      <div>
-                        <p className="text-2xl font-bold text-slate-900">{p.count}</p>
-                        <p className="text-sm text-slate-500">{p.plan__name} plan</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="bg-white rounded-xl p-4 border border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-lg"><TrendingUp className="w-5 h-5 text-green-600" /></div>
-                    <div>
-                      <p className="text-2xl font-bold text-slate-900">SAR {subsStats.revenue_this_month.toLocaleString()}</p>
-                      <p className="text-sm text-slate-500">Revenue this month</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Subscriptions table */}
-            <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b border-slate-100">
-                    <tr>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Importer</th>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Plan</th>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Billing</th>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Status</th>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Expires</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {(subsResult?.results ?? []).map((sub) => (
-                      <tr key={sub.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          <p className="text-sm font-medium text-slate-900">{(sub as any).importer_name ?? sub.dealer_name ?? "—"}</p>
-                          <p className="text-xs text-slate-400">{(sub as any).importer_email ?? sub.dealer_email ?? ""}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-900">{sub.plan?.name ?? "—"}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600 capitalize">{sub.billing_cycle}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                            sub.status === "active" ? "bg-green-100 text-green-700"
-                            : sub.status === "expired" ? "bg-red-100 text-red-700"
-                            : sub.status === "cancelled" ? "bg-slate-100 text-slate-600"
-                            : "bg-amber-100 text-amber-700"
-                          }`}>
-                            {sub.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">
-                          {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString() : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!(subsResult?.results ?? []).length && (
-                  <div className="text-center py-12">
-                    <CreditCard className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <p className="text-slate-500">No subscriptions yet</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ═══════════════ AUDIT LOG TAB ═══════════════ */}
         {activeTab === "audit" && (
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">

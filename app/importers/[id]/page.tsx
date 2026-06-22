@@ -20,6 +20,7 @@ import { getImageUrl } from "@/lib/utils";
 // ---------------------------------------------------------------------------
 interface ImporterProfile {
   id:               number;
+  user_id:          number;
   business_name:    string;
   description:      string | null;
   city:             string | null;

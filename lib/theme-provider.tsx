@@ -22,7 +22,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // On mount: read saved preference and apply it
   useEffect(() => {
-    const saved = localStorage.getItem('markaba-theme');
+    const saved = localStorage.getItem('wared-theme');
     const initial: Theme = saved === 'dark' ? 'dark' : 'light';
     setTheme(initial);
     document.documentElement.classList.toggle('dark', initial === 'dark');
@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     setTheme(prev => {
       const next: Theme = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('markaba-theme', next);
+      localStorage.setItem('wared-theme', next);
       document.documentElement.classList.toggle('dark', next === 'dark');
       return next;
     });
