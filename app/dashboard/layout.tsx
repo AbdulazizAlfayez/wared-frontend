@@ -9,7 +9,7 @@ import type { PaginatedResponse, VerificationStatus } from "@/lib/types";
 import { api } from "@/lib/api";
 import {
   LayoutDashboard, Store, Car, Users, Calendar, Loader2, Wrench,
-  MessageSquare, BarChart2, CreditCard, Zap, ShieldCheck, Flag, Star,
+  MessageSquare, BarChart2, Zap, ShieldCheck, Flag, Star,
   Package, Plus, ClipboardList,
 } from "lucide-react";
 
@@ -31,12 +31,14 @@ function SidebarLink({
   icon: Icon,
   exact,
   showDot,
+  count,
 }: {
   href: string;
   label: string;
   icon: React.ElementType;
   exact?: boolean;
   showDot?: boolean;
+  count?: number;
 }) {
   const pathname = usePathname();
   const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -56,6 +58,13 @@ function SidebarLink({
         )}
       </span>
       {label}
+      {count != null && count > 0 && (
+        <span className={`ml-auto text-xs font-bold rounded-full px-2 py-0.5 ${
+          isActive ? "bg-white/20 text-white" : "bg-accent/10 text-accent"
+        }`}>
+          {count}
+        </span>
+      )}
     </Link>
   );
 }
@@ -68,9 +77,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { isAuthenticated, isLoading, role, user } = useAuth();
   const router = useRouter();
 
-  const isDealerOrAdmin   = isAuthenticated && (role === "dealer" || role === "admin");
-  const isImporter        = isAuthenticated && role === "importer";
-  const isDashboardUser   = isDealerOrAdmin || isImporter;
+  const isImporterOrAdmin = isAuthenticated && (role === "importer" || role === "admin");
+  const isDashboardUser   = isImporterOrAdmin;
 
   // Fetch verification status for the dot indicator
   const [verifLevel, setVerifLevel] = useState<string | null>(null);
@@ -83,15 +91,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const verifIncomplete = verifLevel !== null && ['none', 'email', 'phone'].includes(verifLevel);
 
+  // Fetch pending reservation count for importers
+  const { data: pendingResData } = useApiQuery<{ count: number }>(
+    "/api/reservations/pending-for-me/",
+    { enabled: isImporterOrAdmin }
+  );
+  const pendingResCount = pendingResData?.count ?? 0;
+
   // Fetch showrooms to check if this dealer owns one
   const { data: showroomsRaw, isLoading: showroomsLoading } = useApiQuery<
     PaginatedResponse<ShowroomListItem> | ShowroomListItem[]
-  >("/api/showrooms/?page_size=100", { enabled: isDealerOrAdmin });
+  >("/api/showrooms/?page_size=100", { enabled: isImporterOrAdmin });
 
   // Fetch workshops to check if this dealer owns one
   const { data: workshopsRaw, isLoading: workshopsLoading } = useApiQuery<
     PaginatedResponse<WorkshopListItem> | WorkshopListItem[]
-  >("/api/workshops/?page_size=100", { enabled: isDealerOrAdmin });
+  >("/api/workshops/?page_size=100", { enabled: isImporterOrAdmin });
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -131,6 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Build dynamic nav based on role
   const importerNavItems = [
     { href: "/dashboard/importer",               label: "Overview",       icon: LayoutDashboard, exact: true },
+    { href: "/dashboard/importer/reservations",  label: "Reservations",   icon: Package, count: pendingResCount || undefined },
     { href: "/dashboard/importer/list-car",      label: "List New Car",   icon: Plus },
     { href: "/dashboard/importer/orders",        label: "Orders",         icon: ClipboardList },
     { href: "/messages",                         label: "Messages",       icon: MessageSquare },
@@ -148,15 +164,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/dashboard/promotions",   label: "Promotions",           icon: Zap },
     ...(hasShowroom ? [{ href: "/dashboard/showroom", label: "My Showroom", icon: Store }] : []),
     ...(hasWorkshop ? [{ href: "/dashboard/workshop", label: "My Workshop", icon: Wrench }] : []),
-    // DEPRECATED: Subscription nav link hidden — commission-only model
-    // { href: "/dashboard/subscription", label: "Manage Subscription",  icon: CreditCard },
-    { href: "/dashboard/verification", label: "Verification",          icon: ShieldCheck, showDot: verifIncomplete },
+{ href: "/dashboard/verification", label: "Verification",          icon: ShieldCheck, showDot: verifIncomplete },
     { href: "/dashboard/reviews",      label: "My Reviews",            icon: Star },
     { href: "/dashboard/reports",      label: "My Reports",            icon: Flag },
   ];
 
-  const navItems = isImporter ? importerNavItems : dealerNavItems;
-  const dashboardTitle = isImporter ? "Importer Dashboard" : "Dealer Dashboard";
+  const navItems = importerNavItems;
+  const dashboardTitle = "Importer Dashboard";
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">

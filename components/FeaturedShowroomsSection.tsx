@@ -44,13 +44,13 @@ export default function FeaturedShowroomsSection() {
         <div className="flex items-end justify-between mb-10">
           <div>
             <p className="text-accent font-semibold text-sm mb-1 uppercase tracking-wide">
-              Verified Dealers
+              Verified Importers
             </p>
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
               Featured Showrooms
             </h2>
             <p className="text-slate-500 mt-2">
-              Explore top-rated dealerships across Saudi Arabia
+              Explore top-rated importers across Saudi Arabia
             </p>
           </div>
           <Link

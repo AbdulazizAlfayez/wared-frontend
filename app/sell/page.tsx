@@ -7,7 +7,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { api as djangoApi } from "@/lib/api";
-import type { DealerSubscription, ListingLimitStatus } from "@/lib/types";
+import type { ListingLimitStatus } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -135,7 +135,7 @@ export default function SellPage() {
   const canCreateListings: boolean | undefined = authLoading
     ? undefined
     : isAuthenticated
-    ? role === "dealer" || role === "admin"
+    ? role === "importer" || role === "admin"
     : false;
 
   // DEPRECATED: Subscription limits disabled — commission-only model

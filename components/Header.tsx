@@ -176,9 +176,8 @@ export default function Header() {
   }, []);
 
   const isAdmin = role === "admin";
-  const isDealer = role === "dealer";
   const isImporter = role === "importer";
-  const isDashboardUser = isDealer || isAdmin || isImporter;
+  const isDashboardUser = isImporter || isAdmin;
 
   return (
     <header
@@ -352,7 +351,7 @@ export default function Header() {
                                 <Bookmark className="w-4 h-4" />
                                 <span>Saved Searches</span>
                               </Link>
-                              {isDealer && (
+                              {isImporter && (
                                 <Link
                                   href="/dashboard"
                                   className="flex items-center gap-2 px-4 py-3 text-accent hover:text-accent-600 hover:bg-accent/5 transition-colors"

@@ -72,7 +72,7 @@ export default function CheckoutPage() {
       if (result.success) {
         setSuccess(true);
         setTimeout(() => {
-          router.push(`/reservations`);
+          router.push(`/orders`);
         }, 2000);
       } else {
         setError(result.error || "Payment failed. Please try again.");
@@ -123,7 +123,7 @@ export default function CheckoutPage() {
             Your SAR {reservation.platform_fee_sar} holding fee has been paid. The importer will be notified.
           </p>
           <Link
-            href="/reservations"
+            href="/orders"
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#0B1424] text-white rounded-xl font-medium text-sm"
           >
             View my reservations <ChevronRight className="w-4 h-4" />
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-2xl border border-[#0B1424]/8 p-6 sm:p-8">
               <h1 className="text-2xl font-bold text-[#0B1424] mb-1">Reserve your car</h1>
               <p className="text-sm text-slate-500 mb-8">
-                Pay the SAR {fee} holding fee to secure this vehicle. Fully refundable until the car is purchased.
+                Pay the non-refundable SAR {fee} reservation fee to secure this vehicle.
               </p>
 
               {/* Payment methods */}
@@ -306,7 +306,7 @@ export default function CheckoutPage() {
               {/* Trust badges */}
               <div className="mt-6 space-y-2.5">
                 {[
-                  { icon: Shield, text: "Fully refundable until car is purchased" },
+                  { icon: Shield, text: "Non-refundable reservation fee" },
                   { icon: Lock, text: "Held in secure escrow" },
                   { icon: CheckCircle, text: "SAR 99 deducted from final price" },
                 ].map(({ icon: Icon, text }) => (

@@ -85,11 +85,27 @@ function useReveal() {
 }
 
 // ---------------------------------------------------------------------------
+// Shared hook: fetch real listing + importer counts from API
+// ---------------------------------------------------------------------------
+function useRealStats() {
+  const { data: listingsData } = useApiQuery<PaginatedResponse<ImportedListing>>(
+    "/api/listings/?page_size=1"
+  );
+  const { data: importersData } = useApiQuery<PaginatedResponse<unknown>>(
+    "/api/importers/?page_size=1"
+  );
+  const listingCount = (listingsData && !Array.isArray(listingsData)) ? listingsData.count : null;
+  const importerCount = (importersData && !Array.isArray(importersData)) ? (importersData as PaginatedResponse<unknown>).count : null;
+  return { listingCount, importerCount };
+}
+
+// ---------------------------------------------------------------------------
 // 1. Hero
 // ---------------------------------------------------------------------------
 function Hero() {
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
+  const { listingCount, importerCount } = useRealStats();
 
   return (
     <section className="hero-section relative overflow-hidden" style={{ minHeight: "100vh", paddingBottom: 60, background: "var(--mk-ink)" }}>
@@ -127,7 +143,7 @@ function Hero() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" strokeWidth="1.6" /></svg>
               {isRTL ? "مستوردة إلى السعودية · موثقة جمركياً" : "Imported to Saudi Arabia · Verified by customs"}
             </span>
-            <span className="mk-eyebrow hero-eyebrow font-geist"><span className="dot" />{isRTL ? "نوفر من 22 سوق" : "Now sourcing in 22 markets"}</span>
+            <span className="mk-eyebrow hero-eyebrow font-geist"><span className="dot" />{isRTL ? "نوفر من أسواق عالمية متعددة" : "Now sourcing from multiple markets"}</span>
           </div>
         </FadeIn>
 
@@ -169,19 +185,30 @@ function Hero() {
         {/* Stats — animated counters */}
         <FadeIn delay={0.6} duration={0.8}>
           <div className="flex gap-[54px] max-sm:gap-6 max-sm:flex-wrap mt-16 pt-7" style={{ borderTop: "1px solid rgba(255,255,255,.15)" }}>
-            {[
-              { target: 3200, suffix: "+", l: isRTL ? "سيارة مستوردة" : "cars imported" },
-              { target: 500, suffix: "+", l: isRTL ? "مستورد موثق" : "verified importers" },
-              { target: 22, suffix: "", l: isRTL ? "دولة مصدّرة" : "source markets" },
-              { target: 98, suffix: "%", l: isRTL ? "تسليم في الموعد" : "on-time delivery" },
-            ].map(({ target, suffix, l }) => (
-              <div key={l} className="flex flex-col">
+            {listingCount != null && (
+              <div className="flex flex-col">
                 <div className="font-display font-bold text-[34px] tracking-tight text-white">
-                  <AnimatedCounter target={target} suffix={suffix} duration={1.8} />
+                  <AnimatedCounter target={listingCount} suffix="+" duration={1.8} />
                 </div>
-                <div className="text-xs tracking-[.14em] uppercase mt-1 text-white/50">{l}</div>
+                <div className="text-xs tracking-[.14em] uppercase mt-1 text-white/50">{isRTL ? "سيارة معروضة" : "listed cars"}</div>
               </div>
-            ))}
+            )}
+            {importerCount != null && (
+              <div className="flex flex-col">
+                <div className="font-display font-bold text-[34px] tracking-tight text-white">
+                  <AnimatedCounter target={importerCount} suffix="+" duration={1.8} />
+                </div>
+                <div className="text-xs tracking-[.14em] uppercase mt-1 text-white/50">{isRTL ? "مستورد موثق" : "verified importers"}</div>
+              </div>
+            )}
+            <div className="flex flex-col">
+              <div className="font-display font-bold text-[34px] tracking-tight text-white">{isRTL ? "عالمي" : "Global"}</div>
+              <div className="text-xs tracking-[.14em] uppercase mt-1 text-white/50">{isRTL ? "دول مصدّرة متعددة" : "multiple source countries"}</div>
+            </div>
+            <div className="flex flex-col">
+              <div className="font-display font-bold text-[34px] tracking-tight text-white">{isRTL ? "موثّق" : "Vetted"}</div>
+              <div className="text-xs tracking-[.14em] uppercase mt-1 text-white/50">{isRTL ? "مستوردون موثّقون" : "verified importers only"}</div>
+            </div>
           </div>
         </FadeIn>
       </div>
@@ -237,8 +264,10 @@ function BrowseCars() {
   const apiListings = Array.isArray(data) ? data : (data?.results ?? []);
   const listings = apiListings.length > 0 ? apiListings : DEMO_CARS;
   const isDemo = apiListings.length === 0 && !isLoading;
+  const { listingCount } = useRealStats();
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
+  const countLabel = listingCount != null ? `${listingCount.toLocaleString()}+` : "";
 
   return (
     <section className="relative py-[140px]" style={{ background: "var(--mk-paper)" }}>
@@ -252,8 +281,8 @@ function BrowseCars() {
             <span className="mk-eyebrow"><span className="dot" />{isRTL ? "تصفح" : "Browse"}</span>
             <p className="mt-[18px]">
               {isRTL
-                ? "تصفح أكثر من 320 سيارة من مستوردين موثقين في اليابان، ألمانيا، أمريكا، الإمارات وغيرها."
-                : "Filter through 320+ live listings sourced by vetted importers in Japan, Germany, USA, UAE and more. Every car arrives with full inspection, history and customs paperwork."}
+                ? `تصفح ${countLabel ? `أكثر من ${countLabel}` : ""} سيارة من مستوردين موثقين في اليابان، ألمانيا، أمريكا، الإمارات وغيرها.`
+                : `Filter through ${countLabel ? `${countLabel} ` : ""}live listings sourced by vetted importers in Japan, Germany, USA, UAE and more. Every car arrives with full inspection, history and customs paperwork.`}
             </p>
           </div>
         </FadeIn>
@@ -424,8 +453,8 @@ function PriceCalculator() {
             {/* Footnote */}
             <p className="mt-6 text-[12.5px] leading-relaxed" style={{ color: "rgba(250,250,247,.45)", maxWidth: "48ch" }}>
               {isRTL
-                ? "وارد تفرض رسوم حجز SAR 99 فقط عند حجز السيارة — مستردة بالكامل حتى فوز المستورد بالمزاد. هذا هو الرسم الوحيد الذي نحصّله من المشترين."
-                : "Wared charges a SAR 99 holding fee when you reserve a car \u2014 fully refundable until the importer wins the auction. That\u2019s the only fee we charge buyers."}
+                ? "وارد تفرض رسوم حجز SAR 99 غير قابلة للاسترداد عند حجز السيارة. هذا هو الرسم الوحيد الذي نحصّله من المشترين."
+                : "Wared charges a non-refundable SAR 99 reservation fee when you reserve a car. That\u2019s the only fee we charge buyers."}
             </p>
           </FadeIn>
 
@@ -614,18 +643,19 @@ function TrackIt() {
 function BigStats() {
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
+  const { listingCount, importerCount } = useRealStats();
 
   const stats = isRTL
     ? [
-        { n: "3,200+", l: "سيارة مستوردة" },
-        { n: "22", l: "دولة مصدّرة" },
-        { n: "98%", l: "تسليم في الموعد" },
+        ...(listingCount != null ? [{ n: `${listingCount.toLocaleString()}+`, l: "سيارة معروضة" }] : []),
+        ...(importerCount != null ? [{ n: `${importerCount.toLocaleString()}+`, l: "مستورد موثق" }] : []),
+        { n: "دول متعددة", l: "دول مصدّرة" },
         { n: "99", l: "ريال رسوم حجز فقط" },
       ]
     : [
-        { n: "3,200+", l: "cars imported" },
-        { n: "22", l: "source markets" },
-        { n: "98%", l: "on-time delivery" },
+        ...(listingCount != null ? [{ n: `${listingCount.toLocaleString()}+`, l: "listed cars" }] : []),
+        ...(importerCount != null ? [{ n: `${importerCount.toLocaleString()}+`, l: "verified importers" }] : []),
+        { n: "Global", l: "source countries" },
         { n: "99", l: "SAR reservation fee" },
       ];
 
@@ -669,17 +699,16 @@ const REASONS = [
   },
 ];
 
-function SavingsCard({ active }: { active: boolean }) {
+function SavingsCard({ active: _active }: { active: boolean }) {
   return (
     <div className="bg-white/[0.12] backdrop-blur-xl border border-white/20 rounded-3xl p-8 w-[420px] text-white text-center">
-      <div className="text-[11px] uppercase tracking-[0.15em] text-white/60 mb-5">Average savings per import</div>
+      <div className="text-[11px] uppercase tracking-[0.15em] text-white/60 mb-5">Why importing saves you money</div>
       <div className="mb-1">
-        <span className="text-[16px] text-white/60">SAR </span>
-        <span className="text-[56px] font-medium tracking-tight tabular-nums">
-          {active ? <AnimatedCounter target={18400} duration={1.8} /> : "18,400"}
+        <span className="text-[36px] font-medium tracking-tight">
+          Save by importing directly
         </span>
       </div>
-      <div className="text-[12.5px] text-white/65 mb-6">based on 142 completed imports in 2026</div>
+      <div className="text-[12.5px] text-white/65 mb-6">Skip the middleman — import your car at source price</div>
       <div className="border-t border-white/15 pt-5 space-y-3 text-left">
         {["Direct from international auctions", "No showroom overhead in the price", "Transparent margin — you see what we make"].map((text) => (
           <div key={text} className="flex items-center gap-3">
@@ -738,11 +767,12 @@ function VerifiedCard() {
           <div className="text-[12px] text-white/60">13 years · Dammam, Eastern Province</div>
         </div>
       </div>
+      <div className="text-[10px] uppercase tracking-wider text-white/40 text-center mb-2">Example importer profile</div>
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { value: "142", label: "Imported" },
-          { value: "99%", label: "On-time" },
-          { value: "4.9★", label: "127 reviews" },
+          { value: "50+", label: "Imported" },
+          { value: "95%+", label: "On-time" },
+          { value: "4.8★", label: "Reviews" },
         ].map(({ value, label }) => (
           <div key={label} className="text-center">
             <div className="text-[20px] font-medium tabular-nums">{value}</div>

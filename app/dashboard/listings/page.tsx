@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useAuth } from "@/lib/auth-context";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { api } from "@/lib/api";
-import type { PaginatedResponse, Listing, DealerSubscription, BulkUploadRecord, PromotionPackage } from "@/lib/types";
+import type { PaginatedResponse, Listing, BulkUploadRecord, PromotionPackage } from "@/lib/types";
 import Link from "next/link";
 import { useState, useCallback, useRef, useEffect } from "react";
 import {

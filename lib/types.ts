@@ -385,15 +385,6 @@ export interface Lead {
   updated_at: string;
 }
 
-export interface DealerStats {
-  total_leads: number;
-  new_leads: number;
-  total_listings: number;
-  active_listings: number;
-  total_views: number;
-  avg_response_time: number | null;
-}
-
 export interface AdminStats {
   total_listings: number;
   pending_listings: number;
@@ -659,23 +650,6 @@ export interface BulkUploadRecord {
   errors: Array<{ row: number | string; errors: string[] }>;
   created_at: string;
   completed_at: string | null;
-}
-
-export interface DealerSubscription {
-  id: number;
-  plan: SubscriptionPlan;
-  billing_cycle: "monthly" | "annual";
-  status: "active" | "expired" | "cancelled" | "past_due" | "trial";
-  started_at: string;
-  expires_at: string;
-  cancelled_at: string | null;
-  auto_renew: boolean;
-  trial_ends_at: string | null;
-  days_remaining: number;
-  is_expired: boolean;
-  is_trial: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface SubscriptionHistory {

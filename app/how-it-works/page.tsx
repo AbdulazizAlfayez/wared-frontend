@@ -30,7 +30,7 @@ const STEPS = [
     title: 'Reserve',
     tagline: 'Hold your car for SAR 99',
     description:
-      'A small, fully refundable holding fee secures your reservation. The importer wins the auction or buys the car from the source. Your fee then applies to the final price.',
+      'A non-refundable SAR 99 reservation fee secures your car. The importer wins the auction or buys the car from the source. This is the only fee Wared charges buyers.',
     carPosition: 0.66,
   },
   {
@@ -233,7 +233,7 @@ function StepVisual({ stepNumber }: { stepNumber: string }) {
           <span className="font-medium text-teal-800 text-[14px]">Reservation confirmed</span>
         </div>
         <p className="text-[12.5px] text-teal-700/85">
-          SAR 99 holding fee paid &middot; Fully refundable until auction win
+          SAR 99 reservation fee paid &middot; Non-refundable
         </p>
       </div>
     );

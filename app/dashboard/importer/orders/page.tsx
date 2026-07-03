@@ -86,23 +86,32 @@ function filterOrders(orders: Order[], tab: FilterStatus) {
 // ---------------------------------------------------------------------------
 // Status Update Dropdown
 // ---------------------------------------------------------------------------
-function StatusDropdown({ order, onUpdated }: { order: Order; onUpdated: () => void }) {
+function StatusDropdown({ order, onUpdated, onOptimistic, onRevert }: {
+  order: Order;
+  onUpdated: () => void;
+  onOptimistic: (orderId: number, status: string) => void;
+  onRevert: (orderId: number) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const { showToast } = useToast();
 
   const handleChange = async (newStatus: string) => {
     if (newStatus === order.status) { setOpen(false); return; }
+    setOpen(false);
     setUpdating(true);
+    // Optimistic UI: update immediately
+    onOptimistic(order.id, newStatus);
     try {
       await api.patch(`/api/orders/${order.id}/update-status/`, { status: newStatus });
-      onUpdated();
       showToast("success", "Order status updated.");
+      onUpdated();
     } catch {
+      // Revert on failure
+      onRevert(order.id);
       showToast("error", "Failed to update status.");
     } finally {
       setUpdating(false);
-      setOpen(false);
     }
   };
 
@@ -142,7 +151,12 @@ function StatusDropdown({ order, onUpdated }: { order: Order; onUpdated: () => v
 // ---------------------------------------------------------------------------
 // Order Row (expandable)
 // ---------------------------------------------------------------------------
-function OrderRow({ order, onUpdated }: { order: Order; onUpdated: () => void }) {
+function OrderRow({ order, onUpdated, onOptimistic, onRevert }: {
+  order: Order;
+  onUpdated: () => void;
+  onOptimistic: (orderId: number, status: string) => void;
+  onRevert: (orderId: number) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const listing = order.car;
 
@@ -167,7 +181,7 @@ function OrderRow({ order, onUpdated }: { order: Order; onUpdated: () => void })
           <span className="text-sm text-slate-600">{order.importer?.name ?? "—"}</span>
         </td>
         <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-          <StatusDropdown order={order} onUpdated={onUpdated} />
+          <StatusDropdown order={order} onUpdated={onUpdated} onOptimistic={onOptimistic} onRevert={onRevert} />
         </td>
         <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-700 font-medium">
           {formatSAR(order.reservation_fee)}
@@ -226,13 +240,32 @@ function OrderRow({ order, onUpdated }: { order: Order; onUpdated: () => void })
 export default function ImporterOrdersPage() {
   const { isAuthenticated } = useAuth();
   const [filterTab, setFilterTab] = useState<FilterStatus>("all");
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<number, string>>({});
 
   const { data, isLoading, refetch } = useApiQuery<PaginatedResponse<Order> | Order[]>(
     "/api/dashboard/importer/orders/",
     { enabled: isAuthenticated }
   );
 
-  const allOrders: Order[] = Array.isArray(data) ? data : (data?.results ?? []);
+  const rawOrders: Order[] = Array.isArray(data) ? data : (data?.results ?? []);
+  // Apply optimistic status updates on top of API data
+  const allOrders: Order[] = rawOrders.map((o) => {
+    const optimistic = optimisticUpdates[o.id];
+    if (!optimistic) return o;
+    const statusEntry = ALL_STATUSES.find((s) => s.value === optimistic);
+    return { ...o, status: optimistic as Order["status"], status_display: statusEntry?.label ?? optimistic };
+  });
+
+  const applyOptimistic = (orderId: number, status: string) => {
+    setOptimisticUpdates((prev) => ({ ...prev, [orderId]: status }));
+  };
+  const clearOptimistic = (orderId: number) => {
+    setOptimisticUpdates((prev) => {
+      const next = { ...prev };
+      delete next[orderId];
+      return next;
+    });
+  };
   const filtered = filterOrders(allOrders, filterTab);
 
   const tabs: { key: FilterStatus; label: string }[] = [
@@ -299,7 +332,7 @@ export default function ImporterOrdersPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filtered.map((order) => (
-                  <OrderRow key={order.id} order={order} onUpdated={refetch} />
+                  <OrderRow key={order.id} order={order} onUpdated={refetch} onOptimistic={applyOptimistic} onRevert={clearOptimistic} />
                 ))}
               </tbody>
             </table>

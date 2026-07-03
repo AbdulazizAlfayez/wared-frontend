@@ -33,7 +33,7 @@
     "signUp": "Sign Up",
     "signOut": "Sign Out",
     "admin": "Admin",
-    "becomeDealer": "Become a Dealer"
+    "becomeDealer": "Become an Importer"
   },
   "hero": {
     "title": "Find Your Perfect Car",
@@ -520,11 +520,11 @@
       "browseCars": "Browse Cars",
       "sellAnother": "Sell Another Car"
     },
-    "dealerOnly": "Dealer Account Required",
-    "dealerOnlyMessage": "Only verified dealers can list cars for sale. Contact us to become a dealer.",
-    "becomeDealerButton": "Become a Dealer",
+    "dealerOnly": "Importer Account Required",
+    "dealerOnlyMessage": "Only verified importers can list cars for sale. Contact us to become an importer.",
+    "becomeDealerButton": "Become an Importer",
     "error": {
-      "notDealer": "Only dealers and admins can create listings. Please contact us to become a dealer."
+      "notDealer": "Only importers and admins can create listings. Please contact us to become an importer."
     }
   },
   "admin": {
@@ -541,17 +541,17 @@
     },
     "tabs": {
       "pending": "Pending Approvals",
-      "dealerApps": "Dealer Applications",
+      "dealerApps": "Importer Applications",
       "users": "Users",
       "allListings": "All Listings"
     },
     "noPending": "No pending listings",
     "noPendingDesc": "All listings have been reviewed.",
     "noApplications": "No pending applications",
-    "noApplicationsDesc": "All dealer applications have been reviewed.",
+    "noApplicationsDesc": "All importer applications have been reviewed.",
     "pendingReview": "Pending Review",
     "appliedOn": "Applied on",
-    "approveDealer": "Approve as Dealer",
+    "approveDealer": "Approve as Importer",
     "rejectReasonPlaceholder": "Reason for rejection (optional)",
     "confirmReject": "Confirm Rejection",
     "submittedBy": "Submitted by",
@@ -640,7 +640,7 @@
       "userUnblocked": "User unblocked"
     },
     "applications": {
-      "title": "Dealer Applications",
+      "title": "Importer Applications",
       "noApplications": "No applications found",
       "approved": "Approved",
       "rejected": "Rejected",
@@ -657,15 +657,15 @@
     }
   },
   "dealerApplication": {
-    "title": "Become a Dealer",
-    "subtitle": "Apply to become a verified dealer on WARED and start listing your cars.",
+    "title": "Become an Importer",
+    "subtitle": "Apply to become a verified importer on WARED and start listing your cars.",
     "signInRequired": "Sign In Required",
-    "signInMessage": "Please sign in to apply for a dealer account.",
-    "alreadyDealer": "You're Already a Dealer!",
-    "alreadyDealerMessage": "You already have dealer privileges and can list cars for sale.",
+    "signInMessage": "Please sign in to apply for an importer account.",
+    "alreadyDealer": "You're Already an Importer!",
+    "alreadyDealerMessage": "You already have importer privileges and can list cars for sale.",
     "startSelling": "Start Selling",
     "pendingTitle": "Application Pending",
-    "pendingMessage": "Your dealer application is being reviewed. We'll notify you once it's approved.",
+    "pendingMessage": "Your importer application is being reviewed. We'll notify you once it's approved.",
     "submittedOn": "Submitted on",
     "previouslyRejected": "Previous Application Rejected",
     "rejectionReason": "Reason",
@@ -739,7 +739,7 @@
       "addressRequired": "Address is required",
       "phoneRequired": "Phone number is required",
       "servicesRequired": "Select at least one service",
-      "dealersOnly": "Only dealers and admins can create workshops"
+      "dealersOnly": "Only importers and admins can create workshops"
     },
     "sellForm": {
       "workshopLabel": "Workshop (Optional)",
@@ -751,7 +751,7 @@
   },
   "showroom": {
     "title": "Showrooms",
-    "subtitle": "Discover the best car dealerships across Saudi Arabia",
+    "subtitle": "Discover the best car importers across Saudi Arabia",
     "createTitle": "Create Showroom",
     "createSubtitle": "Add your showroom to reach more customers",
     "searchPlaceholder": "Search showroom, city, or service...",
@@ -790,7 +790,7 @@
       "addressRequired": "Address is required",
       "phoneRequired": "Phone number is required",
       "servicesRequired": "Select at least one service",
-      "dealersOnly": "Only dealers and admins can create showrooms"
+      "dealersOnly": "Only importers and admins can create showrooms"
     },
     "sellForm": {
       "showroomLabel": "Showroom (Optional)",

@@ -1418,7 +1418,7 @@ export default function CarDetailPage() {
                       )}
                     </button>
                     <p className="text-center text-[12.5px] text-[#0B1424]/55">
-                      SAR 99 holding fee · Fully refundable
+                      SAR 99 reservation fee · Non-refundable
                     </p>
                   </>
                 );

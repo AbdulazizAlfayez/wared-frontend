@@ -36,7 +36,7 @@ export default function CreateShowroomPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, role } = useAuth();
 
-  const canCreateListings = role === "dealer" || role === "admin";
+  const canCreateListings = role === "importer" || role === "admin";
 
   const [name, setName] = useState("");
   const [city, setCity] = useState("");

@@ -122,7 +122,7 @@ export default function ShowroomsPage() {
     }, 100);
   }, []);
 
-  const isDealer = role === "dealer" || role === "admin";
+  const isImporter = role === "importer" || role === "admin";
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12">
@@ -139,7 +139,7 @@ export default function ShowroomsPage() {
                 : "Discover the best car dealerships across Saudi Arabia"}
             </p>
           </div>
-          {isDealer && (
+          {isImporter && (
             <Link
               href="/dashboard/showroom"
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl font-medium transition-colors"
