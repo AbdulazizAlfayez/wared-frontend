@@ -55,20 +55,20 @@ const COUNTRY_LABELS: Record<string, string> = {
 };
 
 const SOURCE_PILLS = [
-  { code: "usa",    flag: "🇺🇸", label: "USA" },
-  { code: "japan",  flag: "🇯🇵", label: "Japan" },
-  { code: "korea",  flag: "🇰🇷", label: "Korea" },
-  { code: "uae",    flag: "🇦🇪", label: "UAE" },
-  { code: "europe", flag: "🇪🇺", label: "Europe" },
+  { code: "usa",    flag: "🇺🇸", countryKey: "usa" },
+  { code: "japan",  flag: "🇯🇵", countryKey: "japan" },
+  { code: "korea",  flag: "🇰🇷", countryKey: "korea" },
+  { code: "uae",    flag: "🇦🇪", countryKey: "uae" },
+  { code: "europe", flag: "🇪🇺", countryKey: "europe" },
 ];
 
 type SortKey = "experienced" | "rated" | "imports" | "newest";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "experienced", label: "Most experienced" },
-  { value: "rated",       label: "Highest rated" },
-  { value: "imports",     label: "Most imports" },
-  { value: "newest",      label: "Newest" },
+const SORT_OPTIONS: { value: SortKey; labelKey: string }[] = [
+  { value: "experienced", labelKey: "importers.sortExperienced" },
+  { value: "rated",       labelKey: "importers.sortRated" },
+  { value: "imports",     labelKey: "importers.sortImports" },
+  { value: "newest",      labelKey: "importers.sortNewest" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -107,8 +107,9 @@ function isArabicName(name: string): boolean {
 // Star Rating
 // ---------------------------------------------------------------------------
 function StarRow({ rating, count }: { rating: number; count: number }) {
+  const { t } = useTranslation();
   if (count === 0) {
-    return <span className="text-[12px] text-ink-300">No reviews yet</span>;
+    return <span className="text-[12px] text-ink-300">{t("importers.noReviewsYet")}</span>;
   }
   return (
     <div className="flex items-center gap-1.5">
@@ -121,7 +122,7 @@ function StarRow({ rating, count }: { rating: number; count: number }) {
         ))}
       </div>
       <span className="text-[12.5px] font-semibold text-ink-700">{rating.toFixed(1)}</span>
-      <span className="text-[12px] text-ink-400">({count} reviews)</span>
+      <span className="text-[12px] text-ink-400">({count} {t("importers.reviews")})</span>
     </div>
   );
 }
@@ -130,6 +131,7 @@ function StarRow({ rating, count }: { rating: number; count: number }) {
 // Importer Card
 // ---------------------------------------------------------------------------
 function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteRTL: boolean }) {
+  const { t } = useTranslation();
   const initials  = getInitials(importer.business_name);
   const rating    = Number(importer.average_rating);
   const reviews   = importer.total_reviews ?? importer.review_count ?? 0;
@@ -174,7 +176,7 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
               {importer.is_verified && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[11px] font-medium border border-teal-200/50 flex-shrink-0">
                   <BadgeCheck className="w-3 h-3" />
-                  Verified
+                  {t("importers.verified")}
                 </span>
               )}
             </div>
@@ -190,7 +192,7 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
           {years != null && years > 0 && (
             <>
               <span className="text-ink-200">&middot;</span>
-              <span className="text-[12px] text-ink-400">{years} years in business</span>
+              <span className="text-[12px] text-ink-400">{years} {t("importers.yearsInBusiness")}</span>
             </>
           )}
         </div>
@@ -198,14 +200,14 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
         {/* Sources from */}
         {importer.source_countries.length > 0 && (
           <div>
-            <p className="text-[11px] text-ink-400 font-medium mb-1.5">Sources from</p>
+            <p className="text-[11px] text-ink-400 font-medium mb-1.5">{t("importers.sourcesFrom")}</p>
             <div className="flex flex-wrap gap-1.5">
               {importer.source_countries.map((c) => {
                 const key = c.toLowerCase();
                 return (
                   <span key={c} className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 bg-ink-50 text-ink-600 border border-ink-100">
                     <span className="text-[13px] leading-none">{COUNTRY_FLAGS[key] ?? "🌍"}</span>
-                    {COUNTRY_LABELS[key] ?? c}
+                    {t(`countries.${key}`) !== `countries.${key}` ? t(`countries.${key}`) : (COUNTRY_LABELS[key] ?? c)}
                   </span>
                 );
               })}
@@ -218,23 +220,23 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
         {/* Stats row or "New" */}
         {hasStats ? (
           <div className="flex items-center gap-3 text-[12.5px] text-ink-500 flex-wrap">
-            <span className="font-medium text-ink-700">{imported} imported</span>
+            <span className="font-medium text-ink-700">{imported} {t("importers.imported")}</span>
             {successRate != null && successRate > 0 && (
               <>
                 <span className="text-ink-200">&middot;</span>
-                <span>{successRate}% on-time</span>
+                <span>{successRate}% {t("importers.onTime")}</span>
               </>
             )}
             {avgDays != null && avgDays > 0 && (
               <>
                 <span className="text-ink-200">&middot;</span>
-                <span>Avg {avgDays} days</span>
+                <span>{t("importers.avgDays").replace("{days}", String(avgDays))}</span>
               </>
             )}
           </div>
         ) : (
           <div className="text-[12px] text-ink-400">
-            New on Wared{years ? ` · ${years} years in the business` : ""}
+            {t("importers.newOnWared")}{years ? ` · ${years} ${t("importers.yearsInBusiness")}` : ""}
           </div>
         )}
 
@@ -248,7 +250,7 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
             ))}
             {importer.specializations.length > 2 && (
               <span className="text-[11px] text-ink-400 bg-ink-50 rounded-full px-2.5 py-1">
-                +{importer.specializations.length - 2} more
+                +{importer.specializations.length - 2} {t("importers.more")}
               </span>
             )}
           </div>
@@ -257,7 +259,7 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
         {/* CTA */}
         <div className="mt-auto pt-1 border-t border-ink-100">
           <div className="flex items-center gap-1 py-2 text-[13px] font-medium text-ink-500 group-hover:text-teal-700 transition-colors">
-            {cardRTL ? "عرض الملف" : "View profile"}
+            {t("importers.viewProfile")}
             <ChevronRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${cardRTL ? "rotate-180 group-hover:-translate-x-1" : ""}`} />
           </div>
         </div>
@@ -271,7 +273,7 @@ function ImporterCardItem({ importer, siteRTL }: { importer: ImporterCard; siteR
 // Page
 // ---------------------------------------------------------------------------
 export default function ImportersPage() {
-  const { dir } = useTranslation();
+  const { t, dir } = useTranslation();
   const siteRTL = dir === "rtl";
 
   const [search, setSearch] = useState("");
@@ -343,8 +345,11 @@ export default function ImportersPage() {
 
   // Collect active source country names for summary
   const activeCountryNames = selectedCountries.length > 0
-    ? selectedCountries.map(c => COUNTRY_LABELS[c] ?? c).join(", ")
-    : "all countries";
+    ? selectedCountries.map(c => {
+        const translated = t(`countries.${c}`);
+        return translated !== `countries.${c}` ? translated : (COUNTRY_LABELS[c] ?? c);
+      }).join(", ")
+    : t("common.all");
 
   return (
     <div className="min-h-screen pb-16" style={{ background: "var(--mk-paper)" }}>
@@ -353,17 +358,17 @@ export default function ImportersPage() {
       <section className="px-8 pt-12 pb-8 lg:pt-16 lg:pb-10 border-b border-ink-100">
         <div className="max-w-6xl mx-auto">
           <div className="text-[11px] uppercase tracking-[0.15em] text-ink-400 font-medium mb-3">
-            Marketplace &middot; {rawImporters.length} importers
+            {t("importers.heroSubhead")} &middot; {rawImporters.length} {t("nav.importers").toLowerCase()}
           </div>
           <h1
             className="leading-[1.05] tracking-tight font-light mb-3 max-w-2xl text-ink-900"
             style={{ fontSize: "clamp(32px, 5vw, 48px)" }}
           >
-            Every importer is
-            <span className="font-serif italic"> vetted.</span>
+            {t("importers.heroTitle")}
+            <span className="font-serif italic"> {t("importers.heroTitleAccent")}</span>
           </h1>
           <p className="text-[15.5px] text-ink-400 max-w-xl leading-relaxed">
-            Commercial registration, customs broker license, and track record confirmed before they can list a single car.
+            {t("importers.heroDesc")}
           </p>
         </div>
       </section>
@@ -380,7 +385,7 @@ export default function ImportersPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search importers..."
+                placeholder={t("importers.searchPlaceholder")}
                 className="w-full pl-10 pr-10 py-3 border border-ink-100 rounded-xl text-ink-900 placeholder-ink-300 text-sm focus:border-ink-400 focus:outline-none transition"
                 style={{ background: "var(--mk-paper)" }}
               />
@@ -397,14 +402,14 @@ export default function ImportersPage() {
               style={{ background: "var(--mk-paper)" }}
             >
               {SORT_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
               ))}
             </select>
           </div>
 
           {/* Row 2: Source country pills */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] text-ink-400 font-medium">Source markets:</span>
+            <span className="text-[12px] text-ink-400 font-medium">{t("importers.sourceMarkets")}:</span>
             {SOURCE_PILLS.map(p => {
               const active = selectedCountries.includes(p.code);
               return (
@@ -418,13 +423,13 @@ export default function ImportersPage() {
                   }`}
                 >
                   <span className="text-[14px] leading-none">{p.flag}</span>
-                  {p.label}
+                  {t(`countries.${p.countryKey}`)}
                 </button>
               );
             })}
             {hasFilters && (
               <button onClick={clearAllFilters} className="text-[12px] text-ink-400 hover:text-red-500 flex items-center gap-1 transition-colors ms-2">
-                <X className="w-3.5 h-3.5" /> Clear
+                <X className="w-3.5 h-3.5" /> {t("common.clear")}
               </button>
             )}
           </div>
@@ -447,10 +452,10 @@ export default function ImportersPage() {
             <svg className="w-10 h-10 text-ink-200 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
             </svg>
-            <div className="text-[16px] font-medium text-ink-700 mb-1">No importers match these filters</div>
-            <div className="text-[13.5px] text-ink-400 mb-5">Try removing a source country or clearing your search.</div>
+            <div className="text-[16px] font-medium text-ink-700 mb-1">{t("importers.noMatch")}</div>
+            <div className="text-[13.5px] text-ink-400 mb-5">{t("importers.noMatchHint")}</div>
             <button onClick={clearAllFilters} className="text-[13px] font-medium text-teal-600 hover:text-teal-700">
-              Clear all filters
+              {t("importers.clearAllFilters")}
             </button>
           </div>
         ) : (

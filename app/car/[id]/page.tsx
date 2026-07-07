@@ -150,32 +150,33 @@ const STATUS_ORDER: Record<string, number> = {
 // ---------------------------------------------------------------------------
 // Status display config + badge
 // ---------------------------------------------------------------------------
-const STATUS_DISPLAY: Record<string, { label: string; bg: string; text: string; border: string; dot: string; pulse: boolean }> = {
-  available:         { label: "Available",                  bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
-  reserved:          { label: "Reserved",                   bg: "bg-amber-50",      text: "text-amber-800",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: false },
-  sourcing:          { label: "Importer sourcing",          bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
-  purchased:         { label: "Purchased — preparing",      bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
-  preparing_shipment:{ label: "Preparing shipment",         bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
-  shipped:           { label: "In transit",                 bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
-  in_transit:        { label: "In transit",                 bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
-  arrived_port:      { label: "Arrived at port",            bg: "bg-violet-50",     text: "text-violet-700",     border: "border-violet-200",     dot: "bg-violet-500",     pulse: true },
-  at_port:           { label: "At port",                    bg: "bg-violet-50",     text: "text-violet-700",     border: "border-violet-200",     dot: "bg-violet-500",     pulse: true },
-  in_customs:        { label: "In customs",                 bg: "bg-amber-50",      text: "text-amber-700",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: true },
-  customs_clearance: { label: "Customs clearance",          bg: "bg-amber-50",      text: "text-amber-700",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: true },
-  customs_cleared:   { label: "Customs cleared",            bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
-  inspection:        { label: "Inspection",                 bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
-  ready:             { label: "Ready for delivery",         bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
-  delivered:         { label: "Delivered",                  bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
-  completed:         { label: "Completed",                  bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
-  sold:              { label: "Sold",                       bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
+const STATUS_DISPLAY: Record<string, { labelKey: string; bg: string; text: string; border: string; dot: string; pulse: boolean }> = {
+  available:         { labelKey: "available",              bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
+  reserved:          { labelKey: "reserved",               bg: "bg-amber-50",      text: "text-amber-800",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: false },
+  sourcing:          { labelKey: "importerSourcing",       bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  purchased:         { labelKey: "purchasedPreparing",     bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  preparing_shipment:{ labelKey: "preparingShipment",      bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  shipped:           { labelKey: "in_transit",             bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  in_transit:        { labelKey: "in_transit",             bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  arrived_port:      { labelKey: "arrivedAtPort",          bg: "bg-violet-50",     text: "text-violet-700",     border: "border-violet-200",     dot: "bg-violet-500",     pulse: true },
+  at_port:           { labelKey: "at_port",                bg: "bg-violet-50",     text: "text-violet-700",     border: "border-violet-200",     dot: "bg-violet-500",     pulse: true },
+  in_customs:        { labelKey: "inCustoms",              bg: "bg-amber-50",      text: "text-amber-700",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: true },
+  customs_clearance: { labelKey: "customs_clearance",      bg: "bg-amber-50",      text: "text-amber-700",      border: "border-amber-200",      dot: "bg-amber-500",      pulse: true },
+  customs_cleared:   { labelKey: "customsCleared",         bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
+  inspection:        { labelKey: "inspection",             bg: "bg-blue-50",       text: "text-blue-700",       border: "border-blue-200",       dot: "bg-blue-500",       pulse: true },
+  ready:             { labelKey: "ready",                  bg: "bg-teal-50",       text: "text-teal-700",       border: "border-teal-200",       dot: "bg-teal-500",       pulse: false },
+  delivered:         { labelKey: "delivered",              bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
+  completed:         { labelKey: "completed",              bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
+  sold:              { labelKey: "sold",                   bg: "bg-[#0B1424]/5",   text: "text-[#0B1424]/60",   border: "border-[#0B1424]/10",   dot: "bg-[#0B1424]/40",   pulse: false },
 };
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const config = STATUS_DISPLAY[status] ?? STATUS_DISPLAY.available;
   return (
     <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12.5px] font-medium border ${config.bg} ${config.text} ${config.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${config.dot} ${config.pulse ? "animate-pulse" : ""}`} />
-      {config.label}
+      {t(`importStatus.${config.labelKey}`)}
     </span>
   );
 }
@@ -1340,17 +1341,17 @@ export default function CarDetailPage() {
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Clock className="w-5 h-5 text-amber-700" />
-                        <span className="font-medium text-amber-900">Currently reserved</span>
+                        <span className="font-medium text-amber-900">{t("carDetail.currentlyReserved")}</span>
                       </div>
                       <p className="text-[13.5px] text-amber-800/85 mb-4">
-                        Another buyer has placed a hold on this car. Contact the importer for similar options.
+                        {t("carDetail.reservedDesc")}
                       </p>
                       {listing.owner && (
                         <Link
                           href={`/importers/${listing.owner.id}`}
                           className="block w-full text-center py-3 rounded-xl bg-white border border-amber-300 text-amber-900 text-[14px] font-medium hover:bg-amber-50 transition-colors"
                         >
-                          See similar cars from this importer →
+                          {t("carDetail.seeSimilar")} →
                         </Link>
                       )}
                     </div>
@@ -1363,10 +1364,10 @@ export default function CarDetailPage() {
                     <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className="w-5 h-5 text-blue-700" />
-                        <span className="font-medium text-blue-900">On its way to a buyer</span>
+                        <span className="font-medium text-blue-900">{t("carDetail.inPipeline")}</span>
                       </div>
                       <p className="text-[13.5px] text-blue-800/85">
-                        This car is in the import pipeline for another buyer. Browse similar available cars from this importer.
+                        {t("carDetail.pipelineDesc")}
                       </p>
                     </div>
                   );
@@ -1378,10 +1379,10 @@ export default function CarDetailPage() {
                     <div className="rounded-2xl border border-[#0B1424]/10 bg-[#0B1424]/[0.03] p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-5 h-5 text-[#0B1424]/50" />
-                        <span className="font-medium text-[#0B1424]/70">No longer available</span>
+                        <span className="font-medium text-[#0B1424]/70">{t("carDetail.noLongerAvailable")}</span>
                       </div>
                       <p className="text-[13.5px] text-[#0B1424]/55">
-                        This car has been delivered to its buyer. Check the importer&apos;s current inventory for similar options.
+                        {t("carDetail.noLongerDesc")}
                       </p>
                     </div>
                   );
@@ -1394,7 +1395,7 @@ export default function CarDetailPage() {
                       href="/auth/signin"
                       className="block w-full py-4 bg-[#0B1424] hover:bg-black text-white rounded-xl font-medium text-[15px] text-center transition-colors"
                     >
-                      Sign in to reserve — SAR 99
+                      {t("carDetail.signInToReserve")}
                     </Link>
                   );
                 }
@@ -1414,11 +1415,11 @@ export default function CarDetailPage() {
                       {isReserving ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <span>Reserve this car</span>
+                        <span>{t("carDetail.reserveButton")}</span>
                       )}
                     </button>
                     <p className="text-center text-[12.5px] text-[#0B1424]/55">
-                      SAR 99 reservation fee · Non-refundable
+                      {t("carDetail.reserveFee")}
                     </p>
                   </>
                 );

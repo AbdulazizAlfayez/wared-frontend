@@ -14,6 +14,7 @@ import {
   Users, Car, ChevronRight, Truck, TrendingUp, Shield, Award,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,6 +115,7 @@ function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
 // Tab content components
 // ---------------------------------------------------------------------------
 function InventoryGrid({ importerId }: { importerId: string }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useApiQuery<PaginatedResponse<ImporterInventoryItem> | ImporterInventoryItem[]>(
     `/api/importers/${importerId}/inventory/`
   );
@@ -156,7 +158,12 @@ function InventoryGrid({ importerId }: { importerId: string }) {
               <p className="font-semibold text-slate-900 text-sm">{car.year} {car.make} {car.model}</p>
               <p className="text-xs text-slate-400 mt-1">
                 {new Intl.NumberFormat("en-SA").format(car.mileage)} km
-                {car.source_country && ` · ${COUNTRY_NAMES[car.source_country.toLowerCase()] ?? car.source_country}`}
+                {car.source_country && (() => {
+                  const key = car.source_country!.toLowerCase();
+                  const translated = t(`countries.${key}`);
+                  const name = translated !== `countries.${key}` ? translated : (COUNTRY_NAMES[key] ?? car.source_country);
+                  return ` · ${name}`;
+                })()}
               </p>
               <p className="text-[15px] font-bold text-slate-900 mt-3">{formatSAR(car.final_price_sar ?? car.price)}</p>
             </div>
@@ -216,6 +223,7 @@ function ReviewsList({ importerId }: { importerId: string }) {
 type TabKey = "overview" | "inventory" | "in_transit" | "reviews" | "about";
 
 export default function ImporterProfilePage() {
+  const { t } = useTranslation();
   const params = useParams();
   const importerId = params.id as string;
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -462,7 +470,11 @@ export default function ImporterProfilePage() {
                       {importer.source_countries.map((c) => (
                         <div key={c} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
                           <span className="text-xl">{COUNTRY_FLAGS[c.toLowerCase()] ?? "🌍"}</span>
-                          <span className="text-sm font-medium text-slate-700">{COUNTRY_NAMES[c.toLowerCase()] ?? c}</span>
+                          <span className="text-sm font-medium text-slate-700">{(() => {
+                            const key = c.toLowerCase();
+                            const translated = t(`countries.${key}`);
+                            return translated !== `countries.${key}` ? translated : (COUNTRY_NAMES[key] ?? c);
+                          })()}</span>
                         </div>
                       ))}
                     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n';
 
 // TODO: replace with /api/calculator/exchange-rates/ once
 // exchange rate data is being updated daily via Celery Beat
@@ -31,6 +32,7 @@ const SOURCE_COUNTRIES = [
 ];
 
 export default function CalculatorPage() {
+  const { t } = useTranslation();
   const [sourceCountry, setSourceCountry] = useState('usa');
   const [carPrice, setCarPrice] = useState<number>(16000);
   const [year, setYear] = useState<number>(2024);
@@ -77,18 +79,18 @@ export default function CalculatorPage() {
             <svg className="w-[14px] h-[14px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            Updates as you type &middot; No commitment
+            {t('calculator.badge')}
           </div>
           <h1
             className="leading-[1.05] tracking-tight font-light mb-4 text-ink-900"
             style={{ fontSize: 'clamp(36px, 5vw, 52px)' }}
           >
-            See the full SAR cost,
+            {t('calculator.title1')}
             <br />
-            <span className="font-serif italic">before you commit.</span>
+            <span className="font-serif italic">{t('calculator.title2')}</span>
           </h1>
           <p className="text-[16px] text-ink-400 max-w-xl mx-auto leading-relaxed">
-            Source price, shipping, customs duty, VAT, inspection, importer margin &mdash; every line itemized.
+            {t('calculator.subtitle')}
           </p>
         </div>
 
@@ -101,7 +103,7 @@ export default function CalculatorPage() {
             {/* Source country */}
             <div>
               <label className="block text-[12px] uppercase tracking-[0.12em] text-ink-400 font-medium mb-3">
-                Source country
+                {t('calculator.sourceCountry')}
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {SOURCE_COUNTRIES.map(c => (
@@ -124,7 +126,7 @@ export default function CalculatorPage() {
             {/* Car price */}
             <div>
               <label className="block text-[12px] uppercase tracking-[0.12em] text-ink-400 font-medium mb-3">
-                Car price in {country.currency.toUpperCase()}
+                {t('calculator.carPrice')} {country.currency.toUpperCase()}
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-ink-300 uppercase">
@@ -144,7 +146,7 @@ export default function CalculatorPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[12px] uppercase tracking-[0.12em] text-ink-400 font-medium mb-3">
-                  Model year
+                  {t('calculator.modelYear')}
                 </label>
                 <input
                   type="number"
@@ -157,7 +159,7 @@ export default function CalculatorPage() {
               </div>
               <div>
                 <label className="block text-[12px] uppercase tracking-[0.12em] text-ink-400 font-medium mb-3">
-                  Engine (L)
+                  {t('calculator.engineSize')}
                 </label>
                 <input
                   type="number"
@@ -172,8 +174,8 @@ export default function CalculatorPage() {
             {/* GCC spec toggle */}
             <div className="flex items-center justify-between p-4 bg-ink-50 rounded-xl border border-ink-100">
               <div>
-                <div className="text-[14px] font-medium text-ink-900">Already GCC spec?</div>
-                <div className="text-[12px] text-ink-400 mt-0.5">Skips conversion costs and SASO retrofit</div>
+                <div className="text-[14px] font-medium text-ink-900">{t('calculator.gccSpec')}</div>
+                <div className="text-[12px] text-ink-400 mt-0.5">{t('calculator.gccSpecDesc')}</div>
               </div>
               <button
                 onClick={() => setIsGccSpec(!isGccSpec)}
@@ -190,7 +192,7 @@ export default function CalculatorPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span>
-                  Cars older than 5 years may face import restrictions in Saudi Arabia. Confirm eligibility with your importer.
+                  {t('calculator.yearWarning')}
                 </span>
               </div>
             )}
@@ -201,7 +203,7 @@ export default function CalculatorPage() {
             <div className="rounded-2xl p-6 lg:p-8" style={{ background: 'var(--mk-ink)', color: 'var(--mk-paper)' }}>
 
               <div className="text-[11px] uppercase tracking-[0.15em] opacity-55 mb-2">
-                Estimated landed cost
+                {t('calculator.estimatedCost')}
               </div>
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-[14px] opacity-55">SAR</span>
@@ -210,7 +212,7 @@ export default function CalculatorPage() {
                 </span>
               </div>
               <div className="text-[12.5px] opacity-55 mb-6">
-                Final price delivered to your door in Saudi Arabia
+                {t('calculator.finalDelivered')}
               </div>
 
               <div className="h-px bg-white/15 mb-5" />
@@ -218,14 +220,14 @@ export default function CalculatorPage() {
               {/* Itemized breakdown */}
               <div className="space-y-2.5 text-[13.5px]">
                 {[
-                  { label: 'Source price', value: calculation.carPriceSar },
-                  { label: `Shipping (${shipping.days} days)`, value: calculation.shipping },
-                  { label: 'Customs duty (5%)', value: calculation.customsDuty },
-                  { label: 'VAT (15%)', value: calculation.vat },
-                  { label: 'Inspection \u00b7 SASO', value: calculation.inspection },
-                  { label: 'Port handling', value: calculation.portHandling },
-                  { label: 'Transportation', value: calculation.transportation },
-                  { label: 'Importer margin', value: calculation.importerMargin },
+                  { label: t('calculator.sourcePrice'), value: calculation.carPriceSar },
+                  { label: `${t('calculator.shipping')} (${shipping.days} ${t('calculator.days')})`, value: calculation.shipping },
+                  { label: t('calculator.customsDuty'), value: calculation.customsDuty },
+                  { label: t('calculator.vat'), value: calculation.vat },
+                  { label: t('calculator.inspection'), value: calculation.inspection },
+                  { label: t('calculator.portHandling'), value: calculation.portHandling },
+                  { label: t('calculator.transportation'), value: calculation.transportation },
+                  { label: t('calculator.importerMargin'), value: calculation.importerMargin },
                 ].map(line => (
                   <div key={line.label} className="flex justify-between">
                     <span className="opacity-70">{line.label}</span>
@@ -237,7 +239,7 @@ export default function CalculatorPage() {
               <div className="h-px bg-white/15 my-5" />
 
               <div className="text-[11.5px] opacity-55 text-center mb-6">
-                Conversion at 1 {country.currency.toUpperCase()} = {rate} SAR &middot; Rates updated daily
+                {t('calculator.conversionRate')} 1 {country.currency.toUpperCase()} = {rate} SAR &middot; {t('calculator.ratesUpdated')}
               </div>
 
               <Link
@@ -245,13 +247,12 @@ export default function CalculatorPage() {
                 className="block w-full py-3.5 rounded-full text-[14px] font-medium text-center transition hover:opacity-90"
                 style={{ background: 'var(--mk-paper)', color: 'var(--mk-ink)' }}
               >
-                Find a car like this on Wared &rarr;
+                {t('calculator.findCar')} &rarr;
               </Link>
             </div>
 
             <p className="text-[11.5px] text-ink-300 text-center mt-4 px-4 leading-relaxed">
-              Estimate only. Actual cost varies by importer, vessel, and customs assessment.
-              Listed cars on Wared show the importer&apos;s exact final price.
+              {t('calculator.disclaimer')}
             </p>
           </div>
         </div>

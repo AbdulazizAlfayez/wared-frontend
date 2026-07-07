@@ -112,6 +112,7 @@ function UserAvatar({
 // ---------------------------------------------------------------------------
 
 function MessagesIcon() {
+  const { t } = useTranslation();
   const [unread, setUnread] = useState(0);
 
   const fetchUnread = useCallback(async () => {
@@ -131,7 +132,7 @@ function MessagesIcon() {
     <Link
       href="/messages"
       className="relative p-2 text-slate-600 hover:text-accent hover:bg-slate-100 rounded-lg transition-colors"
-      aria-label="Messages"
+      aria-label={t("nav.messages")}
     >
       <MessageSquare className="w-5 h-5" />
       {unread > 0 && (
@@ -213,12 +214,12 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="nav hidden md:flex items-center gap-6 flex-shrink-0">
             <NavLink href="/browse">{t("nav.browse")}</NavLink>
-            <NavLink href="/browse/map">{locale === "ar" ? "خريطة العالم" : "World Map"}</NavLink>
-            <NavLink href="/importers">Importers</NavLink>
-            <NavLink href="/calculator">Calculator</NavLink>
-            <NavLink href="/how-it-works">How It Works</NavLink>
-            {isDashboardUser && <NavLink href="/dashboard">Dashboard</NavLink>}
-            {isImporter && <NavLink href="/dashboard/importer/list-car">List Car</NavLink>}
+            <NavLink href="/browse/map">{t("nav.worldMap")}</NavLink>
+            <NavLink href="/importers">{t("nav.importers")}</NavLink>
+            <NavLink href="/calculator">{t("nav.calculator")}</NavLink>
+            <NavLink href="/how-it-works">{t("nav.howItWorks")}</NavLink>
+            {isDashboardUser && <NavLink href="/dashboard">{t("nav.dashboard")}</NavLink>}
+            {isImporter && <NavLink href="/dashboard/importer/list-car">{t("nav.listCar")}</NavLink>}
             {isAdmin && <NavLink href="/admin">{t("nav.admin")}</NavLink>}
           </nav>
 
@@ -240,7 +241,7 @@ export default function Header() {
                       <Link
                         href="/dashboard/importer/list-car"
                         className="p-2 text-slate-600 hover:text-accent hover:bg-slate-100 rounded-lg transition-colors"
-                        title="List New Car"
+                        title={t("nav.listNewCar")}
                       >
                         <Plus className="w-5 h-5" />
                       </Link>
@@ -250,7 +251,7 @@ export default function Header() {
                       <Link
                         href="/orders"
                         className="p-2 text-slate-600 hover:text-accent hover:bg-slate-100 rounded-lg transition-colors"
-                        title="My Orders"
+                        title={t("nav.myOrders")}
                       >
                         <Package className="w-5 h-5" />
                       </Link>
@@ -314,7 +315,7 @@ export default function Header() {
                                 onClick={() => setIsUserMenuOpen(false)}
                               >
                                 <LayoutDashboard className="w-4 h-4" />
-                                <span>Importer Dashboard</span>
+                                <span>{t("nav.importerDashboard")}</span>
                               </Link>
                               <Link
                                 href="/dashboard/importer/list-car"
@@ -322,7 +323,7 @@ export default function Header() {
                                 onClick={() => setIsUserMenuOpen(false)}
                               >
                                 <Plus className="w-4 h-4" />
-                                <span>List New Car</span>
+                                <span>{t("nav.listNewCar")}</span>
                               </Link>
                               <Link
                                 href="/dashboard/importer/orders"
@@ -330,7 +331,7 @@ export default function Header() {
                                 onClick={() => setIsUserMenuOpen(false)}
                               >
                                 <Package className="w-4 h-4" />
-                                <span>Manage Orders</span>
+                                <span>{t("nav.manageOrders")}</span>
                               </Link>
                             </>
                           ) : (
@@ -341,7 +342,7 @@ export default function Header() {
                                 onClick={() => setIsUserMenuOpen(false)}
                               >
                                 <Package className="w-4 h-4" />
-                                <span>My Orders</span>
+                                <span>{t("nav.myOrders")}</span>
                               </Link>
                               <Link
                                 href="/saved-searches"
@@ -349,7 +350,7 @@ export default function Header() {
                                 onClick={() => setIsUserMenuOpen(false)}
                               >
                                 <Bookmark className="w-4 h-4" />
-                                <span>Saved Searches</span>
+                                <span>{t("nav.savedSearches")}</span>
                               </Link>
                               {isImporter && (
                                 <Link
@@ -358,7 +359,7 @@ export default function Header() {
                                   onClick={() => setIsUserMenuOpen(false)}
                                 >
                                   <LayoutDashboard className="w-4 h-4" />
-                                  <span>Dashboard</span>
+                                  <span>{t("nav.dashboard")}</span>
                                 </Link>
                               )}
                               {role === "user" && (
@@ -368,7 +369,7 @@ export default function Header() {
                                   onClick={() => setIsUserMenuOpen(false)}
                                 >
                                   <Store className="w-4 h-4" />
-                                  <span>Become an Importer</span>
+                                  <span>{t("nav.becomeAnImporter")}</span>
                                 </Link>
                               )}
                             </>
@@ -444,16 +445,16 @@ export default function Header() {
                 {t("nav.browse")}
               </MobileNavLink>
               <MobileNavLink href="/importers" onClick={() => setIsMobileMenuOpen(false)}>
-                Importers
+                {t("nav.importers")}
               </MobileNavLink>
               <MobileNavLink href="/calculator" onClick={() => setIsMobileMenuOpen(false)}>
                 <span className="flex items-center gap-2">
                   <Calculator className="w-4 h-4" />
-                  Calculator
+                  {t("nav.calculator")}
                 </span>
               </MobileNavLink>
               <MobileNavLink href="/how-it-works" onClick={() => setIsMobileMenuOpen(false)}>
-                How It Works
+                {t("nav.howItWorks")}
               </MobileNavLink>
 
               {/* Dashboard (importer/dealer/admin) */}
@@ -461,7 +462,7 @@ export default function Header() {
                 <MobileNavLink href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                   <span className="flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4" />
-                    Dashboard
+                    {t("nav.dashboard")}
                   </span>
                 </MobileNavLink>
               )}
@@ -469,7 +470,7 @@ export default function Header() {
                 <MobileNavLink href="/dashboard/importer/list-car" onClick={() => setIsMobileMenuOpen(false)}>
                   <span className="flex items-center gap-2">
                     <Plus className="w-4 h-4" />
-                    List New Car
+                    {t("nav.listNewCar")}
                   </span>
                 </MobileNavLink>
               )}
@@ -489,7 +490,7 @@ export default function Header() {
                       <MobileNavLink href="/dashboard/importer/orders" onClick={() => setIsMobileMenuOpen(false)}>
                         <span className="flex items-center gap-2">
                           <Package className="w-5 h-5" />
-                          Manage Orders
+                          {t("nav.manageOrders")}
                         </span>
                       </MobileNavLink>
                     ) : (
@@ -497,7 +498,7 @@ export default function Header() {
                         <MobileNavLink href="/orders" onClick={() => setIsMobileMenuOpen(false)}>
                           <span className="flex items-center gap-2">
                             <Package className="w-5 h-5" />
-                            My Orders
+                            {t("nav.myOrders")}
                           </span>
                         </MobileNavLink>
                         <MobileNavLink href="/favorites" onClick={() => setIsMobileMenuOpen(false)}>
@@ -511,7 +512,7 @@ export default function Header() {
                     <MobileNavLink href="/messages" onClick={() => setIsMobileMenuOpen(false)}>
                       <span className="flex items-center gap-2">
                         <MessageSquare className="w-5 h-5" />
-                        Messages
+                        {t("nav.messages")}
                       </span>
                     </MobileNavLink>
                     <MobileNavLink href="/profile" onClick={() => setIsMobileMenuOpen(false)}>

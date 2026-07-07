@@ -12,6 +12,7 @@ import {
   MessageSquare, Send, Loader2, ArrowLeft, MoreVertical,
   ShieldAlert, Search, Car,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,6 +101,7 @@ function ConvList({
   search: string;
   onSearchChange: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   const filtered = conversations.filter((c) => {
     const name = c.other_party?.name ?? "";
     const car = `${c.listing?.make ?? ""} ${c.listing?.model ?? ""}`;
@@ -115,7 +117,7 @@ function ConvList({
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search conversations…"
+            placeholder={t("messages.searchPlaceholder")}
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-accent bg-slate-50"
           />
         </div>
@@ -123,7 +125,7 @@ function ConvList({
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 && !isDraft ? (
           <div className="py-12 text-center text-slate-400 text-sm px-4">
-            {search ? "No conversations match your search." : "No messages yet."}
+            {search ? t("messages.noSearchMatch") : t("messages.noConversations")}
           </div>
         ) : (
           filtered.map((c) => {
@@ -186,6 +188,7 @@ function MessageThread({
   onBack: () => void;
   onBlock: (conv: Conversation) => void;
 }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -309,7 +312,7 @@ function MessageThread({
                 className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
               >
                 <ShieldAlert className="w-4 h-4" />
-                Block User
+                {t("messages.blockUser")}
               </button>
             </div>
           )}
@@ -324,7 +327,7 @@ function MessageThread({
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-sm">
-            No messages yet. Start the conversation!
+            {t("messages.noMessages")}
           </div>
         ) : (
           messages.map((msg) => {
@@ -365,12 +368,12 @@ function MessageThread({
       <div className="px-4 py-3 border-t border-slate-100 bg-white">
         {contactWarning && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
-            للحماية، أبقِ التواصل داخل وارد — أرقام الهاتف وروابط التواصل تُخفى تلقائياً.
+            {t("messages.contactWarning")}
           </p>
         )}
         {!conversation.is_active ? (
           <p className="text-center text-sm text-slate-400 py-1">
-            This conversation is no longer active.
+            {t("messages.conversationClosed")}
           </p>
         ) : (
           <div className="flex items-end gap-2">
@@ -378,7 +381,7 @@ function MessageThread({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message… (Enter to send)"
+              placeholder={t("messages.typePlaceholder")}
               rows={1}
               className="flex-1 resize-none px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-accent min-h-[42px] max-h-32"
               onInput={(e) => {
@@ -414,6 +417,7 @@ function DraftThread({
   onBack: () => void;
   onConversationCreated: (conv: Conversation) => void;
 }) {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [contactWarning, setContactWarning] = useState(false);
@@ -432,7 +436,7 @@ function DraftThread({
     try {
       // Step 1: Create the conversation via get-or-create
       if (!draft.carId) {
-        setError("يجب اختيار سيارة محددة للتواصل مع المستورد. ارجع لصفحة السيارة واضغط 'مراسلة المستورد'.");
+        setError(t("messages.noCarId"));
         setIsSending(false);
         return;
       }
@@ -488,7 +492,7 @@ function DraftThread({
         <Avatar name={draft.importerName} size="md" />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-900 text-sm">{draft.importerName}</p>
-          <p className="text-xs text-slate-400">New conversation</p>
+          <p className="text-xs text-slate-400">{t("messages.newConversation")}</p>
         </div>
       </div>
 
@@ -496,7 +500,7 @@ function DraftThread({
       <div className="flex-1 overflow-y-auto px-4 py-4 bg-slate-50/30 flex items-center justify-center">
         <div className="text-center text-slate-400 text-sm">
           <MessageSquare className="w-10 h-10 mx-auto mb-2 text-slate-200" />
-          <p>Send a message to start the conversation.</p>
+          <p>{t("messages.sendToStart")}</p>
         </div>
       </div>
 
@@ -504,7 +508,7 @@ function DraftThread({
       <div className="px-4 py-3 border-t border-slate-100 bg-white">
         {contactWarning && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
-            للحماية، أبقِ التواصل داخل وارد — أرقام الهاتف وروابط التواصل تُخفى تلقائياً.
+            {t("messages.contactWarning")}
           </p>
         )}
         {error && (
@@ -517,7 +521,7 @@ function DraftThread({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message… (Enter to send)"
+            placeholder={t("messages.typePlaceholder")}
             rows={1}
             autoFocus
             className="flex-1 resize-none px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-accent min-h-[42px] max-h-32"
@@ -545,6 +549,7 @@ function DraftThread({
 // ---------------------------------------------------------------------------
 
 function MessagesPageInner() {
+  const { t } = useTranslation();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -662,14 +667,14 @@ function MessagesPageInner() {
   const handleBlock = async (conv: Conversation) => {
     const otherId = conv.other_party?.id;
     if (!otherId) return;
-    if (!confirm("Block this user? They will no longer be able to message you.")) return;
+    if (!confirm(t("messages.blockConfirm"))) return;
     try {
       await api.post("/api/blocked-users/", { user_id: otherId });
       setSelected(null);
       setShowThread(false);
       fetchConversations();
     } catch {
-      alert("Failed to block user.");
+      alert(t("messages.blockFailed"));
     }
   };
 
@@ -689,19 +694,19 @@ function MessagesPageInner() {
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Your conversations with buyers and sellers</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("messages.title")}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t("messages.subtitle")}</p>
         </div>
 
         {fetchError ? (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 text-center">
             <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-500 mb-4">Could not load conversations. Please try again.</p>
+            <p className="text-slate-500 mb-4">{t("messages.loadError")}</p>
             <button
               onClick={fetchConversations}
               className="px-4 py-2 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-600 transition-colors"
             >
-              Retry
+              {t("messages.retry")}
             </button>
           </div>
         ) : (
@@ -717,7 +722,7 @@ function MessagesPageInner() {
             >
               <div className="px-4 py-3 border-b border-slate-100">
                 <h2 className="font-semibold text-slate-900 text-sm">
-                  Conversations
+                  {t("messages.conversations")}
                   {conversations.length > 0 && (
                     <span className="ml-2 text-slate-400 font-normal">({conversations.length})</span>
                   )}
@@ -762,8 +767,8 @@ function MessagesPageInner() {
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
                   <MessageSquare className="w-16 h-16 mb-4 text-slate-200" />
-                  <p className="text-lg font-medium text-slate-500">Select a conversation</p>
-                  <p className="text-sm mt-1">Choose a conversation from the list to start messaging.</p>
+                  <p className="text-lg font-medium text-slate-500">{t("messages.selectConversation")}</p>
+                  <p className="text-sm mt-1">{t("messages.selectHint")}</p>
                 </div>
               )}
             </div>
