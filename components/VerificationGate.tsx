@@ -193,15 +193,9 @@ export default function VerificationGate({ children }: { children: React.ReactNo
     await refreshUser();
   }, [refreshUser]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated && user && !user.is_email_verified) {
+  // Show the OTP gate only for authenticated users whose email is not yet verified.
+  // Never block page rendering for unauthenticated visitors or while auth is loading.
+  if (!isLoading && isAuthenticated && user && !user.is_email_verified) {
     return (
       <OtpGateScreen
         email={user.email}

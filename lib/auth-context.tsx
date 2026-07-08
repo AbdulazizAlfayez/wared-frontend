@@ -80,13 +80,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // On mount: initialize CSRF cookie then check session via /api/me/
+  // Timeout after 5s so the site never hangs if the backend is down.
   useEffect(() => {
-    (async () => {
-      await fetchCSRFToken();
-      const me = await fetchMe();
-      setUser(me);
-      setIsLoading(false);
-    })();
+    let cancelled = false;
+    const init = async () => {
+      try {
+        await Promise.race([
+          fetchCSRFToken(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+        ]);
+        if (cancelled) return;
+        const me = await Promise.race([
+          fetchMe(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+        ]);
+        if (!cancelled) setUser(me);
+      } catch {
+        // Backend unreachable — continue as unauthenticated
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    init();
+    return () => { cancelled = true; };
   }, [fetchMe]);
 
   const login = useCallback(
