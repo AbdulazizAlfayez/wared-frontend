@@ -1,7 +1,23 @@
 "use client";
 
 import { useRef, useEffect, useState, ReactNode } from "react";
-import { motion, useInView, useSpring, useMotionValue } from "framer-motion";
+import { motion, useInView, useSpring, useMotionValue, type UseInViewOptions } from "framer-motion";
+
+// ---------------------------------------------------------------------------
+// Hook: useInView with a timeout fallback so content never stays hidden
+// ---------------------------------------------------------------------------
+function useSafeInView(ref: React.RefObject<Element | null>, opts?: UseInViewOptions) {
+  const isInView = useInView(ref, opts);
+  const [fallback, setFallback] = useState(false);
+
+  useEffect(() => {
+    // If useInView hasn't fired after 2s, force-reveal
+    const t = setTimeout(() => setFallback(true), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return isInView || fallback;
+}
 
 // ---------------------------------------------------------------------------
 // Fade-up on scroll (replaces mk-reveal)
@@ -22,7 +38,7 @@ export function FadeIn({
   once?: boolean;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once, margin: "-5% 0px" });
+  const isInView = useSafeInView(ref, { once, margin: "-5% 0px" });
 
   return (
     <motion.div
@@ -52,7 +68,7 @@ export function StaggerContainer({
   style?: React.CSSProperties;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-5% 0px" });
+  const isInView = useSafeInView(ref, { once: true, margin: "-5% 0px" });
 
   return (
     <motion.div
@@ -111,7 +127,7 @@ export function AnimatedCounter({
   className?: string;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+  const isInView = useSafeInView(ref, { once: true });
   const motionVal = useSpring(0, { duration: duration * 1000, bounce: 0 });
   const [display, setDisplay] = useState("0");
 
@@ -193,7 +209,7 @@ export function TextReveal({
   delay?: number;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const isInView = useSafeInView(ref, { once: true, margin: "-10% 0px" });
   const words = text.split(" ");
 
   return (

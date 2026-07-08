@@ -528,12 +528,17 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .mk-marquee .track .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mk-ink); opacity: .4; }
 @keyframes mk-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-/* Reveal on scroll */
-.mk-reveal { opacity: 0; transform: translateY(28px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
-.mk-reveal.in { opacity: 1; transform: none; }
+/* Reveal on scroll — with CSS-only fallback so content is never permanently hidden */
+.mk-reveal {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1);
+  animation: mk-reveal-fallback 0s 2s forwards;
+}
+.mk-reveal.in { opacity: 1; transform: none; animation: none; }
 .mk-reveal.delay-1 { transition-delay: .08s; }
 .mk-reveal.delay-2 { transition-delay: .16s; }
 .mk-reveal.delay-3 { transition-delay: .24s; }
+@keyframes mk-reveal-fallback { to { opacity: 1; transform: none; } }
 
 /* Car card */
 .mk-car-card {
