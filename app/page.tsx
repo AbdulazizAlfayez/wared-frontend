@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  Loader2,
   Globe,
   Clock,
   Car as CarIcon,
@@ -258,12 +257,13 @@ const DEMO_BADGES: Record<string, string> = {
 };
 
 function BrowseCars() {
-  const { data, isLoading } = useApiQuery<PaginatedResponse<ImportedListing>>(
+  const { data } = useApiQuery<PaginatedResponse<ImportedListing>>(
     "/api/imported-cars/?ordering=-created_at&page_size=6"
   );
   const apiListings = Array.isArray(data) ? data : (data?.results ?? []);
+  // Always render — show demo fallback while loading or on error
   const listings = apiListings.length > 0 ? apiListings : DEMO_CARS;
-  const isDemo = apiListings.length === 0 && !isLoading;
+  const isDemo = apiListings.length === 0;
   const { listingCount } = useRealStats();
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
@@ -295,13 +295,8 @@ function BrowseCars() {
           <span className="p">RHD <span className="x">×</span></span>
         </div>
 
-        {/* Car grid */}
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--mk-mute)" }} />
-          </div>
-        ) : (
-          <StaggerContainer stagger={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Car grid — always rendered (uses demo fallback while API loads or on error) */}
+        <StaggerContainer stagger={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {listings.map((listing, i) => {
               const primaryImage = listing.images?.find((img: any) => img.is_primary) ?? listing.images?.[0];
               const imageUrl = listing.primary_image || primaryImage?.image_url || (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
@@ -347,7 +342,6 @@ function BrowseCars() {
               );
             })}
           </StaggerContainer>
-        )}
 
         {/* View all link */}
         <div className="text-center mt-10">
