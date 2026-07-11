@@ -106,9 +106,10 @@ export default {
         },
       },
       fontFamily: {
-        sans:    ["var(--font-body)", "Outfit", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Bricolage Grotesque", "system-ui", "sans-serif"],
-        geist:   ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        sans:    ["Outfit", "system-ui", "sans-serif"],
+        body:    ["Outfit", "system-ui", "sans-serif"],
+        display: ["Bricolage Grotesque", "system-ui", "sans-serif"],
+        geist:   ["Geist", "system-ui", "sans-serif"],
         mono:    ["monospace"],
         arabic:  ["Tajawal", "system-ui", "sans-serif"],
       },

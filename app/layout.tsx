@@ -1,28 +1,11 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Outfit } from "next/font/google";
-import { GeistSans } from "geist/font/sans";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/Toast";
 import { I18nClientProvider } from "./I18nClientProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VerificationGate from "@/components/VerificationGate";
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  display: "swap",
-});
-
-const outfit = Outfit({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "وارد | WARED",
@@ -37,8 +20,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
+      <head>
+        {/* Fonts loaded via <link> — non-blocking, never stalls the build */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Geist:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Tajawal:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${bricolage.variable} ${outfit.variable} ${GeistSans.variable} antialiased min-h-screen flex flex-col bg-white text-slate-900 transition-colors`}
+        className="font-body antialiased min-h-screen flex flex-col bg-white text-slate-900 transition-colors"
       >
           <AuthProvider>
             <ToastProvider>
