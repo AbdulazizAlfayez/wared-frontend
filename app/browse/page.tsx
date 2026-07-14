@@ -7,12 +7,14 @@ import CarGrid from "@/components/CarGrid";
 import { Loader2, Search, X, BookmarkPlus, CheckCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import type { AutocompleteResult } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Live Search Bar
 // ---------------------------------------------------------------------------
 function LiveSearchBar() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -131,7 +133,7 @@ function LiveSearchBar() {
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search make, model, keyword…"
+          placeholder={t("browse.searchPlaceholder")}
           autoComplete="off"
           className={`w-full pl-10 pr-10 py-3 rounded-xl border bg-white text-slate-800 placeholder-slate-400 text-sm transition-colors ${
             isSearching
@@ -153,7 +155,7 @@ function LiveSearchBar() {
       {showDropdown && suggestions.length > 0 && (
         <div className="absolute top-full mt-1.5 w-full bg-white rounded-xl border border-slate-200 shadow-xl z-30 overflow-hidden">
           <div className="px-3 py-1.5 border-b border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Suggestions</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t("browse.suggestions")}</p>
           </div>
           {suggestions.map((sug) => (
             <button
@@ -183,6 +185,7 @@ function SaveSearchButton({
   searchTerm: string;
 }) {
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [name,      setName]      = useState("");
   const [isSaving,  setIsSaving]  = useState(false);
@@ -213,7 +216,7 @@ function SaveSearchButton({
         className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border border-slate-200 hover:border-accent hover:text-accent text-slate-600 rounded-xl text-sm font-medium transition-colors"
       >
         <BookmarkPlus className="w-4 h-4" />
-        <span className="hidden sm:inline">Save Search</span>
+        <span className="hidden sm:inline">{t("browse.saveSearch")}</span>
       </button>
 
       {showModal && (
@@ -228,13 +231,13 @@ function SaveSearchButton({
               </div>
             ) : (
               <>
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Save This Search</h3>
+                <h3 className="text-lg font-bold text-slate-900 mb-4">{t("browse.saveSearchTitle")}</h3>
                 <form onSubmit={handleSave} className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">Name</label>
                     <input
                       type="text" value={name} onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Toyota from Japan under 100k"
+                      placeholder={t("browse.saveSearchPlaceholder")}
                       required autoFocus
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 text-sm"
                     />
@@ -242,12 +245,12 @@ function SaveSearchButton({
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setShowModal(false)}
                       className="flex-1 py-2.5 border border-slate-200 text-slate-700 rounded-xl font-medium text-sm hover:bg-slate-50 transition-colors">
-                      Cancel
+                      {t("common.cancel")}
                     </button>
                     <button type="submit" disabled={isSaving || !name.trim()}
                       className="flex-1 py-2.5 bg-accent hover:bg-accent-600 disabled:opacity-50 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">
                       {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Save
+                      {t("common.save")}
                     </button>
                   </div>
                 </form>
@@ -264,6 +267,7 @@ function SaveSearchButton({
 // Main browse content
 // ---------------------------------------------------------------------------
 function BrowseContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const [resultCount, setResultCount] = useState<number | null>(null);
 
@@ -304,10 +308,10 @@ function BrowseContent() {
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-1">
-            Browse Imported Cars
+            {t("browse.pageTitle")}
           </h1>
-          <p className="text-slate-500 text-sm">
-            Verified imports from USA, Japan, UAE, Korea, and Europe — full cost transparency.
+          <p className="text-slate-500 text-sm text-start">
+            {t("browse.pageSubtitle")}
           </p>
         </div>
 
@@ -323,19 +327,16 @@ function BrowseContent() {
             <p className="text-sm text-slate-500">
               {search ? (
                 <>
-                  <span className="font-semibold text-slate-700">{resultCount}</span>
-                  {` ${resultCount === 1 ? "car" : "cars"} matching `}
-                  <span className="font-semibold text-accent">&ldquo;{search}&rdquo;</span>
+                  {t("browse.resultsMatching", { count: resultCount, query: search })}
                   {activeFilterCount > 1 && (
-                    <span className="text-slate-400"> · {activeFilterCount - 1} filter{activeFilterCount - 1 !== 1 ? "s" : ""} active</span>
+                    <span className="text-slate-400"> · {t("browse.filtersActive", { count: activeFilterCount - 1 })}</span>
                   )}
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-slate-700">{resultCount}</span>
-                  {` imported ${resultCount === 1 ? "car" : "cars"} available`}
+                  {t("browse.resultsAvailable", { count: resultCount })}
                   {activeFilterCount > 0 && (
-                    <span className="text-slate-400"> · {activeFilterCount} filter{activeFilterCount !== 1 ? "s" : ""} active</span>
+                    <span className="text-slate-400"> · {t("browse.filtersActive", { count: activeFilterCount })}</span>
                   )}
                 </>
               )}

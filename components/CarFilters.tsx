@@ -19,45 +19,21 @@ const bodyTypes     = [
   "Sedan", "SUV", "Pickup", "Coupe", "Hatchback", "Van", "Truck", "Convertible", "Wagon",
 ];
 
-const sortOptions = [
-  { value: "-created_at",          label: "Newest First"          },
-  { value: "created_at",           label: "Oldest First"          },
-  { value: "final_price_sar",      label: "Price: Low to High"    },
-  { value: "-final_price_sar",     label: "Price: High to Low"    },
-  { value: "mileage",              label: "Mileage: Low to High"  },
-  { value: "-year",                label: "Year: Newest"          },
-  { value: "estimated_arrival_date", label: "Arriving Soon"       },
+const SORT_KEYS: { value: string; key: string }[] = [
+  { value: "-created_at",            key: "filters.newestFirst"  },
+  { value: "created_at",             key: "filters.oldestFirst"  },
+  { value: "final_price_sar",        key: "filters.priceLowHigh" },
+  { value: "-final_price_sar",       key: "filters.priceHighLow" },
+  { value: "mileage",                key: "filters.mileageLowHigh" },
+  { value: "-year",                  key: "filters.yearNewest"   },
+  { value: "estimated_arrival_date", key: "filters.arrivingSoon" },
 ];
 
-// Import-specific options
-const SOURCE_COUNTRIES = [
-  { value: "usa",    label: "USA 🇺🇸"         },
-  { value: "uae",    label: "UAE 🇦🇪"         },
-  { value: "japan",  label: "Japan 🇯🇵"       },
-  { value: "korea",  label: "South Korea 🇰🇷" },
-  { value: "europe", label: "Europe 🇪🇺"      },
-  { value: "canada", label: "Canada 🇨🇦"      },
-  { value: "qatar",  label: "Qatar 🇶🇦"       },
-  { value: "other",  label: "Other 🌐"         },
-];
-
-const SPEC_ORIGINS = [
-  { value: "gcc",      label: "GCC Specs"      },
-  { value: "american", label: "American Specs" },
-  { value: "european", label: "European Specs" },
-  { value: "japanese", label: "Japanese Specs" },
-  { value: "korean",   label: "Korean Specs"   },
-  { value: "other",    label: "Other"          },
-];
-
-const IMPORT_STATUSES = [
-  { value: "available",         label: "Available"         },
-  { value: "in_transit",        label: "In Transit"        },
-  { value: "arriving",          label: "Arriving Soon"     },
-  { value: "at_port",           label: "At Port"           },
-  { value: "customs_clearance", label: "Customs Clearance" },
-  { value: "reserved",          label: "Reserved"          },
-];
+// Import-specific option keys (labels resolved via t())
+const SOURCE_COUNTRY_KEYS = ["usa", "uae", "japan", "korea", "europe", "canada", "qatar", "other"];
+const SOURCE_FLAGS: Record<string, string> = { usa: "🇺🇸", uae: "🇦🇪", japan: "🇯🇵", korea: "🇰🇷", europe: "🇪🇺", canada: "🇨🇦", qatar: "🇶🇦", other: "🌐" };
+const SPEC_ORIGIN_KEYS = ["gcc", "american", "european", "japanese", "korean", "other"];
+const IMPORT_STATUS_KEYS = ["available", "in_transit", "arriving", "at_port", "customs_clearance", "reserved"];
 
 interface CarFiltersProps {
   onFilterChange?: (filters: FilterState) => void;
@@ -161,28 +137,30 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
   const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
 
   const getFilterLabel = (key: keyof FilterState, value: string): string => {
-    const labels: Record<string, string> = {
-      make: "Make", model: "Model", city: "City", fuelType: "Fuel",
-      transmission: "Trans",
-      condition: value === "new" ? "New" : value === "used" ? "Used" : "Certified",
-      bodyType: "Body", minPrice: "Min SAR", maxPrice: "Max SAR",
-      minYear: "From", maxYear: "To", minMileage: "Min KM", maxMileage: "Max KM",
-      sort: "Sort", negotiable: "Negotiable", warrantyRemaining: "Warranty",
-      noAccidents: "No Accidents", sourceCountry: "Country",
-      specOrigin: "Spec", importStatus: "Status",
-      hasSalvageTitle: "Salvage", gccSpecs: "GCC Specs",
+    const map: Record<string, string> = {
+      make: t("filters.make"), model: t("filters.model"), city: t("filters.city"),
+      fuelType: t("filters.fuelType"), transmission: t("filters.transmission"),
+      condition: t("filters.condition"), bodyType: t("filters.bodyType"),
+      minPrice: t("filters.minPrice"), maxPrice: t("filters.maxPrice"),
+      minYear: t("filters.from"), maxYear: t("filters.to"),
+      minMileage: t("filters.minMileage"), maxMileage: t("filters.maxMileage"),
+      sort: t("filters.sortBy"), negotiable: t("filters.priceNegotiable"),
+      warrantyRemaining: t("filters.hasWarranty"), noAccidents: t("filters.noAccidents"),
+      sourceCountry: t("filters.sourceCountry"), specOrigin: t("filters.specOrigin"),
+      importStatus: t("filters.importStatus"), hasSalvageTitle: t("filters.hasSalvageTitle"),
+      gccSpecs: t("specOrigin.gcc"),
     };
-    return labels[key] ?? key;
+    return map[key] ?? key;
   };
 
   const getFilterDisplayValue = (key: keyof FilterState, value: string): string => {
     if (["condition","negotiable","warrantyRemaining","noAccidents","hasSalvageTitle","gccSpecs"].includes(key)) return "";
     if (key === "minPrice" || key === "maxPrice") return Number(value).toLocaleString() + " SAR";
-    if (key === "minMileage" || key === "maxMileage") return Number(value).toLocaleString() + " km";
-    if (key === "sort") return sortOptions.find((o) => o.value === value)?.label ?? value;
-    if (key === "sourceCountry") return SOURCE_COUNTRIES.find((c) => c.value === value)?.label ?? value;
-    if (key === "specOrigin") return SPEC_ORIGINS.find((c) => c.value === value)?.label ?? value;
-    if (key === "importStatus") return IMPORT_STATUSES.find((c) => c.value === value)?.label ?? value;
+    if (key === "minMileage" || key === "maxMileage") return Number(value).toLocaleString() + ` ${t("browse.kmUnit")}`;
+    if (key === "sort") { const sk = SORT_KEYS.find((o) => o.value === value); return sk ? t(sk.key) : value; }
+    if (key === "sourceCountry") return t(`countries.${value}`);
+    if (key === "specOrigin") return t(`specOrigin.${value}`);
+    if (key === "importStatus") return t(`importStatus.${value}`);
     return value;
   };
 
@@ -219,10 +197,10 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
       {/* Header */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900">Filters</h3>
+          <h3 className="text-base font-bold text-slate-900">{t("browse.filters")}</h3>
           {activeFiltersCount > 0 && (
             <button onClick={clearFilters} className="text-xs text-accent hover:text-accent-700 font-semibold">
-              Clear all ({activeFiltersCount})
+              {t("filters.clearAll", { count: activeFiltersCount })}
             </button>
           )}
         </div>
@@ -246,96 +224,96 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* ── SORT ── */}
       <div className={sectionCls}>
-        <label className={labelCls}>Sort By</label>
+        <label className={labelCls}>{t("filters.sortBy")}</label>
         <select value={filters.sort} onChange={(e) => updateFilter("sort", e.target.value)} className={selectCls}>
-          <option value="">Default</option>
-          {sortOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="">{t("filters.default")}</option>
+          {SORT_KEYS.map((o) => <option key={o.value} value={o.value}>{t(o.key)}</option>)}
         </select>
       </div>
 
       <div className="border-t border-slate-100" />
 
       {/* ── IMPORT FILTERS (top — most relevant) ── */}
-      <p className="text-[11px] font-bold text-accent uppercase tracking-widest">Import Filters</p>
+      <p className="text-[11px] font-bold text-accent uppercase tracking-widest">{t("filters.importFilters")}</p>
 
       {/* Source Country */}
       <div className={sectionCls}>
-        <label className={labelCls}>Source Country</label>
+        <label className={labelCls}>{t("filters.sourceCountry")}</label>
         <select value={filters.sourceCountry} onChange={(e) => updateFilter("sourceCountry", e.target.value)} className={selectCls}>
-          <option value="">All Countries</option>
-          {SOURCE_COUNTRIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          <option value="">{t("filters.allCountries")}</option>
+          {SOURCE_COUNTRY_KEYS.map((k) => <option key={k} value={k}>{t(`countries.${k}`)} {SOURCE_FLAGS[k]}</option>)}
         </select>
       </div>
 
       {/* Import Status */}
       <div className={sectionCls}>
-        <label className={labelCls}>Import Status</label>
+        <label className={labelCls}>{t("filters.importStatus")}</label>
         <select value={filters.importStatus} onChange={(e) => updateFilter("importStatus", e.target.value)} className={selectCls}>
-          <option value="">All Statuses</option>
-          {IMPORT_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          <option value="">{t("filters.allStatuses")}</option>
+          {IMPORT_STATUS_KEYS.map((k) => <option key={k} value={k}>{t(`importStatus.${k}`)}</option>)}
         </select>
       </div>
 
       {/* Spec Origin */}
       <div className={sectionCls}>
-        <label className={labelCls}>Spec Origin</label>
+        <label className={labelCls}>{t("filters.specOrigin")}</label>
         <select value={filters.specOrigin} onChange={(e) => updateFilter("specOrigin", e.target.value)} className={selectCls}>
-          <option value="">All Specs</option>
-          {SPEC_ORIGINS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          <option value="">{t("filters.allSpecs")}</option>
+          {SPEC_ORIGIN_KEYS.map((k) => <option key={k} value={k}>{t(`specOrigin.${k}`)}</option>)}
         </select>
       </div>
 
       {/* Bool import flags */}
       <div className={sectionCls}>
-        <label className={labelCls}>Import Options</label>
+        <label className={labelCls}>{t("filters.importOptions")}</label>
         <div className="flex flex-col gap-2">
-          <BoolChip fieldKey="gccSpecs"        label="GCC Specs Only" />
-          <BoolChip fieldKey="hasSalvageTitle" label="Has Salvage Title" />
+          <BoolChip fieldKey="gccSpecs"        label={t("filters.gccSpecsOnly")} />
+          <BoolChip fieldKey="hasSalvageTitle" label={t("filters.hasSalvageTitle")} />
         </div>
       </div>
 
       <div className="border-t border-slate-100" />
 
       {/* ── STANDARD FILTERS ── */}
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Car Filters</p>
+      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t("filters.carFilters")}</p>
 
       {/* Make */}
       <div className={sectionCls}>
-        <label className={labelCls}>Make</label>
+        <label className={labelCls}>{t("filters.make")}</label>
         <select value={filters.make} onChange={(e) => updateFilter("make", e.target.value)} className={selectCls}>
-          <option value="">All Makes</option>
+          <option value="">{t("filters.allMakes")}</option>
           {carMakes.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
 
       {/* Model */}
       <div className={sectionCls}>
-        <label className={labelCls}>Model</label>
+        <label className={labelCls}>{t("filters.model")}</label>
         <input
           type="text" value={filters.model}
           onChange={(e) => updateFilter("model", e.target.value)}
-          placeholder="e.g. Camry, Patrol..."
+          placeholder={t("filters.modelPlaceholder")}
           className={inputCls}
         />
       </div>
 
       {/* Body Type */}
       <div className={sectionCls}>
-        <label className={labelCls}>Body Type</label>
+        <label className={labelCls}>{t("filters.bodyType")}</label>
         <select value={filters.bodyType} onChange={(e) => updateFilter("bodyType", e.target.value)} className={selectCls}>
-          <option value="">All Types</option>
-          {bodyTypes.map((bt) => <option key={bt} value={bt.toLowerCase()}>{bt}</option>)}
+          <option value="">{t("filters.allTypes")}</option>
+          {bodyTypes.map((bt) => <option key={bt} value={bt.toLowerCase()}>{t(`filters.${bt.toLowerCase()}`)}</option>)}
         </select>
       </div>
 
-      {/* Price Range — uses final_price_sar */}
+      {/* Price Range */}
       <div className={sectionCls}>
-        <label className={labelCls}>Final SAR Price</label>
+        <label className={labelCls}>{t("filters.finalPrice")}</label>
         <div className="grid grid-cols-2 gap-2">
-          <input type="number" placeholder="Min" value={filters.minPrice}
+          <input type="number" placeholder={t("filters.min")} value={filters.minPrice}
             onChange={(e) => updateFilter("minPrice", e.target.value)}
             className={inputCls} />
-          <input type="number" placeholder="Max" value={filters.maxPrice}
+          <input type="number" placeholder={t("filters.max")} value={filters.maxPrice}
             onChange={(e) => updateFilter("maxPrice", e.target.value)}
             className={inputCls} />
         </div>
@@ -343,14 +321,14 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* Year Range */}
       <div className={sectionCls}>
-        <label className={labelCls}>Year</label>
+        <label className={labelCls}>{t("filters.year")}</label>
         <div className="grid grid-cols-2 gap-2">
           <select value={filters.minYear} onChange={(e) => updateFilter("minYear", e.target.value)} className={selectCls}>
-            <option value="">From</option>
+            <option value="">{t("filters.from")}</option>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <select value={filters.maxYear} onChange={(e) => updateFilter("maxYear", e.target.value)} className={selectCls}>
-            <option value="">To</option>
+            <option value="">{t("filters.to")}</option>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
@@ -358,12 +336,12 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* Mileage Range */}
       <div className={sectionCls}>
-        <label className={labelCls}>Mileage (km)</label>
+        <label className={labelCls}>{t("filters.mileageKm")}</label>
         <div className="grid grid-cols-2 gap-2">
-          <input type="number" placeholder="Min" value={filters.minMileage}
+          <input type="number" placeholder={t("filters.min")} value={filters.minMileage}
             onChange={(e) => updateFilter("minMileage", e.target.value)}
             className={inputCls} />
-          <input type="number" placeholder="Max" value={filters.maxMileage}
+          <input type="number" placeholder={t("filters.max")} value={filters.maxMileage}
             onChange={(e) => updateFilter("maxMileage", e.target.value)}
             className={inputCls} />
         </div>
@@ -371,25 +349,25 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* Fuel Type */}
       <div className={sectionCls}>
-        <label className={labelCls}>Fuel Type</label>
+        <label className={labelCls}>{t("filters.fuelType")}</label>
         <select value={filters.fuelType} onChange={(e) => updateFilter("fuelType", e.target.value)} className={selectCls}>
-          <option value="">All Fuel Types</option>
-          {fuelTypes.map((f) => <option key={f} value={f}>{f}</option>)}
+          <option value="">{t("filters.allFuelTypes")}</option>
+          {fuelTypes.map((f) => <option key={f} value={f}>{t(`filters.${f.toLowerCase()}`)}</option>)}
         </select>
       </div>
 
       {/* Transmission */}
       <div className={sectionCls}>
-        <label className={labelCls}>Transmission</label>
+        <label className={labelCls}>{t("filters.transmission")}</label>
         <select value={filters.transmission} onChange={(e) => updateFilter("transmission", e.target.value)} className={selectCls}>
-          <option value="">All</option>
-          {transmissions.map((tr) => <option key={tr} value={tr}>{tr}</option>)}
+          <option value="">{t("filters.allTransmissions")}</option>
+          {transmissions.map((tr) => <option key={tr} value={tr}>{t(`filters.${tr.toLowerCase()}`)}</option>)}
         </select>
       </div>
 
       {/* Condition */}
       <div className={sectionCls}>
-        <label className={labelCls}>Condition</label>
+        <label className={labelCls}>{t("filters.condition")}</label>
         <div className="flex gap-2">
           {conditions.map((c) => (
             <button key={c} type="button"
@@ -399,7 +377,7 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
                   ? "bg-accent text-white border-accent"
                   : "bg-white text-slate-700 border-slate-200 hover:border-accent"
               }`}>
-              {c === "new" ? "New" : c === "used" ? "Used" : "Cert."}
+              {c === "new" ? t("filters.new") : c === "used" ? t("filters.used") : t("filters.certified")}
             </button>
           ))}
         </div>
@@ -407,22 +385,22 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* City */}
       <div className={sectionCls}>
-        <label className={labelCls}>City</label>
+        <label className={labelCls}>{t("filters.city")}</label>
         <input
           type="text" value={filters.city}
           onChange={(e) => updateFilter("city", e.target.value)}
-          placeholder="e.g. Riyadh, Jeddah..."
+          placeholder={t("filters.cityPlaceholder")}
           className={inputCls}
         />
       </div>
 
       {/* Boolean Extras */}
       <div className={sectionCls}>
-        <label className={labelCls}>More Options</label>
+        <label className={labelCls}>{t("filters.moreOptions")}</label>
         <div className="flex flex-col gap-2">
-          <BoolChip fieldKey="negotiable"       label="Price Negotiable"    />
-          <BoolChip fieldKey="warrantyRemaining" label="Has Warranty"        />
-          <BoolChip fieldKey="noAccidents"      label="No Accident History" />
+          <BoolChip fieldKey="negotiable"       label={t("filters.priceNegotiable")}  />
+          <BoolChip fieldKey="warrantyRemaining" label={t("filters.hasWarranty")}      />
+          <BoolChip fieldKey="noAccidents"      label={t("filters.noAccidents")}       />
         </div>
       </div>
     </div>
@@ -436,7 +414,7 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
         className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-accent text-white rounded-full shadow-lg hover:bg-accent-600"
       >
         <SlidersHorizontal className="w-5 h-5" />
-        <span className="font-semibold text-sm">Filters</span>
+        <span className="font-semibold text-sm">{t("browse.filters")}</span>
         {activeFiltersCount > 0 && (
           <span className="px-2 py-0.5 bg-white/20 rounded-full text-sm">{activeFiltersCount}</span>
         )}

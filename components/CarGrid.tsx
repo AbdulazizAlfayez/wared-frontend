@@ -12,6 +12,7 @@ import { isFavorite, toggleFavorite } from "@/lib/favorites";
 import { isCompared, toggleCompare, getCompareIds, clearCompare } from "@/lib/compare";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { getImageUrl } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import type { ImportedListing, PaginatedResponse } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -42,14 +43,16 @@ export const sampleCars: SampleCar[] = [];
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const IMPORT_STATUS_STYLES: Record<string, { label: string; cls: string }> = {
-  available:         { label: "Available",         cls: "bg-white/95 backdrop-blur-sm text-[#0B1424] border border-white/40"   },
-  arriving:          { label: "Arriving soon",     cls: "bg-[#E8F5F0] text-[#0B8470]"     },
-  in_transit:        { label: "In transit",        cls: "bg-[#E8F5F0] text-[#0B8470]"     },
-  at_port:           { label: "At port",           cls: "bg-violet-50 text-violet-700"     },
-  customs_clearance: { label: "Customs",           cls: "bg-amber-50 text-amber-700"       },
-  reserved:          { label: "Reserved",          cls: "bg-amber-50 text-amber-800"       },
-  delivered:         { label: "Delivered",         cls: "bg-slate-100 text-slate-500"      },
+const STATUS_CLS: Record<string, string> = {
+  available:         "bg-white/95 backdrop-blur-sm text-[#0B1424] border border-white/40",
+  arriving:          "bg-[#E8F5F0] text-[#0B8470]",
+  in_transit:        "bg-[#E8F5F0] text-[#0B8470]",
+  at_port:           "bg-violet-50 text-violet-700",
+  customs_clearance: "bg-amber-50 text-amber-700",
+  reserved:          "bg-amber-50 text-amber-800",
+  delivered:         "bg-slate-100 text-slate-500",
+  ready_for_delivery:"bg-green-50 text-green-700",
+  shipping:          "bg-[#E8F5F0] text-[#0B8470]",
 };
 
 const SOURCE_FLAG: Record<string, string> = {
@@ -69,6 +72,7 @@ function formatSAR(n: number | string | null | undefined) {
 // Imported Car Card
 // ---------------------------------------------------------------------------
 function ImportedCarCard({ listing }: { listing: ImportedListing }) {
+  const { t } = useTranslation();
   const [isFav, setIsFav] = useState(() => isFavorite(String(listing.id)));
   const [isInCompare, setIsInCompare] = useState(() => isCompared(String(listing.id)));
 
@@ -104,9 +108,11 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
     primaryImage?.image_url ||
     (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
 
-  const statusInfo = listing.import_status
-    ? (IMPORT_STATUS_STYLES[listing.import_status] ??
-       { label: listing.import_status, cls: "bg-slate-100 text-slate-600" })
+  const statusCls = listing.import_status
+    ? (STATUS_CLS[listing.import_status] ?? "bg-slate-100 text-slate-600")
+    : null;
+  const statusLabel = listing.import_status
+    ? t(`importStatus.${listing.import_status}`)
     : null;
 
   const flag = listing.source_country ? (SOURCE_FLAG[listing.source_country] ?? "🌐") : null;
@@ -135,17 +141,17 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
             </div>
           )}
 
-          {/* Status badge — sentence case, white pill */}
-          {statusInfo && (
-            <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.cls}`}>
-              {statusInfo.label}
+          {/* Status badge */}
+          {statusLabel && statusCls && (
+            <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusCls}`}>
+              {statusLabel}
             </span>
           )}
 
           {/* Favorite */}
           <button
             onClick={handleFav}
-            aria-label={isFav ? "Remove from favorites" : "Save"}
+            aria-label={isFav ? t("actions.removeFromFavorites") : t("actions.saveToFavorites")}
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:scale-110 transition-transform"
           >
             <Heart className={`w-4 h-4 ${isFav ? "fill-red-500 text-red-500" : "text-[#0B1424]/40"}`} />
@@ -154,7 +160,7 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
           {/* Compare */}
           <button
             onClick={handleCompare}
-            aria-label={isInCompare ? "Remove from compare" : "Compare"}
+            aria-label={isInCompare ? t("actions.compared") : t("actions.compare")}
             className={`absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium shadow-sm transition-all ${
               isInCompare
                 ? "bg-[#0B1424] text-white"
@@ -162,7 +168,7 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
             }`}
           >
             {isInCompare ? <Check className="w-3 h-3" /> : <GitCompare className="w-3 h-3" />}
-            {isInCompare ? "Added" : "Compare"}
+            {isInCompare ? t("actions.compared") : t("actions.compare")}
           </button>
         </div>
 
@@ -178,16 +184,16 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
 
           {/* Meta row */}
           <p className="text-[13px] text-[#0B1424]/55 flex items-center gap-1.5 flex-wrap">
-            {listing.mileage > 0 && <span>{Number(listing.mileage).toLocaleString()} km</span>}
+            {listing.mileage > 0 && <span>{Number(listing.mileage).toLocaleString()} {t("browse.kmUnit")}</span>}
             {listing.city && <><span>·</span><span>{listing.city}</span></>}
-            {listing.spec_origin && <><span>·</span><span>{listing.spec_origin} spec</span></>}
+            {listing.spec_origin && <><span>·</span><span>{t(`specOrigin.${listing.spec_origin}`)}</span></>}
           </p>
 
           {/* ETA for in-transit */}
           {showArrival && listing.estimated_arrival_date && (
             <p className="text-[12px] text-[#0B8470] font-medium flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              Arriving {new Date(listing.estimated_arrival_date).toLocaleDateString("en-SA", { month: "short", day: "numeric" })}
+              {t("browse.arrivingDate", { date: new Date(listing.estimated_arrival_date).toLocaleDateString("en-SA", { month: "short", day: "numeric" }) })}
             </p>
           )}
 
@@ -204,8 +210,8 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
               )}
             </div>
             <span className="inline-flex items-center gap-1 px-4 py-2 rounded-full border border-[#0B1424]/15 text-[13px] font-medium text-[#0B1424] group-hover:bg-[#0B1424] group-hover:text-white transition-colors">
-              Reserve
-              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              {t("browse.reserve")}
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100" />
             </span>
           </div>
         </div>
@@ -218,6 +224,7 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
 // Compare bar
 // ---------------------------------------------------------------------------
 function CompareBar() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
@@ -240,18 +247,18 @@ function CompareBar() {
         <div className="flex items-center gap-2">
           <GitCompare className="w-5 h-5 text-accent" />
           <span className="font-semibold text-slate-900 text-sm">
-            Compare ({compareIds.length}) selected
+            {t("actions.compareSelected", { count: compareIds.length })}
           </span>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={clearCompare} className="text-sm text-slate-500 hover:text-slate-800 font-medium">
-            Clear
+            {t("common.clear")}
           </button>
           <button
             onClick={() => router.push(`/compare?ids=${compareIds.join(",")}`)}
             className="px-5 py-2 bg-accent hover:bg-accent-600 text-white rounded-xl font-semibold text-sm transition-colors"
           >
-            Compare Now
+            {t("actions.compareNow")}
           </button>
         </div>
       </div>
@@ -334,6 +341,7 @@ interface CarGridProps {
 }
 
 export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm }: CarGridProps) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [allListings, setAllListings] = useState<ImportedListing[]>([]);
 
@@ -410,7 +418,7 @@ export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm
                 className="inline-flex items-center gap-2 px-8 py-3 bg-accent hover:bg-accent-600 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {isLoading ? "Loading..." : "Load More"}
+                {isLoading ? t("browse.loading") : t("browse.loadMore")}
                 {!isLoading && <ArrowRight className="w-4 h-4" />}
               </button>
             </div>
@@ -429,17 +437,17 @@ export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm
         {searchTerm ? (
           <>
             <h3 className="text-lg font-bold text-slate-900 mb-2">
-              No cars found matching &ldquo;{searchTerm}&rdquo;
+              {t("browse.noCarsMatching", { query: searchTerm })}
             </h3>
             <p className="text-slate-500 text-sm mb-1">
-              Try different keywords or remove some filters.
+              {t("browse.tryDifferentKeywords")}
             </p>
           </>
         ) : (
           <>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">No cars found</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">{t("browse.noCarsFound")}</h3>
             <p className="text-slate-500 text-sm">
-              Try adjusting your filters or check back for new imports.
+              {t("browse.noCarsMessage")}
             </p>
           </>
         )}
