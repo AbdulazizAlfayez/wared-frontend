@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useAuth, parseApiError } from "@/lib/auth-context";
+import { api } from "@/lib/api";
 import OtpVerification from "@/components/OtpVerification";
 import Link from "next/link";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
@@ -46,6 +47,10 @@ export default function SignInPage() {
     );
   }
 
+  // Clear error when user edits the form
+  const handleEmailChange = (v: string) => { setEmail(v); if (error) setError(""); };
+  const handlePasswordChange = (v: string) => { setPassword(v); if (error) setError(""); };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -60,9 +65,22 @@ export default function SignInPage() {
         window.location.href = "/";
       }
     } catch (err: unknown) {
-      setError(
-        parseApiError(err, "Sign-in failed. Please check your credentials and try again.")
-      );
+      const typedErr = err as Error & { code?: string };
+      if (typedErr.code === "email_not_verified") {
+        // Account exists but unverified. Re-register to set auth cookies
+        // (the re-signup fix ensures this succeeds + sends a fresh OTP).
+        try {
+          await api.post("/api/auth/register/", {
+            email, name: email.split("@")[0], password, password2: password,
+          });
+        } catch { /* best effort — OTP was already sent by the 403 handler */ }
+        setOtpEmail(email);
+        setShowOtp(true);
+      } else {
+        setError(
+          parseApiError(err, "Sign-in failed. Please check your credentials and try again.")
+        );
+      }
       setIsLoading(false);
     }
   };
@@ -111,7 +129,7 @@ export default function SignInPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => handleEmailChange(e.target.value)}
                   placeholder="you@example.com"
                   required
                   autoComplete="email"
@@ -130,7 +148,7 @@ export default function SignInPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => handlePasswordChange(e.target.value)}
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"

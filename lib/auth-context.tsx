@@ -107,7 +107,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      await api.post("/api/auth/login/", { email, password });
+      // Use raw fetch to prevent api.ts from intercepting 401→redirect
+      const res = await fetch(`${BASE_URL}/api/auth/login/`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        let body: Record<string, unknown> = {};
+        try { body = await res.json(); } catch { /* ignore */ }
+        const err = new Error(
+          JSON.stringify(body)
+        ) as Error & { status: number; code?: string };
+        err.status = res.status;
+        err.code = typeof body.code === "string" ? body.code : undefined;
+        throw err;
+      }
       const me = await fetchMe();
       setUser(me);
       return { requiresVerification: me ? !me.is_email_verified : false };
