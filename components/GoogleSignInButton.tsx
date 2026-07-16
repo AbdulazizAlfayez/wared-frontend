@@ -58,8 +58,8 @@ export default function GoogleSignInButton({ onSuccess, onError }: Props) {
           if (res.ok) {
             onSuccessRef.current();
           } else {
-            const body = await res.json().catch(() => ({})) as { error?: string };
-            onErrorRef.current(body.error ?? "Google sign-in failed. Please try again.");
+            const body = await res.json().catch(() => ({})) as { error?: string; detail?: string };
+            onErrorRef.current(body.error ?? body.detail ?? "Google sign-in failed. Please try again.");
           }
         } catch {
           onErrorRef.current("Google sign-in failed. Please check your connection.");
