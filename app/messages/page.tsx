@@ -667,12 +667,12 @@ function MessagesPageInner() {
   const handleDraftConversationCreated = (conv: Conversation) => {
     console.log("[MSG] Draft -> real conversation:", conv.id);
     setDraftTarget(null);
+    setFetchError(false);
     setSelected(conv);
     setConversations((prev) => {
       const exists = prev.some((c) => c.id === conv.id);
       return exists ? prev : [conv, ...prev];
     });
-    // Re-fetch to get properly serialized data
     fetchConversations();
   };
 
@@ -710,7 +710,7 @@ function MessagesPageInner() {
           <p className="text-sm text-slate-500 mt-0.5">{t("messages.subtitle")}</p>
         </div>
 
-        {fetchError ? (
+        {fetchError && !draftTarget ? (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 text-center">
             <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-3" />
             <p className="text-slate-500 mb-4">{t("messages.loadError")}</p>
