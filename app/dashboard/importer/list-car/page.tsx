@@ -267,14 +267,16 @@ export default function ListCarPage() {
     setIsSubmitting(true);
     try {
       // Build payload
+      const title = `${form.year} ${form.make} ${form.model}${form.trim ? ` ${form.trim}` : ""}`;
       const payload: Record<string, unknown> = {
+        title,
         make:           form.make,
         model:          form.model,
         year:           parseInt(form.year),
-        trim:           form.trim || undefined,
         body_type:      form.body_type || undefined,
         color:          form.color || undefined,
         mileage:        parseInt(form.mileage),
+        city:           "Riyadh", // default; importer can edit later
         vin:            form.vin || undefined,
         fuel_type:      form.fuel_type || undefined,
         transmission:   form.transmission || undefined,
@@ -287,18 +289,16 @@ export default function ListCarPage() {
         source_price:   form.source_price ? parseFloat(form.source_price) : undefined,
         source_currency:form.source_currency || undefined,
         // Costs
-        shipping_cost:   form.shipping_cost   ? parseFloat(form.shipping_cost)   : undefined,
-        customs_duty:    form.customs_duty     ? parseFloat(form.customs_duty)    : undefined,
-        vat_amount:      form.vat_amount       ? parseFloat(form.vat_amount)      : undefined,
-        inspection_fee:  form.inspection_fee   ? parseFloat(form.inspection_fee)  : undefined,
-        agent_fees:      form.agent_fees       ? parseFloat(form.agent_fees)      : undefined,
-        other_fees:      form.other_fees       ? parseFloat(form.other_fees)      : undefined,
-        final_price_sar: form.final_price_sar  ? parseFloat(form.final_price_sar) : undefined,
+        shipping_cost:       form.shipping_cost   ? parseFloat(form.shipping_cost)   : undefined,
+        customs_duty_amount: form.customs_duty     ? parseFloat(form.customs_duty)    : undefined,
+        vat_amount:          form.vat_amount       ? parseFloat(form.vat_amount)      : undefined,
+        inspection_fee:      form.inspection_fee   ? parseFloat(form.inspection_fee)  : undefined,
+        final_price_sar:     form.final_price_sar  ? parseFloat(form.final_price_sar) : undefined,
         // Shipping
-        import_status:           form.import_status || undefined,
+        import_status:           form.import_status || "available",
         vessel_name:             form.vessel_name || undefined,
-        shipping_company:        form.shipping_line || undefined,
-        bill_of_lading:          form.bill_of_lading || undefined,
+        shipping_line:           form.shipping_line || undefined,
+        bill_of_lading_number:   form.bill_of_lading || undefined,
         port_of_origin:          form.port_of_origin || undefined,
         port_of_entry:           form.port_of_entry || undefined,
         estimated_arrival_date:  form.estimated_arrival_date || undefined,
@@ -306,7 +306,7 @@ export default function ListCarPage() {
         spec_origin:             form.spec_origin || undefined,
         // History
         has_salvage_title:       form.has_salvage_title,
-        odometer_rollback:       false,
+        odometer_verified:       false,
         accident_history:        form.accident_history,
         warranty_remaining:      form.warranty_remaining,
         service_history:         form.service_history,
@@ -317,7 +317,7 @@ export default function ListCarPage() {
         condition:               "used",
       };
 
-      const newListing = await api.post<{ id: number }>("/api/imported-cars/", payload);
+      const newListing = await api.post<{ id: number }>("/api/listings/", payload);
 
       // Upload photos if any
       if (photos.length > 0) {
@@ -328,7 +328,7 @@ export default function ListCarPage() {
           fd.append("order", i.toString());
           try {
             await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/imported-cars/${newListing.id}/images/`,
+              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/listings/${newListing.id}/images/`,
               {
                 method: "POST",
                 credentials: "include",
@@ -341,8 +341,33 @@ export default function ListCarPage() {
 
       showToast("success", "Car listed successfully!");
       router.push(`/car/${newListing.id}`);
-    } catch {
-      showToast("error", "Failed to list car. Please check all required fields.");
+    } catch (err: unknown) {
+      // Surface real field errors from the backend
+      const raw = err instanceof Error ? err.message : String(err);
+      try {
+        const body = JSON.parse(raw) as Record<string, string | string[]>;
+        const fieldErrors: Record<string, string> = {};
+        for (const [k, v] of Object.entries(body)) {
+          if (k === "language") continue;
+          fieldErrors[k] = Array.isArray(v) ? v[0] : String(v);
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors);
+          // Navigate to the first tab with an error
+          const tab1Fields = ["make", "model", "year", "mileage", "vin", "body_type", "color", "title", "city"];
+          const tab2Fields = ["source_country", "source_city", "auction_source", "source_price", "source_currency"];
+          const tab3Fields = ["shipping_cost", "customs_duty_amount", "vat_amount", "inspection_fee", "final_price_sar", "price"];
+          const errorKeys = Object.keys(fieldErrors);
+          if (errorKeys.some(k => tab1Fields.includes(k))) setActiveTab(1);
+          else if (errorKeys.some(k => tab2Fields.includes(k))) setActiveTab(2);
+          else if (errorKeys.some(k => tab3Fields.includes(k))) setActiveTab(3);
+          showToast("error", "Please fix the highlighted fields.");
+        } else {
+          showToast("error", "Failed to list car. Please check all required fields.");
+        }
+      } catch {
+        showToast("error", "Failed to list car. Please check all required fields.");
+      }
     } finally {
       setIsSubmitting(false);
     }
