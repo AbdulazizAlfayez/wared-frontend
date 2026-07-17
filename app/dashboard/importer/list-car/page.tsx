@@ -205,8 +205,25 @@ export default function ListCarPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const set = (key: keyof FormData) => (val: string | boolean) =>
+  const set = (key: keyof FormData) => (val: string | boolean) => {
     setForm(prev => ({ ...prev, [key]: val }));
+    // Clear error for this field when the user edits it
+    if (errors[key]) setErrors(prev => { const n = { ...prev }; delete n[key]; return n; });
+  };
+
+  // URL validation on blur
+  const validateUrl = (key: keyof FormData) => () => {
+    const val = form[key];
+    if (typeof val === "string" && val.trim() && !/^https?:\/\//i.test(val.trim())) {
+      setErrors(prev => ({ ...prev, [key]: "Enter a valid URL starting with https://" }));
+    }
+  };
+
+  // Helper: get error-aware input class
+  const inputCls = (key: keyof FormData) => `${INPUT} ${errors[key] ? "border-red-400 ring-1 ring-red-200" : ""}`;
+
+  // Helper: render field error message
+  const fieldError = (key: keyof FormData) => errors[key] ? <p className="text-red-500 text-xs mt-1">{errors[key]}</p> : null;
 
   // Auto-calculate total landed cost
   const calcLanded = () => {
@@ -382,44 +399,51 @@ export default function ListCarPage() {
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label="Make *">
-              <input className={`${INPUT} ${errors.make ? "border-red-400" : ""}`} value={form.make}
+              <input className={inputCls("make")} value={form.make}
                 onChange={e => set("make")(e.target.value)} placeholder="e.g. Toyota" />
-              {errors.make && <p className="text-red-500 text-xs mt-1">{errors.make}</p>}
+              {fieldError("make")}
             </Field>
             <Field label="Model *">
-              <input className={`${INPUT} ${errors.model ? "border-red-400" : ""}`} value={form.model}
+              <input className={inputCls("model")} value={form.model}
                 onChange={e => set("model")(e.target.value)} placeholder="e.g. Camry" />
-              {errors.model && <p className="text-red-500 text-xs mt-1">{errors.model}</p>}
+              {fieldError("model")}
             </Field>
             <Field label="Year *">
-              <input type="number" className={`${INPUT} ${errors.year ? "border-red-400" : ""}`} value={form.year}
+              <input type="number" className={inputCls("year")} value={form.year}
                 onChange={e => set("year")(e.target.value)} placeholder="e.g. 2022" min="1990" max={new Date().getFullYear() + 1} />
-              {errors.year && <p className="text-red-500 text-xs mt-1">{errors.year}</p>}
+              {fieldError("year")}
             </Field>
             <Field label="Trim / Variant">
-              <input className={INPUT} value={form.trim} onChange={e => set("trim")(e.target.value)} placeholder="e.g. XLE, Sport" />
+              <input className={inputCls("trim")} value={form.trim} onChange={e => set("trim")(e.target.value)} placeholder="e.g. XLE, Sport" />
+              {fieldError("trim")}
             </Field>
             <Field label="Body Type">
               <Select value={form.body_type} onChange={set("body_type")} options={BODY_TYPES} placeholder="Select body type" />
+              {fieldError("body_type")}
             </Field>
             <Field label="Color">
-              <input className={INPUT} value={form.color} onChange={e => set("color")(e.target.value)} placeholder="e.g. Pearl White" />
+              <input className={inputCls("color")} value={form.color} onChange={e => set("color")(e.target.value)} placeholder="e.g. Pearl White" />
+              {fieldError("color")}
             </Field>
             <Field label="Mileage (km) *">
               <NumberInput value={form.mileage} onChange={set("mileage")} placeholder="e.g. 45000" />
-              {errors.mileage && <p className="text-red-500 text-xs mt-1">{errors.mileage}</p>}
+              {fieldError("mileage")}
             </Field>
             <Field label="VIN" hint="17-character Vehicle Identification Number">
-              <input className={INPUT} value={form.vin} onChange={e => set("vin")(e.target.value)} placeholder="1HGCM82633A004352" maxLength={17} />
+              <input className={inputCls("vin")} value={form.vin} onChange={e => set("vin")(e.target.value)} placeholder="1HGCM82633A004352" maxLength={17} />
+              {fieldError("vin")}
             </Field>
             <Field label="Fuel Type">
               <Select value={form.fuel_type} onChange={set("fuel_type")} options={FUEL_TYPES} placeholder="Select fuel type" />
+              {fieldError("fuel_type")}
             </Field>
             <Field label="Transmission">
               <Select value={form.transmission} onChange={set("transmission")} options={TRANSMISSIONS} placeholder="Select transmission" />
+              {fieldError("transmission")}
             </Field>
             <Field label="Engine Size">
-              <input className={INPUT} value={form.engine_size} onChange={e => set("engine_size")(e.target.value)} placeholder="e.g. 2.5L" />
+              <input className={inputCls("engine_size")} value={form.engine_size} onChange={e => set("engine_size")(e.target.value)} placeholder="e.g. 2.5L" />
+              {fieldError("engine_size")}
             </Field>
           </div>
         );
@@ -429,31 +453,38 @@ export default function ListCarPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label="Source Country *">
               <Select value={form.source_country} onChange={set("source_country")} options={SOURCE_COUNTRIES} placeholder="Select country" />
-              {errors.source_country && <p className="text-red-500 text-xs mt-1">{errors.source_country}</p>}
+              {fieldError("source_country")}
             </Field>
             <Field label="Source City">
-              <input className={INPUT} value={form.source_city} onChange={e => set("source_city")(e.target.value)} placeholder="e.g. Los Angeles, CA" />
+              <input className={inputCls("source_city")} value={form.source_city} onChange={e => set("source_city")(e.target.value)} placeholder="e.g. Los Angeles, CA" />
+              {fieldError("source_city")}
             </Field>
             <Field label="Auction Source">
               <Select value={form.auction_source} onChange={set("auction_source")}
                 options={AUCTION_SOURCES.map(a => ({ value: a.toLowerCase().replace(/\s/g,"_"), label: a }))}
                 placeholder="Select auction" />
+              {fieldError("auction_source")}
             </Field>
             <Field label="Auction Lot Number">
-              <input className={INPUT} value={form.auction_lot} onChange={e => set("auction_lot")(e.target.value)} placeholder="e.g. 12345678" />
+              <input className={inputCls("auction_lot")} value={form.auction_lot} onChange={e => set("auction_lot")(e.target.value)} placeholder="e.g. 12345678" />
+              {fieldError("auction_lot")}
             </Field>
             <Field label="Source Price *">
               <NumberInput value={form.source_price} onChange={set("source_price")} placeholder="e.g. 8500" />
-              {errors.source_price && <p className="text-red-500 text-xs mt-1">{errors.source_price}</p>}
+              {fieldError("source_price")}
             </Field>
             <Field label="Source Currency">
               <Select value={form.source_currency} onChange={set("source_currency")}
                 options={CURRENCIES.map(c => ({ value: c, label: c }))} />
+              {fieldError("source_currency")}
             </Field>
             <div className="sm:col-span-2">
               <Field label="Original Auction Listing URL">
-                <input className={INPUT} value={form.original_listing_url} onChange={e => set("original_listing_url")(e.target.value)}
+                <input className={inputCls("original_listing_url")} value={form.original_listing_url}
+                  onChange={e => set("original_listing_url")(e.target.value)}
+                  onBlur={validateUrl("original_listing_url")}
                   placeholder="https://www.copart.com/lot/..." type="url" />
+                {fieldError("original_listing_url")}
               </Field>
             </div>
           </div>
@@ -502,7 +533,7 @@ export default function ListCarPage() {
             <div className="sm:col-span-2">
               <Field label="Final Asking Price (SAR) *">
                 <NumberInput value={form.final_price_sar} onChange={set("final_price_sar")} placeholder="Total price buyer pays" prefix="SAR" />
-                {errors.final_price_sar && <p className="text-red-500 text-xs mt-1">{errors.final_price_sar}</p>}
+                {fieldError("final_price_sar")}
               </Field>
             </div>
           </div>
@@ -550,10 +581,18 @@ export default function ListCarPage() {
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label="Carfax Report URL">
-              <input className={INPUT} value={form.carfax_url} onChange={e => set("carfax_url")(e.target.value)} placeholder="https://www.carfax.com/..." type="url" />
+              <input className={inputCls("carfax_url")} value={form.carfax_url}
+                onChange={e => set("carfax_url")(e.target.value)}
+                onBlur={validateUrl("carfax_url")}
+                placeholder="https://www.carfax.com/..." type="url" />
+              {fieldError("carfax_url")}
             </Field>
             <Field label="AutoCheck Report URL">
-              <input className={INPUT} value={form.autocheck_url} onChange={e => set("autocheck_url")(e.target.value)} placeholder="https://www.autocheck.com/..." type="url" />
+              <input className={inputCls("autocheck_url")} value={form.autocheck_url}
+                onChange={e => set("autocheck_url")(e.target.value)}
+                onBlur={validateUrl("autocheck_url")}
+                placeholder="https://www.autocheck.com/..." type="url" />
+              {fieldError("autocheck_url")}
             </Field>
             <div className="sm:col-span-2">
               <p className="text-sm font-semibold text-slate-700 mb-3">Vehicle Condition Flags</p>
@@ -661,6 +700,17 @@ export default function ListCarPage() {
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const done = activeTab > tab.id;
+          // Check if any error belongs to this tab
+          const tabFieldMap: Record<number, string[]> = {
+            1: ["make","model","year","mileage","vin","body_type","color","title","city","trim","fuel_type","transmission","engine_size"],
+            2: ["source_country","source_city","auction_source","auction_lot","source_price","source_currency","original_listing_url"],
+            3: ["shipping_cost","customs_duty_amount","vat_amount","inspection_fee","final_price_sar","price","transportation_cost"],
+            4: ["import_status","spec_origin","port_of_origin","port_of_entry","shipping_line","vessel_name","bill_of_lading_number","estimated_arrival_date"],
+            5: ["carfax_url","autocheck_url","has_salvage_title","damage_description"],
+            6: [],
+          };
+          const errorKeys = Object.keys(errors);
+          const hasError = (tabFieldMap[tab.id] ?? []).some(f => errorKeys.includes(f));
           return (
             <button
               key={tab.id}
@@ -668,12 +718,14 @@ export default function ListCarPage() {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium flex-shrink-0 transition-colors ${
                 activeTab === tab.id
                   ? "bg-accent text-white shadow-sm"
+                  : hasError
+                  ? "bg-red-50 text-red-600"
                   : done
                   ? "bg-green-50 text-green-700"
                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
               }`}
             >
-              {done ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+              {hasError ? <AlertCircle className="w-4 h-4" /> : done ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
               <span className="hidden sm:inline">{tab.label}</span>
               <span className="sm:hidden">{tab.id}</span>
             </button>
