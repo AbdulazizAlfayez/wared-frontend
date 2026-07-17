@@ -1103,5 +1103,30 @@
     "japanese": "Japanese Specs",
     "korean": "Korean Specs",
     "other": "Other"
+  },
+  "orders": {
+    "pageTitle": "My Orders",
+    "pageSubtitle": "Track your car reservations and orders",
+    "noOrders": "No orders yet",
+    "noOrdersMessage": "When you reserve an imported car, it will appear here.",
+    "browseNow": "Browse Imported Cars",
+    "all": "All",
+    "active": "Active",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "progress": "Progress",
+    "eta": "ETA: {date}",
+    "noActiveOrders": "No {tab} orders",
+    "noTabMessage": "You don't have any {tab} orders."
+  },
+  "reservation": {
+    "pendingReservations": "Pending Reservations",
+    "awaitingApproval": "Awaiting importer approval",
+    "feePaid": "SAR 99 reservation fee paid",
+    "cancelledByBuyer": "Cancelled by you",
+    "cancelledByImporter": "Cancelled by importer",
+    "convertedToOrder": "Converted to order",
+    "expired": "Reservation expired",
+    "pendingPayment": "Payment pending"
   }
 }

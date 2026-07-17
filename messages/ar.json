@@ -1103,5 +1103,30 @@
     "japanese": "مواصفات يابانية",
     "korean": "مواصفات كورية",
     "other": "أخرى"
+  },
+  "orders": {
+    "pageTitle": "طلباتي",
+    "pageSubtitle": "تابع حجوزاتك وطلباتك",
+    "noOrders": "ما في طلبات بعد",
+    "noOrdersMessage": "لمّا تحجز سيارة مستوردة، بتظهر هنا.",
+    "browseNow": "تصفّح السيارات المستوردة",
+    "all": "الكل",
+    "active": "نشطة",
+    "completed": "مكتملة",
+    "cancelled": "ملغية",
+    "progress": "التقدم",
+    "eta": "الوصول المتوقع: {date}",
+    "noActiveOrders": "ما في طلبات {tab}",
+    "noTabMessage": "ما عندك طلبات {tab}."
+  },
+  "reservation": {
+    "pendingReservations": "حجوزات بانتظار الموافقة",
+    "awaitingApproval": "بانتظار موافقة المستورد",
+    "feePaid": "تم دفع رسوم الحجز 99 ريال",
+    "cancelledByBuyer": "ملغي من طرفك",
+    "cancelledByImporter": "ملغي من المستورد",
+    "convertedToOrder": "تم تحويله لطلب",
+    "expired": "انتهت صلاحية الحجز",
+    "pendingPayment": "بانتظار الدفع"
   }
 }
