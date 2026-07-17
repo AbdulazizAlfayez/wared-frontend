@@ -25,45 +25,88 @@ const TABS = [
   { id: 6, label: "Photos",        icon: Camera },
 ] as const;
 
+// Values MUST match backend model choice slugs exactly (lowercase).
 const SOURCE_COUNTRIES = [
-  { value: "usa",     label: "🇺🇸 United States" },
-  { value: "japan",   label: "🇯🇵 Japan" },
-  { value: "korea",   label: "🇰🇷 South Korea" },
-  { value: "uae",     label: "🇦🇪 UAE" },
-  { value: "germany", label: "🇩🇪 Germany" },
-  { value: "canada",  label: "🇨🇦 Canada" },
-  { value: "uk",      label: "🇬🇧 United Kingdom" },
-  { value: "europe",  label: "🇪🇺 Europe" },
+  { value: "usa",    label: "🇺🇸 United States" },
+  { value: "japan",  label: "🇯🇵 Japan" },
+  { value: "korea",  label: "🇰🇷 South Korea" },
+  { value: "uae",    label: "🇦🇪 UAE" },
+  { value: "europe", label: "🇪🇺 Europe" },
+  { value: "canada", label: "🇨🇦 Canada" },
+  { value: "qatar",  label: "🇶🇦 Qatar" },
+  { value: "other",  label: "🌐 Other" },
 ];
 
-const AUCTION_SOURCES = ["Copart", "IAAI", "USS Japan", "Manheim", "TAA Japan", "JU Group", "Private", "Other"];
+const AUCTION_SOURCES = [
+  { value: "copart",    label: "Copart" },
+  { value: "iaai",      label: "IAAI" },
+  { value: "uss_japan", label: "USS Japan" },
+  { value: "manheim",   label: "Manheim" },
+  { value: "private",   label: "Private Sale" },
+  { value: "dealer",    label: "Dealer" },
+  { value: "other",     label: "Other" },
+];
 
-const PORTS_OF_ENTRY = ["Dammam", "Jeddah", "Jubail", "Yanbu", "Jizan", "Riyadh (Dry Port)"];
+const PORTS_OF_ENTRY = [
+  { value: "jeddah_islamic_port",          label: "Jeddah Islamic Port" },
+  { value: "king_abdulaziz_port_dammam",   label: "King Abdulaziz Port (Dammam)" },
+  { value: "jubail_port",                  label: "Jubail Commercial Port" },
+];
 
-const CURRENCIES = ["USD", "JPY", "AED", "KRW", "EUR", "CAD", "GBP"];
+const CURRENCIES = [
+  { value: "usd", label: "USD" },
+  { value: "jpy", label: "JPY" },
+  { value: "aed", label: "AED" },
+  { value: "krw", label: "KRW" },
+  { value: "eur", label: "EUR" },
+  { value: "cad", label: "CAD" },
+  { value: "gbp", label: "GBP" },
+  { value: "qar", label: "QAR" },
+];
 
-const BODY_TYPES = ["Sedan", "SUV", "Coupe", "Hatchback", "Pickup", "Van", "Wagon", "Convertible", "Other"];
+const BODY_TYPES = [
+  { value: "sedan",       label: "Sedan" },
+  { value: "suv",         label: "SUV" },
+  { value: "coupe",       label: "Coupe" },
+  { value: "hatchback",   label: "Hatchback" },
+  { value: "pickup",      label: "Pickup" },
+  { value: "van",         label: "Van" },
+  { value: "wagon",       label: "Wagon" },
+  { value: "convertible", label: "Convertible" },
+  { value: "other",       label: "Other" },
+];
 
-const FUEL_TYPES = ["Gasoline", "Diesel", "Hybrid", "Electric", "Plug-in Hybrid"];
+const FUEL_TYPES = [
+  { value: "petrol",   label: "Petrol / Gasoline" },
+  { value: "diesel",   label: "Diesel" },
+  { value: "hybrid",   label: "Hybrid" },
+  { value: "electric", label: "Electric" },
+];
 
-const TRANSMISSIONS = ["Automatic", "Manual", "CVT", "Semi-Automatic"];
+const TRANSMISSIONS = [
+  { value: "automatic", label: "Automatic" },
+  { value: "manual",    label: "Manual" },
+  { value: "cvt",       label: "CVT" },
+];
 
 const SPEC_ORIGINS = [
   { value: "gcc",      label: "GCC Specs" },
-  { value: "american", label: "US Specs" },
+  { value: "american", label: "US / American Specs" },
   { value: "japanese", label: "Japan Specs" },
   { value: "european", label: "European Specs" },
   { value: "korean",   label: "Korean Specs" },
-  { value: "other",    label: "Other" },
 ];
 
 const IMPORT_STATUSES = [
-  { value: "available",         label: "Available" },
-  { value: "arriving",          label: "Arriving Soon" },
-  { value: "in_transit",        label: "In Transit" },
-  { value: "at_port",           label: "At Port" },
-  { value: "customs_clearance", label: "Customs Clearance" },
-  { value: "delivered",         label: "Delivered" },
+  { value: "available",          label: "Available" },
+  { value: "sourcing",           label: "Sourcing" },
+  { value: "purchased",          label: "Purchased" },
+  { value: "shipping",           label: "Shipping" },
+  { value: "at_port",            label: "At Port" },
+  { value: "in_customs",         label: "In Customs" },
+  { value: "customs_cleared",    label: "Customs Cleared" },
+  { value: "inspection",         label: "Inspection" },
+  { value: "ready_for_delivery", label: "Ready for Delivery" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -174,7 +217,7 @@ const INITIAL: FormData = {
   make:"", model:"", year:"", trim:"", body_type:"", color:"", mileage:"", vin:"",
   fuel_type:"", transmission:"", engine_size:"",
   source_country:"", source_city:"", auction_source:"", auction_lot:"",
-  original_listing_url:"", source_price:"", source_currency:"USD",
+  original_listing_url:"", source_price:"", source_currency:"usd",
   shipping_cost:"", customs_duty:"", vat_amount:"", inspection_fee:"",
   transportation_cost:"", agent_fees:"", other_fees:"", profit_margin:"",
   final_price_sar:"",
@@ -461,7 +504,7 @@ export default function ListCarPage() {
             </Field>
             <Field label="Auction Source">
               <Select value={form.auction_source} onChange={set("auction_source")}
-                options={AUCTION_SOURCES.map(a => ({ value: a.toLowerCase().replace(/\s/g,"_"), label: a }))}
+                options={AUCTION_SOURCES}
                 placeholder="Select auction" />
               {fieldError("auction_source")}
             </Field>
@@ -475,7 +518,7 @@ export default function ListCarPage() {
             </Field>
             <Field label="Source Currency">
               <Select value={form.source_currency} onChange={set("source_currency")}
-                options={CURRENCIES.map(c => ({ value: c, label: c }))} />
+                options={CURRENCIES} />
               {fieldError("source_currency")}
             </Field>
             <div className="sm:col-span-2">
@@ -553,7 +596,7 @@ export default function ListCarPage() {
               <input className={INPUT} value={form.port_of_origin} onChange={e => set("port_of_origin")(e.target.value)} placeholder="e.g. Los Angeles" />
             </Field>
             <Field label="Port of Entry">
-              <Select value={form.port_of_entry} onChange={set("port_of_entry")} options={PORTS_OF_ENTRY.map(p => ({ value: p.toLowerCase().replace(/\s/g,"_"), label: p }))} placeholder="Select port" />
+              <Select value={form.port_of_entry} onChange={set("port_of_entry")} options={PORTS_OF_ENTRY} placeholder="Select port" />
             </Field>
             <Field label="Shipping Company">
               <input className={INPUT} value={form.shipping_line} onChange={e => set("shipping_line")(e.target.value)} placeholder="e.g. WALLENIUS" />
