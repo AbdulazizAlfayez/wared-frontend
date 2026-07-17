@@ -369,12 +369,17 @@ export default function MyOrdersPage() {
   const allOrders: Order[] = Array.isArray(ordersData) ? ordersData : (ordersData?.results ?? []);
   const allReservations: BuyerReservation[] = Array.isArray(resData) ? resData : (resData?.results ?? []);
 
-  // Filter out reservations that have been converted to orders (avoid duplicates)
-  const pendingReservations = allReservations.filter(r => PENDING_RES_STATUSES.has(r.status));
-  const terminalReservations = allReservations.filter(r => TERMINAL_RES_STATUSES.has(r.status));
+  // Exclude converted_to_order (those appear as orders), show everything else
+  const visibleReservations = allReservations.filter(r => r.status !== "converted_to_order");
+  const pendingReservations = visibleReservations.filter(r => PENDING_RES_STATUSES.has(r.status));
+  const terminalReservations = visibleReservations.filter(r => TERMINAL_RES_STATUSES.has(r.status));
+  // Catch-all: any status not in pending or terminal sets (defensive — never hide a paid reservation)
+  const otherReservations = visibleReservations.filter(
+    r => !PENDING_RES_STATUSES.has(r.status) && !TERMINAL_RES_STATUSES.has(r.status)
+  );
 
   const filteredOrders = filterOrders(allOrders, activeTab);
-  const totalItems = allOrders.length + pendingReservations.length + terminalReservations.length;
+  const totalItems = allOrders.length + visibleReservations.length;
 
   // Show reservations in the appropriate tab
   const showPendingRes = activeTab === "all" || activeTab === "active";
@@ -382,12 +387,12 @@ export default function MyOrdersPage() {
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all",       label: t("orders.all"),       count: totalItems },
-    { key: "active",    label: t("orders.active"),    count: allOrders.filter(o => ACTIVE_STATUSES.has(o.status)).length + pendingReservations.length },
+    { key: "active",    label: t("orders.active"),    count: allOrders.filter(o => ACTIVE_STATUSES.has(o.status)).length + pendingReservations.length + otherReservations.length },
     { key: "completed", label: t("orders.completed"), count: allOrders.filter(o => COMPLETED_STATUSES.has(o.status)).length },
     { key: "cancelled", label: t("orders.cancelled"), count: allOrders.filter(o => CANCELLED_STATUSES.has(o.status)).length + terminalReservations.length },
   ];
 
-  const hasVisibleContent = (showPendingRes && pendingReservations.length > 0)
+  const hasVisibleContent = (showPendingRes && (pendingReservations.length > 0 || otherReservations.length > 0))
     || filteredOrders.length > 0
     || (showTerminalRes && terminalReservations.length > 0);
 
@@ -449,13 +454,13 @@ export default function MyOrdersPage() {
         ) : (
           <div className="space-y-4">
             {/* Pending reservations — shown at the top */}
-            {showPendingRes && pendingReservations.length > 0 && (
+            {showPendingRes && (pendingReservations.length > 0 || otherReservations.length > 0) && (
               <>
                 <h3 className="text-sm font-bold text-amber-700 uppercase tracking-wider flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   {t("reservation.pendingReservations")}
                 </h3>
-                {pendingReservations.map((res) => (
+                {[...pendingReservations, ...otherReservations].map((res) => (
                   <ReservationCard key={`res-${res.id}`} res={res} t={t} />
                 ))}
               </>
