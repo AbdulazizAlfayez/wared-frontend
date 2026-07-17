@@ -90,6 +90,7 @@ function ConvList({
   conversations,
   selectedId,
   isDraft,
+  draftTarget,
   onSelect,
   search,
   onSearchChange,
@@ -97,6 +98,7 @@ function ConvList({
   conversations: Conversation[];
   selectedId: number | null;
   isDraft: boolean;
+  draftTarget: DraftTarget | null;
   onSelect: (c: Conversation) => void;
   search: string;
   onSearchChange: (v: string) => void;
@@ -123,6 +125,16 @@ function ConvList({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
+        {/* Draft entry at the top when active */}
+        {isDraft && draftTarget && (
+          <div className="w-full text-left px-4 py-3 border-b border-slate-50 bg-accent/5 border-l-2 border-l-accent flex items-start gap-3">
+            <Avatar name={draftTarget.importerName} size="md" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900 truncate">{draftTarget.importerName}</p>
+              <p className="text-xs text-accent mt-0.5">{t("messages.newConversation")}</p>
+            </div>
+          </div>
+        )}
         {filtered.length === 0 && !isDraft ? (
           <div className="py-12 text-center text-slate-400 text-sm px-4">
             {search ? t("messages.noSearchMatch") : t("messages.noConversations")}
@@ -738,6 +750,7 @@ function MessagesPageInner() {
                   conversations={conversations}
                   selectedId={selected?.id ?? null}
                   isDraft={!!draftTarget}
+                  draftTarget={draftTarget}
                   onSelect={handleSelect}
                   search={search}
                   onSearchChange={setSearch}
