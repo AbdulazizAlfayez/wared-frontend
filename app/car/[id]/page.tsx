@@ -513,6 +513,7 @@ function CostBreakdownCard({ listing }: { listing: ImportedListing }) {
 }
 
 function SourceInfoCard({ listing }: { listing: ImportedListing }) {
+  const { t } = useTranslation();
   const country = listing.source_country?.toLowerCase() ?? "";
   const flag = COUNTRY_FLAGS[country] ?? "🌍";
   const countryName = listing.source_country_display ?? COUNTRY_NAMES[country] ?? capitalize(listing.source_country ?? "");
@@ -570,8 +571,8 @@ function SourceInfoCard({ listing }: { listing: ImportedListing }) {
           )}
           {listing.port_of_entry && (
             <div>
-              <div className="text-xs text-slate-400">Port of Entry</div>
-              <div className="text-sm font-medium text-slate-700">{listing.port_of_entry}</div>
+              <div className="text-xs text-slate-400">{t("carDetail.portOfEntry")}</div>
+              <div className="text-sm font-medium text-slate-700">{t(`ports.${listing.port_of_entry}`)}</div>
             </div>
           )}
           {listing.shipping_company && (
@@ -957,7 +958,7 @@ export default function CarDetailPage() {
           className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Browse</span>
+          <span>{t("carDetail.backToBrowse")}</span>
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1206,16 +1207,16 @@ export default function CarDetailPage() {
                 </div>
                 <div className="px-5 pb-2 divide-y divide-slate-50">
                   <div className="grid grid-cols-1 sm:grid-cols-2">
-                    {listing.body_type && <SpecRow icon={Car} label="Body Type" value={capitalize(listing.body_type)} dir={dir} />}
-                    {listing.drive_type && <SpecRow icon={Navigation2} label="Drive Type" value={listing.drive_type.toUpperCase()} dir={dir} />}
-                    {listing.engine_size && <SpecRow icon={Zap} label="Engine Size" value={listing.engine_size} dir={dir} />}
-                    {listing.horsepower != null && <SpecRow icon={Zap} label="Horsepower" value={`${listing.horsepower} hp`} dir={dir} />}
-                    {listing.cylinders != null && <SpecRow icon={Settings} label="Cylinders" value={listing.cylinders} dir={dir} />}
-                    {listing.seats != null && <SpecRow icon={Users} label="Seats" value={listing.seats} dir={dir} />}
-                    {listing.doors != null && <SpecRow icon={Car} label="Doors" value={listing.doors} dir={dir} />}
+                    {listing.body_type && <SpecRow icon={Car} label={t("carDetail.bodyType")} value={capitalize(listing.body_type)} dir={dir} />}
+                    {listing.drive_type && <SpecRow icon={Navigation2} label={t("carDetail.driveType")} value={listing.drive_type.toUpperCase()} dir={dir} />}
+                    {listing.engine_size && <SpecRow icon={Zap} label={t("carDetail.engineSize")} value={listing.engine_size} dir={dir} />}
+                    {listing.horsepower != null && <SpecRow icon={Zap} label={t("carDetail.horsepower")} value={`${listing.horsepower} hp`} dir={dir} />}
+                    {listing.cylinders != null && <SpecRow icon={Settings} label={t("carDetail.cylinders")} value={listing.cylinders} dir={dir} />}
+                    {listing.seats != null && <SpecRow icon={Users} label={t("carDetail.seats")} value={listing.seats} dir={dir} />}
+                    {listing.doors != null && <SpecRow icon={Car} label={t("carDetail.doors")} value={listing.doors} dir={dir} />}
                     {listing.color_interior && <SpecRow icon={Palette} label="Interior Color" value={capitalize(listing.color_interior)} dir={dir} />}
                     {listing.vin && <SpecRow icon={Hash} label="VIN" value={maskVin(listing.vin)} dir={dir} />}
-                    {listing.condition && <SpecRow icon={CheckCircle} label="Condition" value={capitalize(listing.condition)} dir={dir} />}
+                    {listing.condition && <SpecRow icon={CheckCircle} label={t("carDetail.condition")} value={capitalize(listing.condition)} dir={dir} />}
                   </div>
                 </div>
               </div>
@@ -1246,7 +1247,7 @@ export default function CarDetailPage() {
 
             {/* Importer Info */}
             <div className="bg-white rounded-xl p-5 border border-slate-100">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">Importer Info</h2>
+              <h2 className="text-base font-semibold text-slate-900 mb-4">{t("carDetail.importerInfo")}</h2>
               {ownerProfile ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-4">
@@ -1299,7 +1300,7 @@ export default function CarDetailPage() {
                       href={`/importers/${ownerId}`}
                       className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-600 font-medium"
                     >
-                      View Importer Profile
+                      {t("carDetail.viewProfile")}
                       <ExternalLink className="w-3.5 h-3.5" />
                     </Link>
                   )}
@@ -1323,7 +1324,7 @@ export default function CarDetailPage() {
               <div className="bg-white rounded-xl p-5 border border-slate-100">
                 <ReviewsSection
                   endpoint={`/api/users/${ownerId}/reviews/`}
-                  title="Importer Reviews"
+                  title={t("carDetail.importerReviews")}
                   emptyMessage="This importer has no reviews yet."
                 />
               </div>
@@ -1437,14 +1438,14 @@ export default function CarDetailPage() {
                   }`}
                 >
                   <Heart className={`w-5 h-5 ${isFav ? "fill-current" : ""}`} />
-                  <span className="hidden sm:inline">{isFav ? "Saved" : "Save"}</span>
+                  <span className="hidden sm:inline">{isFav ? t("carDetail.saved") : t("carDetail.save")}</span>
                 </button>
                 <Link
                   href={isAuthenticated && ownerId ? `/messages?importer_user=${ownerId}&car_id=${listingId}` : "/auth/signin"}
                   className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
                 >
                   <MessageSquare className="w-5 h-5" />
-                  <span>مراسلة المستورد</span>
+                  <span>{t("carDetail.messageImporter")}</span>
                 </Link>
               </div>
 
@@ -1455,7 +1456,7 @@ export default function CarDetailPage() {
                   className="w-full flex items-center justify-center gap-2 py-2 text-sm text-slate-400 hover:text-red-500 transition-colors"
                 >
                   <Flag className="w-3.5 h-3.5" />
-                  Report this listing
+                  {t("carDetail.reportListing")}
                 </button>
               )}
             </div>
@@ -1472,7 +1473,7 @@ export default function CarDetailPage() {
           onClose={() => setShowReport(false)}
           onSuccess={() => {
             setShowReport(false);
-            showToast("success", "Report submitted. Our team will review it shortly.");
+            showToast("success", t("carDetail.reportSubmitted"));
           }}
         />
       )}
