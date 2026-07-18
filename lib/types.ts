@@ -299,6 +299,9 @@ export interface Order {
   updated_at: string;
   notes: string;
   can_cancel: boolean;
+  buyer_info?: { id: number; name: string; city?: string };
+  importer_info?: { id: number; name: string; business_name?: string };
+  buyer_notes?: string;
 }
 
 export interface OrderTimelineEvent {

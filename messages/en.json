@@ -1128,5 +1128,24 @@
     "convertedToOrder": "Converted to order",
     "expired": "Reservation expired",
     "pendingPayment": "Payment pending"
+  },
+  "orderDetail": {
+    "buyerCard": "Buyer",
+    "messageBuyer": "Message Buyer",
+    "updateStatus": "Update Status",
+    "selectStatus": "Select new status",
+    "update": "Update",
+    "statusUpdated": "Status updated successfully",
+    "statusUpdateFailed": "Failed to update status",
+    "uploadDocument": "Upload Document",
+    "selectFile": "Select file",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "documentUploaded": "Document uploaded",
+    "platformCommission": "Platform commission (1%)",
+    "yourEarnings": "Your Earnings",
+    "buyerNotes": "Buyer Notes",
+    "backToOrders": "Orders",
+    "importerOrders": "Orders"
   }
 }

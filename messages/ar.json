@@ -1128,5 +1128,24 @@
     "convertedToOrder": "تم تحويله لطلب",
     "expired": "انتهت صلاحية الحجز",
     "pendingPayment": "بانتظار الدفع"
+  },
+  "orderDetail": {
+    "buyerCard": "المشتري",
+    "messageBuyer": "مراسلة المشتري",
+    "updateStatus": "تحديث الحالة",
+    "selectStatus": "اختر الحالة الجديدة",
+    "update": "تحديث",
+    "statusUpdated": "تم تحديث الحالة بنجاح",
+    "statusUpdateFailed": "فشل تحديث الحالة",
+    "uploadDocument": "رفع مستند",
+    "selectFile": "اختر ملف",
+    "upload": "رفع",
+    "uploading": "جاري الرفع...",
+    "documentUploaded": "تم رفع المستند",
+    "platformCommission": "عمولة المنصة (1%)",
+    "yourEarnings": "أرباحك",
+    "buyerNotes": "ملاحظات المشتري",
+    "backToOrders": "الطلبات",
+    "importerOrders": "الطلبات"
   }
 }

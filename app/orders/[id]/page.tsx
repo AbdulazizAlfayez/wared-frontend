@@ -6,10 +6,11 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/use-api";
+import { useTranslation } from "@/lib/i18n";
 import type { Order, OrderTimelineEvent, OrderDocument } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import nextDynamic from "next/dynamic";
 import {
   ArrowLeft,
@@ -34,6 +35,7 @@ import {
   DollarSign,
   ExternalLink,
   ChevronRight,
+  Upload,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { getImageUrl } from "@/lib/utils";
@@ -293,12 +295,165 @@ function DocumentsSection({ orderId }: { orderId: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Valid status transitions (matches backend ImportOrder.VALID_TRANSITIONS)
+// ---------------------------------------------------------------------------
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  pending:            ["deposit_requested", "confirmed", "cancelled"],
+  deposit_requested:  ["deposit_paid", "cancelled"],
+  deposit_paid:       ["confirmed", "refunded"],
+  confirmed:          ["sourcing", "cancelled"],
+  sourcing:           ["purchased", "cancelled"],
+  purchased:          ["preparing_shipment"],
+  preparing_shipment: ["shipped"],
+  shipped:            ["arrived_port"],
+  arrived_port:       ["in_customs"],
+  in_customs:         ["customs_cleared"],
+  customs_cleared:    ["inspection"],
+  inspection:         ["ready"],
+  ready:              ["delivered"],
+  delivered:          ["completed"],
+};
+
+const STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  STATUS_STEPS.map(s => [s.key, s.label])
+);
+
+// ---------------------------------------------------------------------------
+// Importer: Status Update Panel
+// ---------------------------------------------------------------------------
+function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () => void }) {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [newStatus, setNewStatus] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const nextStatuses = VALID_TRANSITIONS[order.status] ?? [];
+  if (nextStatuses.length === 0) return null;
+
+  const handleUpdate = async () => {
+    if (!newStatus) return;
+    setIsUpdating(true);
+    try {
+      await api.patch(`/api/orders/${order.id}/update-status/`, { status: newStatus });
+      showToast("success", t("orderDetail.statusUpdated"));
+      setNewStatus("");
+      onUpdated();
+    } catch {
+      showToast("error", t("orderDetail.statusUpdateFailed"));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-accent/20 p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <Package className="w-4 h-4 text-accent" />
+        {t("orderDetail.updateStatus")}
+      </h2>
+      <select
+        value={newStatus}
+        onChange={e => setNewStatus(e.target.value)}
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-3"
+      >
+        <option value="">{t("orderDetail.selectStatus")}</option>
+        {nextStatuses.map(s => (
+          <option key={s} value={s}>{STATUS_LABELS[s] ?? s.replace(/_/g, " ")}</option>
+        ))}
+      </select>
+      <button
+        onClick={handleUpdate}
+        disabled={!newStatus || isUpdating}
+        className="w-full py-2.5 bg-accent hover:bg-accent-600 disabled:opacity-40 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+      >
+        {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+        {t("orderDetail.update")}
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Importer: Document Upload
+// ---------------------------------------------------------------------------
+function DocUploadSection({ orderId, onUploaded }: { orderId: string; onUploaded: () => void }) {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [title, setTitle] = useState("");
+  const [docType, setDocType] = useState("other");
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUpload = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file || !title.trim()) return;
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("title", title.trim());
+      fd.append("document_type", docType);
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/orders/${orderId}/documents/`,
+        { method: "POST", credentials: "include", body: fd }
+      );
+      showToast("success", t("orderDetail.documentUploaded"));
+      setTitle("");
+      setDocType("other");
+      if (fileRef.current) fileRef.current.value = "";
+      onUploaded();
+    } catch {
+      showToast("error", "Upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <Upload className="w-4 h-4 text-slate-400" />
+        {t("orderDetail.uploadDocument")}
+      </h2>
+      <div className="space-y-3">
+        <input
+          type="text" value={title} onChange={e => setTitle(e.target.value)}
+          placeholder="Document title"
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none"
+        />
+        <select value={docType} onChange={e => setDocType(e.target.value)}
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none"
+        >
+          <option value="invoice">Invoice</option>
+          <option value="bill_of_lading">Bill of Lading</option>
+          <option value="customs_declaration">Customs Declaration</option>
+          <option value="inspection_report">Inspection Report</option>
+          <option value="conformity_cert">Conformity Certificate</option>
+          <option value="delivery_receipt">Delivery Receipt</option>
+          <option value="other">Other</option>
+        </select>
+        <input ref={fileRef} type="file" className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200" />
+        <button
+          onClick={handleUpload}
+          disabled={isUploading || !title.trim()}
+          className="w-full py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+        >
+          {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          {isUploading ? t("orderDetail.uploading") : t("orderDetail.upload")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params.id as string;
-  const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
+  const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
 
   const { data: order, isLoading, refetch: refetchOrder } = useApiQuery<Order>(
@@ -365,6 +520,8 @@ export default function OrderDetailPage() {
     );
   }
 
+  const isImporter = user?.id === order.importer?.id;
+
   const listing = order.car;
   const countryFlag = COUNTRY_FLAGS[listing?.source_country?.toLowerCase() ?? ""] ?? "🌍";
   const statusColor = STATUS_COLORS[order.status] ?? "bg-slate-100 text-slate-600";
@@ -377,9 +534,12 @@ export default function OrderDetailPage() {
     <div className="min-h-screen bg-slate-50 pt-24 pb-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back */}
-        <Link href="/orders" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 text-sm">
+        <Link
+          href={isImporter ? "/dashboard/importer/orders" : "/orders"}
+          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 text-sm"
+        >
           <ArrowLeft className="w-4 h-4" />
-          My Orders
+          {isImporter ? t("orderDetail.importerOrders") : t("orderDetail.backToOrders")}
         </Link>
 
         {/* Header */}
@@ -476,143 +636,197 @@ export default function OrderDetailPage() {
             <DocumentsSection orderId={orderId} />
           </div>
 
-          {/* Right: Sidebar */}
+          {/* Right: Sidebar — role-aware */}
           <div className="space-y-4">
-            {/* Order Summary Card */}
-            <div className="bg-white rounded-2xl border border-slate-100 p-5">
-              <h2 className="text-sm font-semibold text-slate-700 mb-4">Order Summary</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Car Price</span>
-                  <span className="font-medium text-slate-800">{formatSAR(listing.final_price_sar ?? listing.price)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Reservation Fee</span>
-                  <span className="font-medium text-slate-800">{formatSAR(order.reservation_fee)}</span>
-                </div>
-                {order.total_price != null && (
-                  <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
-                    <span className="text-slate-700">Total</span>
-                    <span className="text-slate-900">{formatSAR(order.total_price)}</span>
-                  </div>
-                )}
-              </div>
 
-              {order.estimated_delivery_date && (
-                <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                  <div>
-                    <div className="text-xs text-slate-400">Estimated Delivery</div>
-                    <div className="font-medium text-slate-700">{formatDate(order.estimated_delivery_date)}</div>
-                  </div>
-                </div>
-              )}
-              {order.actual_delivery_date && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <div>
-                    <div className="text-xs">Delivered</div>
-                    <div className="font-medium">{formatDate(order.actual_delivery_date)}</div>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* ── IMPORTER VIEW ── */}
+            {isImporter ? (
+              <>
+                {/* Status Update — importer's main action */}
+                <StatusUpdatePanel order={order} onUpdated={refetchOrder} />
 
-            {/* Importer Card */}
-            {order.importer && (
-              <div className="bg-white rounded-2xl border border-slate-100 p-5">
-                <h2 className="text-sm font-semibold text-slate-700 mb-4">Your Importer</h2>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {order.importer.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={order.importer.avatar_url} alt={order.importer.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-6 h-6 text-slate-400" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-slate-900">{order.importer.name}</div>
-                    {order.importer.phone && (
-                      <a href={`tel:${order.importer.phone}`} className="text-sm text-accent hover:underline" dir="ltr">
-                        {order.importer.phone}
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Link
-                    href={`/messages?order=${order.id}`}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Message Importer
-                  </Link>
-                  <Link
-                    href={`/importers/${order.importer.id}`}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    View Profile
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* Car Link */}
-            <Link
-              href={`/car/${listing.id}`}
-              className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors group"
-            >
-              <span className="text-sm font-medium text-slate-700">View Car Listing</span>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
-            </Link>
-
-            {/* Cancel */}
-            {order.can_cancel && order.status !== "cancelled" && order.status !== "refunded" && (
-              <div>
-                {!showCancelConfirm ? (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="w-full py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-red-100"
-                  >
-                    Cancel Order
-                  </button>
-                ) : (
-                  <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                {/* Buyer Card */}
+                {order.buyer_info && (
+                  <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                    <h2 className="text-sm font-semibold text-slate-700 mb-4">{t("orderDetail.buyerCard")}</h2>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="w-6 h-6 text-slate-400" />
+                      </div>
                       <div>
-                        <p className="text-sm font-semibold text-red-700">Cancel this order?</p>
-                        <p className="text-xs text-red-500 mt-0.5">Cancellation may be subject to fees depending on order stage.</p>
+                        <div className="font-semibold text-slate-900">{order.buyer_info.name}</div>
+                        {order.buyer_info.city && (
+                          <div className="text-sm text-slate-400 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {order.buyer_info.city}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowCancelConfirm(false)}
-                        className="flex-1 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-                      >
-                        Keep Order
-                      </button>
-                      <button
-                        onClick={handleCancel}
-                        disabled={isCancelling}
-                        className="flex-1 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1"
-                      >
-                        {isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                        Confirm
-                      </button>
-                    </div>
+                    {order.buyer_notes && (
+                      <div className="bg-slate-50 rounded-lg p-3 mb-3">
+                        <p className="text-xs font-semibold text-slate-500 mb-1">{t("orderDetail.buyerNotes")}</p>
+                        <p className="text-sm text-slate-700">{order.buyer_notes}</p>
+                      </div>
+                    )}
+                    <Link
+                      href={`/messages?order=${order.id}`}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {t("orderDetail.messageBuyer")}
+                    </Link>
                   </div>
                 )}
-              </div>
-            )}
 
-            {order.notes && (
-              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-amber-700 mb-1">Note from Importer</p>
-                <p className="text-sm text-amber-700">{order.notes}</p>
-              </div>
+                {/* Importer Economics */}
+                <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                  <h2 className="text-sm font-semibold text-slate-700 mb-4">{t("orderDetail.yourEarnings")}</h2>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Car Price</span>
+                      <span className="font-medium text-slate-800">{formatSAR(listing.final_price_sar ?? listing.price)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-red-500">
+                      <span>{t("orderDetail.platformCommission")}</span>
+                      <span className="font-medium">
+                        -{formatSAR(Math.round(Number(listing.final_price_sar ?? listing.price ?? 0) * 0.01))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
+                      <span className="text-slate-700">Net</span>
+                      <span className="text-green-700">
+                        {formatSAR(Math.round(Number(listing.final_price_sar ?? listing.price ?? 0) * 0.99))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Document Upload */}
+                <DocUploadSection orderId={orderId} onUploaded={refetchOrder} />
+
+                {/* Car Link */}
+                <Link href={`/car/${listing.id}`}
+                  className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors group"
+                >
+                  <span className="text-sm font-medium text-slate-700">View Car Listing</span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                </Link>
+              </>
+            ) : (
+              /* ── BUYER VIEW (unchanged) ── */
+              <>
+                {/* Order Summary Card */}
+                <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                  <h2 className="text-sm font-semibold text-slate-700 mb-4">Order Summary</h2>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Car Price</span>
+                      <span className="font-medium text-slate-800">{formatSAR(listing.final_price_sar ?? listing.price)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Reservation Fee</span>
+                      <span className="font-medium text-slate-800">{formatSAR(order.reservation_fee)}</span>
+                    </div>
+                    {order.total_price != null && (
+                      <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-100">
+                        <span className="text-slate-700">Total</span>
+                        <span className="text-slate-900">{formatSAR(order.total_price)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {order.estimated_delivery_date && (
+                    <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      <div>
+                        <div className="text-xs text-slate-400">Estimated Delivery</div>
+                        <div className="font-medium text-slate-700">{formatDate(order.estimated_delivery_date)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {order.actual_delivery_date && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <div>
+                        <div className="text-xs">Delivered</div>
+                        <div className="font-medium">{formatDate(order.actual_delivery_date)}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Importer Card */}
+                {order.importer_info && (
+                  <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                    <h2 className="text-sm font-semibold text-slate-700 mb-4">Your Importer</h2>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-slate-900">{order.importer_info.business_name ?? order.importer_info.name}</div>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/messages?order=${order.id}`}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Message Importer
+                    </Link>
+                  </div>
+                )}
+
+                {/* Car Link */}
+                <Link href={`/car/${listing.id}`}
+                  className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors group"
+                >
+                  <span className="text-sm font-medium text-slate-700">View Car Listing</span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                </Link>
+
+                {/* Cancel */}
+                {order.can_cancel && order.status !== "cancelled" && order.status !== "refunded" && (
+                  <div>
+                    {!showCancelConfirm ? (
+                      <button
+                        onClick={() => setShowCancelConfirm(true)}
+                        className="w-full py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-red-100"
+                      >
+                        Cancel Order
+                      </button>
+                    ) : (
+                      <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-red-700">Cancel this order?</p>
+                            <p className="text-xs text-red-500 mt-0.5">Cancellation may be subject to fees depending on order stage.</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowCancelConfirm(false)}
+                            className="flex-1 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            Keep Order
+                          </button>
+                          <button onClick={handleCancel} disabled={isCancelling}
+                            className="flex-1 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1">
+                            {isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Confirm
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {order.notes && (
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-amber-700 mb-1">Note from Importer</p>
+                    <p className="text-sm text-amber-700">{order.notes}</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
