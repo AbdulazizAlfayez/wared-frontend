@@ -256,14 +256,32 @@ const DEMO_BADGES: Record<string, string> = {
   "demo-6": "From Yokohama",
 };
 
+// Pill definitions: label (en), label (ar), query params
+const FILTER_PILLS = [
+  { en: "All",           ar: "الكل",           params: "" },
+  { en: "Sedan",         ar: "سيدان",          params: "body_type=sedan" },
+  { en: "SUV",           ar: "دفع رباعي",      params: "body_type=suv" },
+  { en: "Coupe",         ar: "كوبيه",          params: "body_type=coupe" },
+  { en: "Pickup",        ar: "بيك أب",         params: "body_type=pickup" },
+  { en: "Electric",      ar: "كهربائية",        params: "fuel_type=electric" },
+  { en: "Hybrid",        ar: "هايبرد",          params: "fuel_type=hybrid" },
+  { en: "Under 200K SAR",ar: "أقل من 200K",    params: "price_max=200000" },
+  { en: "2024+",         ar: "2024+",           params: "year_min=2024" },
+];
+
 function BrowseCars() {
+  const [activePill, setActivePill] = useState(0);
+  const filterParams = FILTER_PILLS[activePill]?.params ?? "";
+  const queryUrl = `/api/imported-cars/?ordering=-created_at&page_size=6${filterParams ? `&${filterParams}` : ""}`;
+
   const { data } = useApiQuery<PaginatedResponse<ImportedListing>>(
-    "/api/imported-cars/?ordering=-created_at&page_size=6"
+    queryUrl,
+    { deps: [queryUrl] }
   );
   const apiListings = Array.isArray(data) ? data : (data?.results ?? []);
   // Always render — show demo fallback while loading or on error
-  const listings = apiListings.length > 0 ? apiListings : DEMO_CARS;
-  const isDemo = apiListings.length === 0;
+  const listings = apiListings.length > 0 ? apiListings : (activePill === 0 ? DEMO_CARS : []);
+  const isDemo = activePill === 0 && apiListings.length === 0;
   const { listingCount } = useRealStats();
   const { dir } = useTranslation();
   const isRTL = dir === "rtl";
@@ -289,13 +307,27 @@ function BrowseCars() {
 
         {/* Filter pills */}
         <div className="mk-filter-pills">
-          {["All", "Sedan", "SUV", "Coupe", "Pickup", "Electric", "Hybrid", isRTL ? "أقل من 200K" : "Under 200K SAR", "2024+"].map((label, i) => (
-            <span key={label} className={`p ${i === 0 ? "active" : ""}`}>{label}</span>
+          {FILTER_PILLS.map((pill, i) => (
+            <button
+              key={pill.en}
+              type="button"
+              onClick={() => setActivePill(i)}
+              className={`p ${activePill === i ? "active" : ""}`}
+            >
+              {isRTL ? pill.ar : pill.en}
+            </button>
           ))}
-          <span className="p">RHD <span className="x">×</span></span>
         </div>
 
-        {/* Car grid — always rendered (uses demo fallback while API loads or on error) */}
+        {/* Car grid */}
+        {listings.length === 0 && activePill !== 0 ? (
+          <div className="text-center py-16">
+            <p className="text-lg text-slate-400 mb-2">{isRTL ? "ما لقينا سيارات بهالفلتر" : "No cars match this filter"}</p>
+            <button onClick={() => setActivePill(0)} className="text-accent text-sm font-medium hover:underline">
+              {isRTL ? "عرض الكل" : "Show all"}
+            </button>
+          </div>
+        ) : (
         <StaggerContainer stagger={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {listings.map((listing, i) => {
               const primaryImage = listing.images?.find((img: any) => img.is_primary) ?? listing.images?.[0];
@@ -342,6 +374,7 @@ function BrowseCars() {
               );
             })}
           </StaggerContainer>
+        )}
 
         {/* View all link */}
         <div className="text-center mt-10">
