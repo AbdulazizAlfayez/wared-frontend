@@ -394,7 +394,7 @@ export default function Header() {
                 <div className="flex items-center gap-1.5">
                   <Link
                     href="/auth/signin"
-                    className="px-4 py-2 text-sm text-slate-600 hover:text-ink-900 font-medium transition-colors rounded-lg hover:bg-slate-50"
+                    className="nav-link px-4 py-2 text-sm text-slate-600 hover:text-ink-900 font-medium transition-colors rounded-lg hover:bg-slate-50"
                   >
                     {t("nav.signIn")}
                   </Link>

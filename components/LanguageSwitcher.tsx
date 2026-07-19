@@ -13,7 +13,7 @@ export default function LanguageSwitcher() {
   return (
     <button
       onClick={toggleLocale}
-      className="flex items-center space-x-1.5 rtl:space-x-reverse px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors text-sm font-medium"
+      className="nav-link flex items-center space-x-1.5 rtl:space-x-reverse px-3 py-1.5 rounded-lg bg-slate-100/80 hover:bg-slate-200 text-slate-700 transition-colors text-sm font-medium"
       aria-label={locale === "en" ? "Switch to Arabic" : "Switch to English"}
     >
       <Globe className="w-4 h-4" />

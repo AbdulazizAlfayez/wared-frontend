@@ -438,6 +438,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .site-header.is-dark .nav-link:hover { color:#FAFAF7 !important; }
 .site-header.is-dark .auth-btn { background:#FAFAF7 !important; color:#0A0A0A !important; border-color:#FAFAF7 !important; }
 .site-header.is-dark .auth-btn:hover { background:#e8e8e4 !important; }
+.site-header.is-dark button.nav-link { background:rgba(255,255,255,.12) !important; color:rgba(250,250,247,.9) !important; }
+.site-header.is-dark button.nav-link:hover { background:rgba(255,255,255,.2) !important; color:#FAFAF7 !important; }
 
 /* Wared design tokens */
 .mk-page {
