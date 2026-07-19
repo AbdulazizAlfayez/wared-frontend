@@ -1098,7 +1098,10 @@
     "views": "مشاهدة",
     "verifiedImporter": "مستورد موثق",
     "activeListings": "سيارة معروضة",
-    "sold": "مبيعة"
+    "sold": "مبيعة",
+    "updateImportStatus": "تحديث حالة الاستيراد",
+    "statusUpdated": "تم تحديث الحالة",
+    "statusUpdateFailed": "فشل تحديث الحالة"
   },
   "importers": {
     "sortExperienced": "الأكثر خبرة",

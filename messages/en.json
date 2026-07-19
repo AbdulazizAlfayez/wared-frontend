@@ -1098,7 +1098,10 @@
     "views": "views",
     "verifiedImporter": "Verified Importer",
     "activeListings": "active listings",
-    "sold": "sold"
+    "sold": "sold",
+    "updateImportStatus": "Update Import Status",
+    "statusUpdated": "Status updated",
+    "statusUpdateFailed": "Failed to update status"
   },
   "importers": {
     "sortExperienced": "Most experienced",

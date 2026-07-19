@@ -217,6 +217,55 @@ function SpecRow({
   );
 }
 
+function OwnerStatusControl({ listingId, currentStatus }: { listingId: string; currentStatus: string | null }) {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [newStatus, setNewStatus] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdate = async () => {
+    if (!newStatus) return;
+    setIsUpdating(true);
+    try {
+      await api.patch(`/api/listings/${listingId}/`, { import_status: newStatus });
+      showToast("success", t("carDetail.statusUpdated"));
+      setNewStatus("");
+      window.location.reload();
+    } catch {
+      showToast("error", t("carDetail.statusUpdateFailed"));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border-2 border-accent/20 p-4 mt-3">
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+        {t("carDetail.updateImportStatus")}
+      </label>
+      <div className="flex gap-2">
+        <select
+          value={newStatus}
+          onChange={e => setNewStatus(e.target.value)}
+          className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-accent focus:outline-none"
+        >
+          <option value="">{currentStatus?.replace(/_/g, " ") ?? "—"}</option>
+          {STATUS_STEPS.filter(s => s.key !== currentStatus).map(s => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleUpdate}
+          disabled={!newStatus || isUpdating}
+          className="px-4 py-2 bg-accent hover:bg-accent-600 disabled:opacity-40 text-white rounded-lg text-sm font-semibold transition-colors"
+        >
+          {isUpdating ? "..." : t("orderDetail.update")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ImportStatusStepper({ status }: { status: string | null }) {
   const currentStep = STATUS_ORDER[status ?? ""] ?? 0;
   return (
@@ -736,6 +785,7 @@ export default function CarDetailPage() {
   );
 
   const ownerId = listing?.owner_id ?? listing?.owner?.id;
+  const isOwner = isAuthenticated && user?.id === ownerId;
   const { data: ownerProfile } = useApiQuery<PublicOwnerProfile>(
     `/api/users/${ownerId}/profile/`,
     { enabled: !!ownerId }
@@ -1035,10 +1085,13 @@ export default function CarDetailPage() {
               </div>
             )}
 
-            {/* Import Status Stepper — shown below images on desktop */}
-            <div className="hidden lg:block">
-              <ImportStatusStepper status={listing.import_status} />
-            </div>
+            {/* Import Status — owner sees stepper + update control */}
+            {isOwner && (
+              <div className="hidden lg:block">
+                <ImportStatusStepper status={listing.import_status} />
+                <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} />
+              </div>
+            )}
 
             {/* Cost Breakdown — shown below stepper on desktop */}
             <div className="hidden lg:block">
@@ -1188,9 +1241,14 @@ export default function CarDetailPage() {
               </div>
             </div>
 
-            {/* Mobile-only: stepper, cost breakdown, source info */}
+            {/* Mobile-only: stepper (owner only), cost breakdown, source info */}
             <div className="lg:hidden space-y-5">
-              <ImportStatusStepper status={listing.import_status} />
+              {isOwner && (
+                <>
+                  <ImportStatusStepper status={listing.import_status} />
+                  <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} />
+                </>
+              )}
               <CostBreakdownCard listing={listing} />
               <SourceInfoCard listing={listing} />
             </div>
