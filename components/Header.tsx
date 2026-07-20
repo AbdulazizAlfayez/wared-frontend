@@ -231,7 +231,7 @@ export default function Header() {
             <LanguageSwitcher />
 
             {/* Desktop Auth/User Actions */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="header-actions hidden md:flex items-center gap-3">
               {isLoading ? (
                 <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />
               ) : isAuthenticated && user ? (
@@ -277,7 +277,7 @@ export default function Header() {
                       <span className="hidden lg:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
                         {user.name.split(" ")[0]}
                       </span>
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
+                      <ChevronDown className="w-4 h-4 text-slate-500 chevron" />
                     </button>
 
                     {isUserMenuOpen && (

@@ -92,7 +92,7 @@ export default function NotificationBell() {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative header-actions" ref={dropdownRef}>
       <button
         onClick={handleOpen}
         className="relative p-2 text-slate-600 hover:text-accent hover:bg-slate-100 rounded-lg transition-colors"
