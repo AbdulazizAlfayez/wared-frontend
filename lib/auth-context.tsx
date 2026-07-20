@@ -94,7 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetchMe(),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
         ]);
-        if (!cancelled) setUser(me);
+        if (!cancelled) {
+          setUser(me);
+          // Sync favorites cache from server if authenticated
+          if (me) {
+            import("./favorites").then(({ syncFavoritesFromServer }) => {
+              syncFavoritesFromServer().catch(() => {});
+            });
+          }
+        }
       } catch {
         // Backend unreachable — continue as unauthenticated
       } finally {
