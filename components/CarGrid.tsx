@@ -73,7 +73,7 @@ function formatSAR(n: number | string | null | undefined) {
 // ---------------------------------------------------------------------------
 function ImportedCarCard({ listing }: { listing: ImportedListing }) {
   const { t } = useTranslation();
-  const [isFav, setIsFav] = useState(() => isFavorite(String(listing.id)));
+  const [isFav, setIsFav] = useState(() => listing ? isFavorite(String(listing.id)) : false);
   const [isInCompare, setIsInCompare] = useState(() => isCompared(String(listing.id)));
 
   useEffect(() => {

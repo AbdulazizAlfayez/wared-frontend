@@ -41,6 +41,9 @@ export default function CarCard({ listing, favoriteId, onFavoriteToggle }: CarCa
   const [currentFavoriteId, setCurrentFavoriteId] = useState<number | undefined>(favoriteId);
   const [isToggling, setIsToggling] = useState(false);
 
+  // Guard: if listing is somehow undefined/null, render nothing
+  if (!listing) return null;
+
   const primaryImage = listing.images?.find((img) => img.is_primary) ?? listing.images?.[0];
   const imageUrl =
     listing.primary_image ||

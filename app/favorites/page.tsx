@@ -6,34 +6,35 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Heart, ArrowRight } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/use-api";
-import type { FavoriteItem, PaginatedResponse } from "@/lib/types";
+import type { Listing, PaginatedResponse } from "@/lib/types";
 import CarCard from "@/components/CarCard";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { toggleFavorite } from "@/lib/favorites";
 
 export default function FavoritesPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const { data, isLoading } = useApiQuery<PaginatedResponse<FavoriteItem>>(
+  const { data, isLoading, refetch } = useApiQuery<PaginatedResponse<Listing>>(
     "/api/favorites/",
     { enabled: isAuthenticated }
   );
 
-  const favorites: FavoriteItem[] = data?.results ?? [];
+  // The backend returns bare Listing objects (not wrapped in {id, listing})
+  const favorites: Listing[] = data?.results ?? [];
 
   // Track removed IDs optimistically so the UI updates instantly
   const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
 
-  const handleFavoriteToggle = useCallback(
-    (listingId: number, isFav: boolean, favoriteId?: number) => {
-      if (!isFav && favoriteId !== undefined) {
-        setRemovedIds((prev) => new Set(prev).add(favoriteId));
-      }
+  const handleUnfavorite = useCallback(
+    (listingId: number) => {
+      setRemovedIds((prev) => new Set(prev).add(listingId));
+      toggleFavorite(String(listingId));
     },
     []
   );
 
-  const displayedFavorites = favorites.filter((fav) => !removedIds.has(fav.id));
+  const displayedFavorites = favorites.filter((listing) => !removedIds.has(listing.id));
 
   if (authLoading || (isLoading && isAuthenticated)) {
     return (
@@ -103,12 +104,11 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayedFavorites.map((fav) => (
+            {displayedFavorites.map((listing) => (
               <CarCard
-                key={fav.id}
-                listing={fav.listing}
-                favoriteId={fav.id}
-                onFavoriteToggle={handleFavoriteToggle}
+                key={listing.id}
+                listing={listing}
+                onFavoriteToggle={(_id, isFav) => { if (!isFav) handleUnfavorite(listing.id); }}
               />
             ))}
           </div>
