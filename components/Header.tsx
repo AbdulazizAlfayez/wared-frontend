@@ -287,7 +287,7 @@ export default function Header() {
                           onClick={() => setIsUserMenuOpen(false)}
                         />
                         <div
-                          className="absolute mt-2 w-60 bg-white rounded-2xl shadow-card-elevated border border-slate-100/80 overflow-hidden animate-scale-in"
+                          className="header-dropdown absolute mt-2 w-60 bg-white rounded-2xl shadow-card-elevated border border-slate-100/80 overflow-hidden animate-scale-in"
                           style={{ insetInlineEnd: 0, direction: dir, zIndex: 9999 }}
                         >
                           {/* User info header */}

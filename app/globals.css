@@ -452,6 +452,13 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .site-header.is-dark .header-actions button:hover { color:#FAFAF7 !important; background:rgba(255,255,255,.1) !important; }
 .site-header.is-dark .header-actions span { color:rgba(250,250,247,.85) !important; }
 .site-header.is-dark .header-actions .chevron { color:rgba(250,250,247,.5) !important; }
+/* Dropdown panels inside the header always use dark-on-white — override dark-hero colors */
+.site-header.is-dark .header-dropdown a,
+.site-header.is-dark .header-dropdown button { color:#334155 !important; }
+.site-header.is-dark .header-dropdown a:hover,
+.site-header.is-dark .header-dropdown button:hover { color:#0a0a0a !important; background:#f8fafc !important; }
+.site-header.is-dark .header-dropdown span,
+.site-header.is-dark .header-dropdown p { color:unset !important; }
 
 /* Wared design tokens */
 .mk-page {
