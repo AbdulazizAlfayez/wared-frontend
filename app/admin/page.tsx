@@ -79,9 +79,13 @@ interface DealerApplication {
   city: string;
   phone: string;
   email: string;
+  address: string;
+  description: string;
+  expected_listings: string;
   status: string;
   admin_notes: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface Workshop {
@@ -834,6 +838,8 @@ export default function AdminPage() {
     }
   };
 
+  const [selectedApp, setSelectedApp] = useState<DealerApplication | null>(null);
+
   // ── Application handlers ───────────────────────────────────────────────────
   const handleApproveApplication = async (app: DealerApplication) => {
     setProcessingId(`app-${app.id}`);
@@ -1521,7 +1527,7 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {(appsResult?.results ?? []).map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-50">
+                    <tr key={app.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedApp(app)}>
                       <td className="px-4 py-3">
                         <p className="font-medium text-slate-900">{app.business_name}</p>
                         {app.email && <p className="text-xs text-slate-500">{app.email}</p>}
@@ -1570,7 +1576,137 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ═══════════════ SUBSCRIPTIONS TAB ═══════════════ */}
+        {/* ═══════════════ APPLICATION DETAIL SLIDE-OVER ═══════════════ */}
+        {selectedApp && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedApp(null)} />
+            <div className="relative w-full max-w-lg bg-white shadow-2xl overflow-y-auto animate-slide-in-right">
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">{selectedApp.business_name}</h2>
+                  <p className="text-xs text-slate-400">Application #{selectedApp.id}</p>
+                </div>
+                <button onClick={() => setSelectedApp(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                  <XCircle className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 space-y-6">
+                {/* Status */}
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${statusBadge(selectedApp.status)}`}>
+                    {selectedApp.status.charAt(0).toUpperCase() + selectedApp.status.slice(1)}
+                  </span>
+                  <span className="text-xs text-slate-400">Submitted {formatDate(selectedApp.created_at)}</span>
+                </div>
+
+                {/* Business Info */}
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Business Info</h3>
+                  <div className="bg-slate-50 rounded-xl p-4 space-y-2.5">
+                    {[
+                      ["Business Name", selectedApp.business_name],
+                      ["Business Type", selectedApp.business_type ? selectedApp.business_type.charAt(0).toUpperCase() + selectedApp.business_type.slice(1) : "—"],
+                      ["City", selectedApp.city || "—"],
+                      ["Address", selectedApp.address || "—"],
+                      ["Expected Listings", selectedApp.expected_listings || "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between text-sm">
+                        <span className="text-slate-500">{label}</span>
+                        <span className="font-medium text-slate-800 text-right max-w-[60%]">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Contact</h3>
+                  <div className="bg-slate-50 rounded-xl p-4 space-y-2.5">
+                    {[
+                      ["Applicant Name", selectedApp.applicant_name],
+                      ["Applicant Email", selectedApp.applicant_email],
+                      ["Phone", selectedApp.phone || "—"],
+                      ["Contact Email", selectedApp.email || "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between text-sm">
+                        <span className="text-slate-500">{label}</span>
+                        <span className="font-medium text-slate-800 text-right max-w-[60%] break-all">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedApp.description && (
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Description</h3>
+                    <div className="bg-slate-50 rounded-xl p-4">
+                      <p className="text-sm text-slate-700 leading-relaxed">{selectedApp.description}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Admin Notes */}
+                {selectedApp.admin_notes && (
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Admin Notes</h3>
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                      <p className="text-sm text-amber-800">{selectedApp.admin_notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Meta */}
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Meta</h3>
+                  <div className="bg-slate-50 rounded-xl p-4 space-y-2.5">
+                    {[
+                      ["Application ID", `#${selectedApp.id}`],
+                      ["Applicant User ID", `#${selectedApp.applicant}`],
+                      ["Submitted", formatDate(selectedApp.created_at)],
+                      ["Last Updated", selectedApp.updated_at ? formatDate(selectedApp.updated_at) : "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between text-sm">
+                        <span className="text-slate-500">{label}</span>
+                        <span className="font-medium text-slate-800">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {selectedApp.status === "pending" && (
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={async () => {
+                        await handleApproveApplication(selectedApp);
+                        setSelectedApp(null);
+                      }}
+                      disabled={processingId === `app-${selectedApp.id}`}
+                      className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      {processingId === `app-${selectedApp.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleRejectApplication(selectedApp);
+                        setSelectedApp(null);
+                      }}
+                      className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ═══════════════ AUDIT LOG TAB ═══════════════ */}
         {activeTab === "audit" && (
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">

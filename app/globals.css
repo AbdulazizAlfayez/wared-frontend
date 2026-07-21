@@ -557,6 +557,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .mk-reveal.delay-2 { transition-delay: .16s; }
 .mk-reveal.delay-3 { transition-delay: .24s; }
 @keyframes mk-reveal-fallback { to { opacity: 1; transform: none; } }
+@keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.animate-slide-in-right { animation: slide-in-right 0.25s ease-out; }
 
 /* Car card */
 .mk-car-card {
