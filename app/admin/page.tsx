@@ -417,7 +417,7 @@ export default function AdminPage() {
   const appsParams = new URLSearchParams();
   if (statusFilter) appsParams.set("status", statusFilter);
   const { data: appsResult, refetch: appsRefetch } = useApiQuery<PaginatedResponse<DealerApplication>>(
-    `/api/dealer-applications/admin/?${appsParams.toString()}`,
+    `/api/importer-applications/admin/?${appsParams.toString()}`,
     { enabled: isAdmin && activeTab === "applications" }
   );
 
@@ -838,7 +838,7 @@ export default function AdminPage() {
   const handleApproveApplication = async (app: DealerApplication) => {
     setProcessingId(`app-${app.id}`);
     try {
-      await djangoApi.patch(`/api/dealer-applications/admin/${app.id}/`, { status: "approved" });
+      await djangoApi.patch(`/api/importer-applications/admin/${app.id}/`, { status: "approved" });
       showToast(`${app.business_name} approved — applicant is now an importer`, "success");
       appsRefetch();
       statsRefetch();
@@ -857,7 +857,7 @@ export default function AdminPage() {
   const confirmRejectApplication = async (app: DealerApplication, notes: string) => {
     setProcessingId(`app-${app.id}`);
     try {
-      await djangoApi.patch(`/api/dealer-applications/admin/${app.id}/`, {
+      await djangoApi.patch(`/api/importer-applications/admin/${app.id}/`, {
         status: "rejected",
         admin_notes: notes,
       });
