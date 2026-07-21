@@ -1578,21 +1578,27 @@ export default function AdminPage() {
 
         {/* ═══════════════ APPLICATION DETAIL SLIDE-OVER ═══════════════ */}
         {selectedApp && (
-          <div className="fixed inset-0 z-50 flex justify-end">
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+          <div
+            className="fixed inset-0 flex justify-end"
+            style={{ zIndex: 10000 }}
+            onKeyDown={(e) => { if (e.key === "Escape") setSelectedApp(null); }}
+          >
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedApp(null)} />
-            <div className="relative w-full max-w-lg bg-white shadow-2xl overflow-y-auto animate-slide-in-right">
-              {/* Header */}
-              <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
+            <div className="relative w-full max-w-lg bg-white shadow-2xl flex flex-col h-full animate-slide-in-right">
+              {/* ── Panel header (sticky) ── */}
+              <div className="flex-shrink-0 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
                 <div>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-0.5">Application Details</p>
                   <h2 className="text-lg font-bold text-slate-900">{selectedApp.business_name}</h2>
-                  <p className="text-xs text-slate-400">Application #{selectedApp.id}</p>
                 </div>
-                <button onClick={() => setSelectedApp(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <button onClick={() => setSelectedApp(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors" autoFocus>
                   <XCircle className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
 
-              <div className="px-6 py-5 space-y-6">
+              {/* ── Scrollable content ── */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
                 {/* Status */}
                 <div className="flex items-center gap-3">
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${statusBadge(selectedApp.status)}`}>
@@ -1614,7 +1620,7 @@ export default function AdminPage() {
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between text-sm">
                         <span className="text-slate-500">{label}</span>
-                        <span className="font-medium text-slate-800 text-right max-w-[60%]">{value}</span>
+                        <span className="font-medium text-slate-800 text-end max-w-[60%]">{value}</span>
                       </div>
                     ))}
                   </div>
@@ -1632,21 +1638,19 @@ export default function AdminPage() {
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between text-sm">
                         <span className="text-slate-500">{label}</span>
-                        <span className="font-medium text-slate-800 text-right max-w-[60%] break-all">{value}</span>
+                        <span className="font-medium text-slate-800 text-end max-w-[60%] break-all">{value}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Description */}
-                {selectedApp.description && (
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Description</h3>
-                    <div className="bg-slate-50 rounded-xl p-4">
-                      <p className="text-sm text-slate-700 leading-relaxed">{selectedApp.description}</p>
-                    </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Description</h3>
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <p className="text-sm text-slate-700 leading-relaxed">{selectedApp.description || "—"}</p>
                   </div>
-                )}
+                </div>
 
                 {/* Admin Notes */}
                 {selectedApp.admin_notes && (
@@ -1675,34 +1679,28 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Actions */}
-                {selectedApp.status === "pending" && (
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      onClick={async () => {
-                        await handleApproveApplication(selectedApp);
-                        setSelectedApp(null);
-                      }}
-                      disabled={processingId === `app-${selectedApp.id}`}
-                      className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-                    >
-                      {processingId === `app-${selectedApp.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleRejectApplication(selectedApp);
-                        setSelectedApp(null);
-                      }}
-                      className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Reject
-                    </button>
-                  </div>
-                )}
               </div>
+
+              {/* ── Sticky footer: actions ── */}
+              {selectedApp.status === "pending" && (
+                <div className="flex-shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3">
+                  <button
+                    onClick={async () => { await handleApproveApplication(selectedApp); setSelectedApp(null); }}
+                    disabled={processingId === `app-${selectedApp.id}`}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    {processingId === `app-${selectedApp.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => { handleRejectApplication(selectedApp); setSelectedApp(null); }}
+                    className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Reject
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
