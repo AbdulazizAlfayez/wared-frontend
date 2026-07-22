@@ -107,11 +107,11 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="header-dropdown absolute top-12 z-50 w-80 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden"
-          style={{ insetInlineEnd: 0 }}>
+        <div className="absolute top-12 z-50 w-80 rounded-xl shadow-lg border border-slate-100 overflow-hidden"
+          style={{ insetInlineEnd: 0, backgroundColor: "#ffffff" }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-            <span className="font-semibold text-slate-900 text-sm">Notifications</span>
+            <span className="font-semibold text-sm" style={{ color: "#0f172a" }}>Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -130,7 +130,7 @@ export default function NotificationBell() {
                 <Loader2 className="w-5 h-5 animate-spin text-accent" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-sm">
+              <div className="py-8 text-center text-sm" style={{ color: "#94a3b8" }}>
                 No notifications yet
               </div>
             ) : (
@@ -141,14 +141,15 @@ export default function NotificationBell() {
                   className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${
                     n.is_read ? "" : "bg-accent/5"
                   }`}
+                  style={{ color: "#334155" }}
                 >
                   <div className="flex items-start gap-2">
                     {!n.is_read && (
                       <span className="mt-1.5 w-2 h-2 rounded-full bg-accent flex-shrink-0" />
                     )}
                     <div className={!n.is_read ? "" : "ml-4"}>
-                      <p className="text-sm text-slate-800 leading-snug">{n.message}</p>
-                      <p className="text-xs text-slate-400 mt-1">{formatTime(n.created_at)}</p>
+                      <p className="text-sm leading-snug" style={{ color: "#1e293b" }}>{n.message}</p>
+                      <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>{formatTime(n.created_at)}</p>
                     </div>
                   </div>
                 </button>

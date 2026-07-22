@@ -286,89 +286,74 @@ export default function Header() {
                           className="fixed inset-0"
                           onClick={() => setIsUserMenuOpen(false)}
                         />
+                        {/*
+                          Profile dropdown panel.
+                          ALL COLORS ARE INTENTIONALLY STATIC via inline style.
+                          Do NOT tie to header dark/light state — this regressed twice
+                          when CSS cascade from .header-actions overrode dropdown classes.
+                          Inline styles beat any !important cascade.
+                        */}
                         <div
-                          className="header-dropdown absolute mt-2 w-60 bg-white rounded-2xl shadow-card-elevated border border-slate-100/80 overflow-hidden animate-scale-in"
-                          style={{ insetInlineEnd: 0, direction: dir, zIndex: 9999 }}
+                          className="absolute mt-2 w-60 rounded-2xl shadow-card-elevated border border-slate-100/80 overflow-hidden"
+                          style={{ insetInlineEnd: 0, direction: dir, zIndex: 9999, backgroundColor: "#ffffff" }}
                         >
                           {/* User info header */}
-                          <div className="px-4 py-3.5 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
-                            <p className="text-sm font-semibold text-ink-900 truncate font-display">
+                          <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9", background: "linear-gradient(135deg, #f8fafc, #ffffff)" }}>
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {user.name}
                             </p>
-                            <p className="text-xs text-slate-400 truncate mt-0.5">{user.email}</p>
+                            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {user.email}
+                            </p>
                           </div>
 
-                          <Link
-                            href="/profile"
-                            className="flex items-center gap-2 px-4 py-3 text-slate-700 hover:text-accent hover:bg-slate-50 transition-colors"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            <User className="w-4 h-4" />
+                          <Link href="/profile" onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-slate-50"
+                            style={{ color: "#334155" }}>
+                            <User className="w-4 h-4" style={{ color: "#94a3b8" }} />
                             <span>{t("nav.profile")}</span>
                           </Link>
 
                           {isImporter ? (
                             <>
-                              <Link
-                                href="/dashboard/importer"
-                                className="flex items-center gap-2 px-4 py-3 text-accent hover:text-accent-600 hover:bg-accent/5 transition-colors"
-                                onClick={() => setIsUserMenuOpen(false)}
-                              >
-                                <LayoutDashboard className="w-4 h-4" />
+                              <Link href="/dashboard/importer" onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-slate-50"
+                                style={{ color: "#0a0a0a", fontWeight: 500 }}>
+                                <LayoutDashboard className="w-4 h-4" style={{ color: "#94a3b8" }} />
                                 <span>{t("nav.importerDashboard")}</span>
                               </Link>
-                              <Link
-                                href="/dashboard/importer/list-car"
-                                className="flex items-center gap-2 px-4 py-3 text-slate-700 hover:text-accent hover:bg-slate-50 transition-colors"
-                                onClick={() => setIsUserMenuOpen(false)}
-                              >
-                                <Plus className="w-4 h-4" />
+                              <Link href="/dashboard/importer/list-car" onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-slate-50"
+                                style={{ color: "#334155" }}>
+                                <Plus className="w-4 h-4" style={{ color: "#94a3b8" }} />
                                 <span>{t("nav.listNewCar")}</span>
                               </Link>
-                              <Link
-                                href="/dashboard/importer/orders"
-                                className="flex items-center gap-2 px-4 py-3 text-slate-700 hover:text-accent hover:bg-slate-50 transition-colors"
-                                onClick={() => setIsUserMenuOpen(false)}
-                              >
-                                <Package className="w-4 h-4" />
+                              <Link href="/dashboard/importer/orders" onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-slate-50"
+                                style={{ color: "#334155" }}>
+                                <Package className="w-4 h-4" style={{ color: "#94a3b8" }} />
                                 <span>{t("nav.manageOrders")}</span>
                               </Link>
                             </>
                           ) : (
                             <>
-                              <Link
-                                href="/orders"
-                                className="flex items-center gap-2 px-4 py-3 text-slate-700 hover:text-accent hover:bg-slate-50 transition-colors"
-                                onClick={() => setIsUserMenuOpen(false)}
-                              >
-                                <Package className="w-4 h-4" />
+                              <Link href="/orders" onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-slate-50"
+                                style={{ color: "#334155" }}>
+                                <Package className="w-4 h-4" style={{ color: "#94a3b8" }} />
                                 <span>{t("nav.myOrders")}</span>
                               </Link>
-                              <Link
-                                href="/saved-searches"
-                                className="flex items-center gap-2 px-4 py-3 text-slate-700 hover:text-accent hover:bg-slate-50 transition-colors"
-                                onClick={() => setIsUserMenuOpen(false)}
-                              >
-                                <Bookmark className="w-4 h-4" />
+                              <Link href="/saved-searches" onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-slate-50"
+                                style={{ color: "#334155" }}>
+                                <Bookmark className="w-4 h-4" style={{ color: "#94a3b8" }} />
                                 <span>{t("nav.savedSearches")}</span>
                               </Link>
-                              {isImporter && (
-                                <Link
-                                  href="/dashboard"
-                                  className="flex items-center gap-2 px-4 py-3 text-accent hover:text-accent-600 hover:bg-accent/5 transition-colors"
-                                  onClick={() => setIsUserMenuOpen(false)}
-                                >
-                                  <LayoutDashboard className="w-4 h-4" />
-                                  <span>{t("nav.dashboard")}</span>
-                                </Link>
-                              )}
                               {role === "user" && (
-                                <Link
-                                  href="/become-importer"
-                                  className="flex items-center gap-2 px-4 py-3 text-amber-700 hover:text-amber-800 hover:bg-amber-50 transition-colors"
-                                  onClick={() => setIsUserMenuOpen(false)}
-                                >
-                                  <Store className="w-4 h-4" />
+                                <Link href="/become-importer" onClick={() => setIsUserMenuOpen(false)}
+                                  className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-amber-50"
+                                  style={{ color: "#92400e" }}>
+                                  <Store className="w-4 h-4" style={{ color: "#b45309" }} />
                                   <span>{t("nav.becomeAnImporter")}</span>
                                 </Link>
                               )}
@@ -376,11 +361,9 @@ export default function Header() {
                           )}
 
                           <button
-                            onClick={() => {
-                              setIsUserMenuOpen(false);
-                              logout();
-                            }}
-                            className="flex items-center gap-2 px-4 py-3 text-slate-700 hover:text-accent hover:bg-slate-50 transition-colors w-full border-t border-slate-100"
+                            onClick={() => { setIsUserMenuOpen(false); logout(); }}
+                            className="flex items-center gap-2 px-4 py-3 transition-colors hover:bg-red-50 w-full"
+                            style={{ color: "#dc2626", borderTop: "1px solid #f1f5f9" }}
                           >
                             <LogOut className="w-4 h-4" />
                             <span>{t("nav.signOut")}</span>
