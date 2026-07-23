@@ -11,8 +11,9 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Car, Eye, Edit, ChevronLeft, ChevronRight, Loader2, Search, Plus,
   Upload, Download, Trash2, Square, X, ChevronDown,
-  FileText, AlertTriangle, CheckCircle, Lock, CheckSquare, Zap,
+  FileText, AlertTriangle, CheckCircle, Lock, CheckSquare, Zap, RefreshCw,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -25,16 +26,18 @@ const STATUS_OPTIONS = [
   { value: "approved", label: "Approved" },
   { value: "pending", label: "Pending" },
   { value: "rejected", label: "Rejected" },
+  { value: "changes_requested", label: "Changes Requested" },
   { value: "sold", label: "Sold" },
   { value: "draft", label: "Draft" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  approved: "bg-green-100 text-green-700",
-  pending:  "bg-yellow-100 text-yellow-700",
-  rejected: "bg-red-100 text-red-700",
-  sold:     "bg-blue-100 text-blue-700",
-  draft:    "bg-slate-100 text-slate-600",
+  approved:           "bg-green-100 text-green-700",
+  pending:            "bg-amber-100 text-amber-700",
+  rejected:           "bg-red-100 text-red-700",
+  changes_requested:  "bg-orange-100 text-orange-700",
+  sold:               "bg-slate-200 text-slate-700",
+  draft:              "bg-slate-100 text-slate-600",
 };
 
 const UPLOAD_STATUS_COLORS: Record<string, string> = {
@@ -250,6 +253,7 @@ function PromotionModal({
 
 export default function DealerListingsPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   // Listing filters / pagination
   const [statusFilter, setStatusFilter] = useState("");
@@ -774,8 +778,18 @@ export default function DealerListingsPage() {
                       </td>
                       <td className="px-5 py-3">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[l.status] ?? "bg-slate-100 text-slate-600"}`}>
-                          {l.status}
+                          {l.status === "changes_requested" ? t("listingStatus.changes_requested") : l.status}
                         </span>
+                        {l.status === "changes_requested" && (l as any).admin_notes && (
+                          <div className="mt-1.5 px-2 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-800">
+                            <span className="font-medium">{t("listingStatus.adminNote")}:</span> {(l as any).admin_notes}
+                          </div>
+                        )}
+                        {l.status === "rejected" && (l as any).rejection_reason && (
+                          <div className="mt-1.5 px-2 py-1.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+                            <span className="font-medium">{t("listingStatus.rejectionReason")}:</span> {(l as any).rejection_reason}
+                          </div>
+                        )}
                       </td>
                       <td className="px-5 py-3 text-right text-slate-500 hidden sm:table-cell">
                         {l.view_count ?? l.views_count ?? 0}
@@ -812,6 +826,15 @@ export default function DealerListingsPage() {
                                 <Zap className="w-4 h-4" />
                               </button>
                             </>
+                          )}
+                          {(l.status === "changes_requested" || l.status === "rejected") && (
+                            <Link
+                              href={`/listing/edit/${l.id}`}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-medium transition-colors"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                              {t("listingStatus.editAndResubmit")}
+                            </Link>
                           )}
                         </div>
                       </td>

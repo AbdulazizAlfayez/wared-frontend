@@ -1198,5 +1198,21 @@
     "jeddah_islamic_port": "Jeddah Islamic Port",
     "king_abdulaziz_port_dammam": "King Abdulaziz Port (Dammam)",
     "jubail_port": "Jubail Port"
+  },
+  "listingStatus": {
+    "draft": "Draft",
+    "pending": "Pending Review",
+    "approved": "Published",
+    "rejected": "Rejected",
+    "changes_requested": "Changes Requested",
+    "sold": "Sold",
+    "submittedForReview": "Your listing has been submitted for review",
+    "submittedMessage": "An admin will review your listing and approve, request changes, or reject it. You'll be notified.",
+    "adminNote": "Admin note",
+    "rejectionReason": "Rejection reason",
+    "editAndResubmit": "Edit & Resubmit",
+    "requestChanges": "Request Changes",
+    "enterNote": "Enter a note for the importer explaining what needs to change...",
+    "enterReason": "Enter the reason for rejection..."
   }
 }

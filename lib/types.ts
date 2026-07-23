@@ -143,7 +143,9 @@ export interface Listing {
   owner_verified?: boolean;
   owner_verification_level?: string;
   // Meta
-  status: "draft" | "pending" | "approved" | "rejected" | "sold";
+  status: "draft" | "pending" | "approved" | "rejected" | "changes_requested" | "sold";
+  admin_notes?: string;
+  rejection_reason?: string;
   is_active?: boolean;
   images: ListingImage[];
   primary_image?: string | null;

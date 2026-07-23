@@ -1198,5 +1198,21 @@
     "jeddah_islamic_port": "ميناء جدة الإسلامي",
     "king_abdulaziz_port_dammam": "ميناء الملك عبدالعزيز (الدمام)",
     "jubail_port": "ميناء الجبيل"
+  },
+  "listingStatus": {
+    "draft": "مسودة",
+    "pending": "قيد المراجعة",
+    "approved": "منشورة",
+    "rejected": "مرفوضة",
+    "changes_requested": "مطلوب تعديل",
+    "sold": "مباعة",
+    "submittedForReview": "تم إرسال إعلانك للمراجعة",
+    "submittedMessage": "يراجعه فريقنا ونبلّغك بالنتيجة — اعتماد أو طلب تعديل أو رفض.",
+    "adminNote": "ملاحظة المراجع",
+    "rejectionReason": "سبب الرفض",
+    "editAndResubmit": "عدّل وأعد الإرسال",
+    "requestChanges": "طلب تعديل",
+    "enterNote": "اكتب ملاحظة للمستورد توضّح التعديلات المطلوبة...",
+    "enterReason": "اكتب سبب الرفض..."
   }
 }

@@ -12,6 +12,7 @@ import {
   Car, Globe, DollarSign, Ship, Shield, Camera, AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { useTranslation } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -238,6 +239,7 @@ export default function ListCarPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL);
@@ -399,7 +401,7 @@ export default function ListCarPage() {
         }
       }
 
-      showToast("success", "Car listed successfully!");
+      showToast("success", t("listingStatus.submittedForReview"));
       router.push(`/car/${newListing.id}`);
     } catch (err: unknown) {
       // Surface real field errors from the backend

@@ -355,7 +355,7 @@ function DeleteConfirmModal({
 // MAIN ADMIN PAGE
 // ===========================================
 export default function AdminPage() {
-  const { dir } = useTranslation();
+  const { t, dir } = useTranslation();
   const { role, isAuthenticated, isLoading: authLoading } = useAuth();
   const isAdmin = role === "admin";
 
@@ -372,6 +372,10 @@ export default function AdminPage() {
   // Rejection modal state
   const [rejectModal, setRejectModal] = useState<{ type: "listing" | "application"; item: any } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+
+  // Request-changes modal state
+  const [changesModal, setChangesModal] = useState<{ item: any } | null>(null);
+  const [changesNote, setChangesNote] = useState("");
 
   // Toast + processing
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -748,6 +752,26 @@ export default function AdminPage() {
     }
   };
 
+  const handleRequestChanges = (listing: any) => {
+    setChangesNote("");
+    setChangesModal({ item: listing });
+  };
+
+  const confirmRequestChanges = async (listing: any, note: string) => {
+    setProcessingId(`lst-${listing.id}`);
+    try {
+      await djangoApi.patch(`/api/listings/${listing.id}/request-changes/`, { admin_notes: note });
+      showToast("Changes requested", "success");
+      setChangesModal(null);
+      listingsRefetch();
+      statsRefetch();
+    } catch {
+      showToast("Failed to request changes", "error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleDeleteItem = async () => {
     if (!deletingItem) return;
     setProcessingId(`del-${deletingItem.item.id}`);
@@ -915,6 +939,7 @@ export default function AdminPage() {
     approved: "bg-green-100 text-green-700",
     pending: "bg-yellow-100 text-yellow-700",
     rejected: "bg-red-100 text-red-700",
+    changes_requested: "bg-orange-100 text-orange-700",
     draft: "bg-gray-100 text-gray-700",
     sold: "bg-blue-100 text-blue-700",
   }[s] || "bg-slate-100 text-slate-700");
@@ -1066,7 +1091,7 @@ export default function AdminPage() {
               <>
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2.5 border border-slate-200 rounded-lg bg-white min-w-[150px]">
                   <option value="">All Statuses</option>
-                  {["pending", "approved", "rejected", "draft", "sold"].map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                  {["pending", "approved", "rejected", "changes_requested", "draft", "sold"].map((s) => <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>)}
                 </select>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-4 py-2.5 border border-slate-200 rounded-lg bg-white min-w-[150px]">
                   <option value="newest">Newest First</option>
@@ -1188,11 +1213,15 @@ export default function AdminPage() {
                         <div className="flex items-center gap-1">
                           <Link href={`/car/${listing.id}`} className="p-2 text-slate-500 hover:text-accent hover:bg-slate-100 rounded-lg" title="View"><Eye className="w-4 h-4" /></Link>
                           <button onClick={() => setEditingListing(listing)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit"><Edit className="w-4 h-4" /></button>
-                          {listing.status === "pending" && (
+                          {(listing.status === "pending" || listing.status === "changes_requested") && (
                             <>
                               <button onClick={() => handleApproveListing(listing)} disabled={processingId === `lst-${listing.id}`}
                                 className="p-2 text-green-500 hover:bg-green-50 rounded-lg" title="Approve">
                                 {processingId === `lst-${listing.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                              </button>
+                              <button onClick={() => handleRequestChanges(listing)} disabled={processingId === `lst-${listing.id}`}
+                                className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg" title="Request Changes">
+                                <MessageSquare className="w-4 h-4" />
                               </button>
                               <button onClick={() => handleRejectListing(listing)} disabled={processingId === `lst-${listing.id}`}
                                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Reject">
@@ -2714,6 +2743,49 @@ export default function AdminPage() {
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <XCircle className="w-4 h-4" />}
                 Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Request Changes Modal */}
+      {changesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setChangesModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">
+                {t("listingStatus.requestChanges")}
+              </h2>
+              <button onClick={() => setChangesModal(null)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              {changesModal.item.title || `${changesModal.item.year} ${changesModal.item.make} ${changesModal.item.model}`}
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t("listingStatus.adminNote")}</label>
+              <textarea
+                value={changesNote}
+                onChange={(e) => setChangesNote(e.target.value)}
+                rows={3}
+                placeholder={t("listingStatus.enterNote")}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-accent focus:ring-1 focus:ring-accent resize-none"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setChangesModal(null)} className="flex-1 py-2.5 text-slate-700 hover:bg-slate-100 rounded-lg font-medium text-sm">Cancel</button>
+              <button
+                onClick={() => confirmRequestChanges(changesModal.item, changesNote)}
+                disabled={!changesNote.trim() || processingId === `lst-${changesModal.item.id}`}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-lg font-medium text-sm"
+              >
+                {processingId === `lst-${changesModal.item.id}`
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <MessageSquare className="w-4 h-4" />}
+                {t("listingStatus.requestChanges")}
               </button>
             </div>
           </div>

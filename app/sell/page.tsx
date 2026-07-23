@@ -444,10 +444,10 @@ export default function SellPage() {
               )}
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mb-4">
-              {isPending ? t("sell.success.pendingTitle") : t("sell.success.title")}
+              {isPending ? t("listingStatus.submittedForReview") : t("sell.success.title")}
             </h1>
             <p className="text-slate-500 mb-8">
-              {isPending ? t("sell.success.pendingMessage") : t("sell.success.message")}
+              {isPending ? t("listingStatus.submittedMessage") : t("sell.success.message")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               {createdListingId && !isPending ? (
