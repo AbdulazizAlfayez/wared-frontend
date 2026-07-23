@@ -446,14 +446,19 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .site-header.is-dark button.nav-link:hover { background:rgba(255,255,255,.2) !important; color:#FAFAF7 !important; }
 .site-header.is-dark button.nav-link:focus-visible { outline:2px solid rgba(255,255,255,.6); outline-offset:2px; }
 /* Logged-in header controls — all icons/buttons white over dark hero */
-.site-header.is-dark .header-actions a,
-.site-header.is-dark .header-actions button { color:rgba(250,250,247,.9) !important; }
-.site-header.is-dark .header-actions a:hover,
-.site-header.is-dark .header-actions button:hover { color:#FAFAF7 !important; background:rgba(255,255,255,.1) !important; }
-.site-header.is-dark .header-actions span { color:rgba(250,250,247,.85) !important; }
-.site-header.is-dark .header-actions .chevron { color:rgba(250,250,247,.5) !important; }
-/* Profile & notification dropdowns use inline styles — no CSS cascade needed.
-   See Header.tsx comment: "ALL COLORS ARE INTENTIONALLY STATIC". */
+/* Header icon buttons in dark mode — DIRECT children only (> combinator).
+   Dropdowns are nested deeper and must NOT inherit these white colors.
+   The > combinator prevents cascade into dropdown panels. */
+.site-header.is-dark .header-actions > a,
+.site-header.is-dark .header-actions > button,
+.site-header.is-dark .header-actions > div > button,
+.site-header.is-dark .header-actions > div > a { color:rgba(250,250,247,.9) !important; }
+.site-header.is-dark .header-actions > a:hover,
+.site-header.is-dark .header-actions > button:hover,
+.site-header.is-dark .header-actions > div > button:hover,
+.site-header.is-dark .header-actions > div > a:hover { color:#FAFAF7 !important; background:rgba(255,255,255,.1) !important; }
+.site-header.is-dark .header-actions > div > button > span { color:rgba(250,250,247,.85) !important; }
+.site-header.is-dark .header-actions > div > button > .chevron { color:rgba(250,250,247,.5) !important; }
 
 /* Wared design tokens */
 .mk-page {
