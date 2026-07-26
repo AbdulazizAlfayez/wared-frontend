@@ -1101,7 +1101,8 @@
     "sold": "مبيعة",
     "updateImportStatus": "تحديث حالة الاستيراد",
     "statusUpdated": "تم تحديث الحالة",
-    "statusUpdateFailed": "فشل تحديث الحالة"
+    "statusUpdateFailed": "فشل تحديث الحالة",
+    "editListing": "تعديل الإعلان"
   },
   "importers": {
     "sortExperienced": "الأكثر خبرة",
@@ -1213,6 +1214,17 @@
     "editAndResubmit": "عدّل وأعد الإرسال",
     "requestChanges": "طلب تعديل",
     "enterNote": "اكتب ملاحظة للمستورد توضّح التعديلات المطلوبة...",
-    "enterReason": "اكتب سبب الرفض..."
+    "enterReason": "اكتب سبب الرفض...",
+    "viewMyListings": "عرض إعلاناتي"
+  },
+  "validation": {
+    "yearRange": "السنة لازم تكون بين 1980 و {max}.",
+    "mileageNegative": "العداد ما يقبل قيمة سالبة.",
+    "mileageMax": "العداد ما يتعدى 1,000,000 كم.",
+    "pricePositive": "السعر لازم يكون أكثر من صفر.",
+    "priceMax": "السعر ما يتعدى 5,000,000 ريال.",
+    "makeRequired": "الماركة مطلوبة.",
+    "modelRequired": "الموديل مطلوب.",
+    "vinDuplicate": "عندك إعلان نشط بنفس رقم الهيكل."
   }
 }

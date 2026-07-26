@@ -450,21 +450,12 @@ export default function SellPage() {
               {isPending ? t("listingStatus.submittedMessage") : t("sell.success.message")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              {createdListingId && !isPending ? (
-                <Link
-                  href={`/car/${createdListingId}`}
-                  className="flex-1 py-3 bg-accent hover:bg-accent-600 text-white rounded-xl font-semibold transition-colors text-center"
-                >
-                  {t("sell.success.viewListing")}
-                </Link>
-              ) : (
-                <Link
-                  href="/browse"
-                  className="flex-1 py-3 bg-accent hover:bg-accent-600 text-white rounded-xl font-semibold transition-colors text-center"
-                >
-                  {t("sell.success.browseCars")}
-                </Link>
-              )}
+              <Link
+                href="/dashboard/listings"
+                className="flex-1 py-3 bg-accent hover:bg-accent-600 text-white rounded-xl font-semibold transition-colors text-center"
+              >
+                {t("listingStatus.viewMyListings")}
+              </Link>
               <button
                 onClick={() => {
                   setIsSubmitted(false);

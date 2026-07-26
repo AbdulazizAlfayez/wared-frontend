@@ -1101,7 +1101,8 @@
     "sold": "sold",
     "updateImportStatus": "Update Import Status",
     "statusUpdated": "Status updated",
-    "statusUpdateFailed": "Failed to update status"
+    "statusUpdateFailed": "Failed to update status",
+    "editListing": "Edit Listing"
   },
   "importers": {
     "sortExperienced": "Most experienced",
@@ -1213,6 +1214,17 @@
     "editAndResubmit": "Edit & Resubmit",
     "requestChanges": "Request Changes",
     "enterNote": "Enter a note for the importer explaining what needs to change...",
-    "enterReason": "Enter the reason for rejection..."
+    "enterReason": "Enter the reason for rejection...",
+    "viewMyListings": "View My Listings"
+  },
+  "validation": {
+    "yearRange": "Year must be between 1980 and {max}.",
+    "mileageNegative": "Mileage cannot be negative.",
+    "mileageMax": "Mileage cannot exceed 1,000,000 km.",
+    "pricePositive": "Price must be greater than zero.",
+    "priceMax": "Price cannot exceed SAR 5,000,000.",
+    "makeRequired": "Make is required.",
+    "modelRequired": "Model is required.",
+    "vinDuplicate": "You already have an active listing with this VIN."
   }
 }

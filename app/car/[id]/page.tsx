@@ -1391,6 +1391,38 @@ export default function CarDetailPage() {
             {/* Action Buttons — status-aware */}
             <div className="space-y-3">
               {(() => {
+                // Owner sees status banner instead of reserve CTA when listing is not approved
+                const listingApprovalStatus = (listing as any).status ?? "approved";
+                if (isOwner && listingApprovalStatus !== "approved") {
+                  const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+                    pending:           { bg: "bg-amber-50 border-amber-200",   text: "text-amber-800",  label: t("listingStatus.pending") },
+                    rejected:          { bg: "bg-red-50 border-red-200",       text: "text-red-800",    label: t("listingStatus.rejected") },
+                    changes_requested: { bg: "bg-orange-50 border-orange-200", text: "text-orange-800", label: t("listingStatus.changes_requested") },
+                    draft:             { bg: "bg-slate-50 border-slate-200",   text: "text-slate-600",  label: t("listingStatus.draft") },
+                  };
+                  const cfg = statusConfig[listingApprovalStatus] || statusConfig.pending;
+                  const adminNotes = (listing as any).admin_notes || (listing as any).rejection_reason;
+                  return (
+                    <div className={`rounded-2xl border p-5 ${cfg.bg}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle className={`w-5 h-5 ${cfg.text}`} />
+                        <span className={`font-medium ${cfg.text}`}>{cfg.label}</span>
+                      </div>
+                      {adminNotes && (listingApprovalStatus === "rejected" || listingApprovalStatus === "changes_requested") && (
+                        <p className={`text-[13.5px] mb-4 ${cfg.text} opacity-85`}>
+                          {t("listingStatus.adminNote")}: {adminNotes}
+                        </p>
+                      )}
+                      <Link
+                        href={`/listing/edit/${listingId}`}
+                        className={`block w-full text-center py-3 rounded-xl bg-white border ${cfg.bg.replace("bg-", "border-").replace("50", "300")} ${cfg.text} text-[14px] font-medium hover:opacity-80 transition-colors`}
+                      >
+                        {t("carDetail.editListing")}
+                      </Link>
+                    </div>
+                  );
+                }
+
                 const status = listing.import_status ?? "available";
                 const isReserved = status === "reserved" || !!(listing as any).is_reserved;
 

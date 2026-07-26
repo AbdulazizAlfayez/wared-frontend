@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, CheckCircle, Loader2, Upload, X,
-  Car, Globe, DollarSign, Ship, Shield, Camera, AlertCircle,
+  Car, Globe, DollarSign, Ship, Shield, Camera, AlertCircle, Clock,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { useTranslation } from "@/lib/i18n";
@@ -247,6 +248,7 @@ export default function ListCarPage() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -401,8 +403,7 @@ export default function ListCarPage() {
         }
       }
 
-      showToast("success", t("listingStatus.submittedForReview"));
-      router.push(`/car/${newListing.id}`);
+      setIsSubmitted(true);
     } catch (err: unknown) {
       // Surface real field errors from the backend
       const raw = err instanceof Error ? err.message : String(err);
@@ -724,6 +725,33 @@ export default function ListCarPage() {
         );
     }
   };
+
+  // ---------------------------------------------------------------------------
+  // Success Screen
+  // ---------------------------------------------------------------------------
+  if (isSubmitted) {
+    return (
+      <div className="max-w-lg mx-auto py-16 px-4 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-100 flex items-center justify-center">
+            <Clock className="w-10 h-10 text-amber-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">
+            {t("listingStatus.submittedForReview")}
+          </h1>
+          <p className="text-slate-500 mb-8">
+            {t("listingStatus.submittedMessage")}
+          </p>
+          <Link
+            href="/dashboard/listings"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-600 text-white rounded-xl font-semibold transition-colors"
+          >
+            {t("listingStatus.viewMyListings")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Render
