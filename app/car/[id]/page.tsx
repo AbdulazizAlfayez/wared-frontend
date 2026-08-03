@@ -1085,8 +1085,8 @@ export default function CarDetailPage() {
               </div>
             )}
 
-            {/* Import Status — owner sees stepper + update control */}
-            {isOwner && (
+            {/* Import Status — owner sees stepper + update control ONLY on approved listings */}
+            {isOwner && listing.status === 'approved' && (
               <div className="hidden lg:block">
                 <ImportStatusStepper status={listing.import_status} />
                 <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} />
@@ -1243,7 +1243,7 @@ export default function CarDetailPage() {
 
             {/* Mobile-only: stepper (owner only), cost breakdown, source info */}
             <div className="lg:hidden space-y-5">
-              {isOwner && (
+              {isOwner && listing.status === 'approved' && (
                 <>
                   <ImportStatusStepper status={listing.import_status} />
                   <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} />
