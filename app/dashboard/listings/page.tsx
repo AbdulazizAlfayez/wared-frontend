@@ -892,10 +892,7 @@ export default function DealerListingsPage() {
                 className="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-accent min-w-[140px]"
               >
                 <option value="">Change Status…</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="sold">Sold</option>
-                <option value="draft">Draft</option>
+                <option value="sold">Mark as Sold</option>
               </select>
               <button
                 onClick={handleBulkStatusChange}
