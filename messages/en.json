@@ -1102,7 +1102,8 @@
     "updateImportStatus": "Update Import Status",
     "statusUpdated": "Status updated",
     "statusUpdateFailed": "Failed to update status",
-    "editListing": "Edit Listing"
+    "editListing": "Edit Listing",
+    "statusLockedByOrder": "Status is managed by the active order. Update the order status instead."
   },
   "importers": {
     "sortExperienced": "Most experienced",

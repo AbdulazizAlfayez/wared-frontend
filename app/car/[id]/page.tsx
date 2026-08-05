@@ -217,11 +217,29 @@ function SpecRow({
   );
 }
 
-function OwnerStatusControl({ listingId, currentStatus }: { listingId: string; currentStatus: string | null }) {
+function OwnerStatusControl({ listingId, currentStatus, hasActiveOrder }: {
+  listingId: string; currentStatus: string | null; hasActiveOrder: boolean;
+}) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [newStatus, setNewStatus] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Pre-order: only sourcing/available allowed. With active order: control hidden (rendered in parent).
+  const PRE_ORDER_ALLOWED = [
+    { key: "sourcing", label: "Sourcing" },
+    { key: "available", label: "Available" },
+  ];
+
+  if (hasActiveOrder) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-3 text-sm text-amber-800">
+        {t("carDetail.statusLockedByOrder")}
+      </div>
+    );
+  }
+
+  const options = PRE_ORDER_ALLOWED.filter(s => s.key !== currentStatus);
 
   const handleUpdate = async () => {
     if (!newStatus) return;
@@ -231,8 +249,10 @@ function OwnerStatusControl({ listingId, currentStatus }: { listingId: string; c
       showToast("success", t("carDetail.statusUpdated"));
       setNewStatus("");
       window.location.reload();
-    } catch {
-      showToast("error", t("carDetail.statusUpdateFailed"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      try { const b = JSON.parse(msg); showToast("error", b.import_status?.[0] ?? t("carDetail.statusUpdateFailed")); }
+      catch { showToast("error", t("carDetail.statusUpdateFailed")); }
     } finally {
       setIsUpdating(false);
     }
@@ -250,7 +270,7 @@ function OwnerStatusControl({ listingId, currentStatus }: { listingId: string; c
           className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-accent focus:outline-none"
         >
           <option value="">{currentStatus?.replace(/_/g, " ") ?? "—"}</option>
-          {STATUS_STEPS.filter(s => s.key !== currentStatus).map(s => (
+          {options.map(s => (
             <option key={s.key} value={s.key}>{s.label}</option>
           ))}
         </select>
@@ -1089,7 +1109,7 @@ export default function CarDetailPage() {
             {isOwner && listing.status === 'approved' && (
               <div className="hidden lg:block">
                 <ImportStatusStepper status={listing.import_status} />
-                <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} />
+                <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} hasActiveOrder={!!(listing as any).is_reserved} />
               </div>
             )}
 
@@ -1246,7 +1266,7 @@ export default function CarDetailPage() {
               {isOwner && listing.status === 'approved' && (
                 <>
                   <ImportStatusStepper status={listing.import_status} />
-                  <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} />
+                  <OwnerStatusControl listingId={listingId} currentStatus={listing.import_status} hasActiveOrder={!!(listing as any).is_reserved} />
                 </>
               )}
               <CostBreakdownCard listing={listing} />

@@ -1102,7 +1102,8 @@
     "updateImportStatus": "تحديث حالة الاستيراد",
     "statusUpdated": "تم تحديث الحالة",
     "statusUpdateFailed": "فشل تحديث الحالة",
-    "editListing": "تعديل الإعلان"
+    "editListing": "تعديل الإعلان",
+    "statusLockedByOrder": "حالة السيارة مرتبطة بطلب نشط. حدّث حالة الطلب بدلاً من ذلك."
   },
   "importers": {
     "sortExperienced": "الأكثر خبرة",
