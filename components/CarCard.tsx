@@ -41,22 +41,6 @@ export default function CarCard({ listing, favoriteId, onFavoriteToggle }: CarCa
   const [currentFavoriteId, setCurrentFavoriteId] = useState<number | undefined>(favoriteId);
   const [isToggling, setIsToggling] = useState(false);
 
-  // Guard: if listing is somehow undefined/null, render nothing
-  if (!listing) return null;
-
-  const primaryImage = listing.images?.find((img) => img.is_primary) ?? listing.images?.[0];
-  const imageUrl =
-    listing.primary_image ||
-    primaryImage?.image_url ||
-    (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
-
-  // Import-specific fields (typed as any since they're extended fields)
-  const ls = listing as any;
-  const importStatus = ls.import_status as string | undefined;
-  const sourceCountry = ls.source_country as string | undefined;
-  const finalPriceSar = ls.final_price_sar ? Number(ls.final_price_sar) : null;
-  const displayPrice = finalPriceSar ?? listing.price;
-
   const handleToggleFavorite = useCallback(
     async (e: React.MouseEvent) => {
       e.preventDefault();
@@ -78,8 +62,26 @@ export default function CarCard({ listing, favoriteId, onFavoriteToggle }: CarCa
       } catch { /* non-critical */ }
       finally { setIsToggling(false); }
     },
-    [isAuthenticated, isToggling, isFav, currentFavoriteId, listing.id, onFavoriteToggle]
+    [isAuthenticated, isToggling, isFav, currentFavoriteId, listing?.id, onFavoriteToggle]
   );
+
+  // Guard AFTER all hooks: if listing is somehow undefined/null, render nothing.
+  // (Hooks must run unconditionally — early-returning before them breaks the
+  // rules of hooks and crashes React when the prop flips between renders.)
+  if (!listing) return null;
+
+  const primaryImage = listing.images?.find((img) => img.is_primary) ?? listing.images?.[0];
+  const imageUrl =
+    listing.primary_image ||
+    primaryImage?.image_url ||
+    (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
+
+  // Import-specific fields (typed as any since they're extended fields)
+  const ls = listing as any;
+  const importStatus = ls.import_status as string | undefined;
+  const sourceCountry = ls.source_country as string | undefined;
+  const finalPriceSar = ls.final_price_sar ? Number(ls.final_price_sar) : null;
+  const displayPrice = finalPriceSar ?? listing.price;
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("en-SA", {
