@@ -460,6 +460,26 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .site-header.is-dark .header-actions > div > button > span { color:rgba(250,250,247,.85) !important; }
 .site-header.is-dark .header-actions > div > button > .chevron { color:rgba(250,250,247,.5) !important; }
 
+/* Sign Up pill — must stay dark-on-white over the dark hero.
+   Needs higher specificity than the ".header-actions > div > a" white-text
+   rule above, which was making the button text invisible (white on white). */
+.site-header.is-dark .header-actions .auth-btn,
+.site-header.is-dark .header-actions > div > a.auth-btn {
+  background:#FAFAF7 !important;
+  color:#0A0A0A !important;
+  border-color:#FAFAF7 !important;
+}
+.site-header.is-dark .header-actions .auth-btn:hover,
+.site-header.is-dark .header-actions > div > a.auth-btn:hover {
+  background:#e8e8e4 !important;
+  color:#0A0A0A !important;
+}
+/* Sign In outline pill keeps its white-outline look (already correct), but
+   guard it explicitly so future header-actions rules can't flip it either. */
+.site-header.is-dark .header-actions > div > a.auth-signin {
+  color:#FAFAF7 !important;
+}
+
 /* Wared design tokens */
 .mk-page {
   --mk-ink: #0A0A0A;
