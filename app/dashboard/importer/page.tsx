@@ -8,7 +8,7 @@ import type { Order, PaginatedResponse } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Package, Plus, TrendingUp, DollarSign, Star, CheckCircle,
+  Package, Plus, DollarSign, Star,
   Loader2, ChevronRight, Car, Users, Clock, ArrowRight,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
@@ -17,11 +17,14 @@ import { getImageUrl } from "@/lib/utils";
 // Types
 // ---------------------------------------------------------------------------
 interface ImporterStats {
-  total_listings:     number;
-  active_orders:      number;
-  completed_this_month: number;
-  revenue_this_month: number;
-  average_rating:     number | null;
+  total_cars_listed:           number;
+  live_listings_count:         number;
+  pending_approval_count:      number;
+  sold_count:                  number;
+  active_orders_count:         number;
+  completed_orders_this_month: number;
+  revenue_this_month:          number;
+  average_rating:              number | null;
 }
 
 interface PipelineListing {
@@ -284,37 +287,11 @@ export default function ImporterDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard
-          label="Cars Listed"
-          value={stats?.total_listings ?? 0}
-          icon={Car}
-          color="bg-slate-100 text-slate-600"
-        />
-        <StatCard
-          label="Active Orders"
-          value={stats?.active_orders ?? 0}
-          icon={Package}
-          color="bg-accent/10 text-accent"
-        />
-        <StatCard
-          label="Completed (Month)"
-          value={stats?.completed_this_month ?? 0}
-          icon={CheckCircle}
-          color="bg-green-100 text-green-600"
-        />
-        <StatCard
-          label="Revenue (Month)"
-          value={formatSAR(stats?.revenue_this_month)}
-          icon={DollarSign}
-          color="bg-emerald-100 text-emerald-600"
-        />
-        <StatCard
-          label="Rating"
-          value={stats?.average_rating != null ? Number(stats.average_rating).toFixed(1) : "—"}
-          sub="Average from buyers"
-          icon={Star}
-          color="bg-yellow-100 text-yellow-600"
-        />
+        <StatCard label="Live Listings" value={stats?.live_listings_count ?? 0} sub={`${stats?.total_cars_listed ?? 0} total cars`} icon={Car} color="bg-slate-100 text-slate-600" />
+        <StatCard label="Pending Approval" value={stats?.pending_approval_count ?? 0} sub="Awaiting admin review" icon={Clock} color="bg-amber-100 text-amber-600" />
+        <StatCard label="Active Orders" value={stats?.active_orders_count ?? 0} icon={Package} color="bg-accent/10 text-accent" />
+        <StatCard label="Revenue (Month)" value={formatSAR(stats?.revenue_this_month)} sub={`${stats?.completed_orders_this_month ?? 0} completed this month`} icon={DollarSign} color="bg-emerald-100 text-emerald-600" />
+        <StatCard label="Rating" value={stats?.average_rating != null && Number(stats.average_rating) > 0 ? Number(stats.average_rating).toFixed(1) : "—"} sub="Average from buyers" icon={Star} color="bg-yellow-100 text-yellow-600" />
       </div>
 
       {/* Quick Actions */}
