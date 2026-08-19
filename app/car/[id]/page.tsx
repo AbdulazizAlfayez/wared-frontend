@@ -1031,6 +1031,16 @@ export default function CarDetailPage() {
           <span>{t("carDetail.backToBrowse")}</span>
         </Link>
 
+        {isOwner && ((listing as any).status ?? "approved") !== "approved" && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900">{t("listingStatus.submittedForReview")}</p>
+              <p className="text-[13.5px] text-amber-800 mt-1">{t("listingStatus.submittedMessage")}</p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* ---------------------------------------------------------------- */}
           {/* LEFT: Image Gallery                                               */}
@@ -1046,7 +1056,14 @@ export default function CarDetailPage() {
               />
               {/* Import status badge */}
               <div className="absolute top-4 left-4">
-                <StatusBadge status={(listing as any).is_reserved ? "reserved" : (listing.import_status ?? "available")} />
+                {((listing as any).status ?? "approved") === "approved" ? (
+                  <StatusBadge status={(listing as any).is_reserved ? "reserved" : (listing.import_status ?? "available")} />
+                ) : (
+                  <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12.5px] font-medium border bg-amber-50 text-amber-800 border-amber-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    {t(`listingStatus.${(listing as any).status}`) || t("listingStatus.pending")}
+                  </span>
+                )}
               </div>
               {/* Country flag badge */}
               {listing.source_country && (
