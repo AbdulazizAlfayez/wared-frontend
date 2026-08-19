@@ -352,6 +352,20 @@ export default function EditListingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/listings/${id}/`);
+      router.push("/dashboard/listings");
+    } catch {
+      setError("Could not delete the listing. Please try again.");
+      setIsDeleting(false);
+      setConfirmingDelete(false);
+    }
+  };
 
   // Auth guard
   useEffect(() => {
@@ -737,6 +751,32 @@ export default function EditListingPage() {
             </button>
           </div>
         </form>
+
+        {/* Danger Zone */}
+        <div className="mt-8 bg-white rounded-2xl border border-red-200 p-6">
+          <h2 className="text-base font-semibold text-red-700 mb-1">Danger Zone</h2>
+          <p className="text-sm text-slate-500 mb-4">
+            Deleting this listing removes it from the marketplace permanently. This cannot be undone.
+          </p>
+          {!confirmingDelete ? (
+            <button type="button" onClick={() => setConfirmingDelete(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 border border-red-300 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors">
+              <Trash2 className="w-4 h-4" /> Delete this listing
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-red-700">Are you sure?</span>
+              <button type="button" onClick={handleDelete} disabled={isDeleting}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white rounded-xl text-sm font-semibold transition-colors">
+                {isDeleting ? (<><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</>) : (<><Trash2 className="w-4 h-4" /> Yes, delete permanently</>)}
+              </button>
+              <button type="button" onClick={() => setConfirmingDelete(false)} disabled={isDeleting}
+                className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
