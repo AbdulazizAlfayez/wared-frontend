@@ -141,6 +141,7 @@ function PipelineCarCard({ listing }: { listing: PipelineListing }) {
 type PipelineApiResponse = Record<string, PipelineListing[]>;
 
 const COLUMN_LABELS: Record<string, string> = {
+  pending_approval:  "Pending Approval",
   sourcing:          "Sourcing",
   available:         "Available",
   reserved:          "Reserved",
