@@ -51,10 +51,23 @@ function ResetPasswordForm() {
       });
       setSuccess(true);
       setTimeout(() => router.push("/auth/signin"), 3000);
-    } catch {
-      setError(
-        "Reset link is invalid or has expired. Please request a new one."
-      );
+    } catch (e) {
+      // Show the REAL reason from the API (e.g. "This password is too
+      // common.") instead of always blaming the reset link.
+      let msg = "Reset link is invalid or has expired. Please request a new one.";
+      try {
+        const body = JSON.parse((e as Error).message);
+        const firstError =
+          body?.new_password?.[0] ??
+          body?.confirm_password?.[0] ??
+          body?.token?.[0] ??
+          body?.uid?.[0] ??
+          (typeof body?.detail === "string" ? body.detail : null);
+        if (firstError) msg = firstError;
+      } catch {
+        /* unparseable error — keep the default message */
+      }
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -161,7 +174,7 @@ function ResetPasswordForm() {
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
             {error}{" "}
-            {error.includes("invalid or has expired") && (
+            {/(invalid or (has )?expired)/i.test(error) && (
               <Link
                 href="/auth/forgot-password"
                 className="underline font-medium"
