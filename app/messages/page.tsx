@@ -80,6 +80,7 @@ interface DraftTarget {
   importerUserId: number;
   importerName: string;
   carId?: number;
+  buyerUserId?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -452,9 +453,10 @@ function DraftThread({
         setIsSending(false);
         return;
       }
-      console.log("[DraftThread] Creating conversation with car_id:", draft.carId);
+      console.log("[DraftThread] Creating conversation with car_id:", draft.carId, "buyer_id:", draft.buyerUserId);
       const conv = await api.post<Conversation>("/api/conversations/", {
         car_id: draft.carId,
+        ...(draft.buyerUserId ? { buyer_id: draft.buyerUserId } : {}),
       });
       console.log("[DraftThread] Conversation created:", conv.id);
 
@@ -607,13 +609,15 @@ function MessagesPageInner() {
     if (!isAuthenticated || isLoading) return;
 
     const importerUserId = searchParams.get("importer_user") ?? searchParams.get("importer");
+    const buyerUserParam = searchParams.get("buyer_user");
     const carIdParam = searchParams.get("car_id");
-    if (!importerUserId) return;
+    if (!importerUserId && !buyerUserParam) return;
 
     deepLinkHandled.current = true;
-    const targetUserId = Number(importerUserId);
+    const targetUserId = Number(importerUserId ?? buyerUserParam);
+    const sellerInitiated = !importerUserId && !!buyerUserParam;
 
-    console.log("[MSG] Deep-link: importer_user=", targetUserId, "car_id=", carIdParam);
+    console.log("[MSG] Deep-link: target_user=", targetUserId, "car_id=", carIdParam, "sellerInitiated=", sellerInitiated);
 
     // Check if we already have a conversation with this importer
     const existing = carIdParam
@@ -648,6 +652,7 @@ function MessagesPageInner() {
         importerUserId: targetUserId,
         importerName,
         carId: carIdParam ? Number(carIdParam) : undefined,
+        buyerUserId: sellerInitiated ? targetUserId : undefined,
       });
       setSelected(null);
       setShowThread(true);

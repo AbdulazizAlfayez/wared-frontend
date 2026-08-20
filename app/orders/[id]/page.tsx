@@ -654,7 +654,7 @@ export default function OrderDetailPage() {
                         <User className="w-6 h-6 text-slate-400" />
                       </div>
                       <div>
-                        <div className="font-semibold text-slate-900">{order.buyer_info.name}</div>
+                        <Link href={`/user/${order.buyer_info.id}`} className="font-semibold text-slate-900 hover:text-accent hover:underline">{order.buyer_info.name}</Link>
                         {order.buyer_info.city && (
                           <div className="text-sm text-slate-400 flex items-center gap-1">
                             <MapPin className="w-3 h-3" /> {order.buyer_info.city}
@@ -669,7 +669,7 @@ export default function OrderDetailPage() {
                       </div>
                     )}
                     <Link
-                      href={`/messages?order=${order.id}`}
+                      href={`/messages?buyer_user=${order.buyer_info.id}${order.car?.id ? `&car_id=${order.car.id}` : ""}`}
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
                     >
                       <MessageSquare className="w-4 h-4" />
