@@ -139,6 +139,148 @@ const DOC_ICONS: Record<string, React.ElementType> = {
 };
 
 // ---------------------------------------------------------------------------
+// Payment — buyer pays the car balance to WARED by bank transfer.
+// States: awaiting_payment → under_review → paid.
+// ---------------------------------------------------------------------------
+function PaymentSection({ order, onUpdated }: { order: Order; onUpdated: () => void }) {
+  const o = order as unknown as {
+    id: number;
+    payment_status?: string;
+    balance_payment?: { status: string; amount: number; reference: string } | null;
+    payment_instructions?: {
+      bank_name: string; beneficiary: string; iban: string;
+      amount_sar: number; note: string;
+    } | null;
+    status?: string;
+  };
+  const [reference, setReference] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const payStatus = o.payment_status;
+  const instr = o.payment_instructions;
+
+  if (o.status === "cancelled" || o.status === "refunded") return null;
+
+  if (payStatus === "paid") {
+    return (
+      <div className="bg-green-50 rounded-2xl border border-green-200 p-5">
+        <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
+          <CheckCircle className="w-5 h-5" /> Payment confirmed by WARED
+        </div>
+        <p className="text-[13px] text-green-700/80 mt-1.5">
+          Full payment received{o.balance_payment ? ` (${formatSAR(o.balance_payment.amount)})` : ""}. The importer is now arranging delivery — follow progress in the timeline.
+        </p>
+      </div>
+    );
+  }
+
+  if (payStatus === "under_review") {
+    return (
+      <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5">
+        <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+          <Clock className="w-5 h-5" /> Payment under review by WARED
+        </div>
+        <p className="text-[13px] text-amber-800/80 mt-1.5">
+          We received your transfer reference
+          {o.balance_payment?.reference ? <> (<span className="font-mono">{o.balance_payment.reference}</span>)</> : null}.
+          WARED verifies bank transfers within 1 business day — you&apos;ll be notified once confirmed.
+        </p>
+      </div>
+    );
+  }
+
+  if (!instr) return null;
+
+  const submit = async () => {
+    if (!reference.trim()) { setError("Enter the bank transfer reference number."); return; }
+    setIsSubmitting(true); setError("");
+    try {
+      await api.post(`/api/orders/${o.id}/pay-balance/`, { reference: reference.trim() });
+      onUpdated();
+    } catch {
+      setError("Could not submit the reference. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-accent/30 p-5">
+      <h2 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-2">
+        <CreditCard className="w-4 h-4 text-accent" /> Pay for your car
+      </h2>
+      <p className="text-[13px] text-slate-500 mb-4">
+        For an amount this size, payment is made by <span className="font-semibold text-slate-700">bank transfer to WARED</span> — your money is held safely by the platform and only released to the importer after delivery.
+      </p>
+      <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm mb-4">
+        <div className="flex justify-between"><span className="text-slate-500">Amount</span><span className="font-bold text-slate-900">{formatSAR(instr.amount_sar)}</span></div>
+        <div className="flex justify-between"><span className="text-slate-500">Bank</span><span className="font-medium text-slate-800">{instr.bank_name}</span></div>
+        <div className="flex justify-between"><span className="text-slate-500">Beneficiary</span><span className="font-medium text-slate-800">{instr.beneficiary}</span></div>
+        <div className="flex justify-between gap-3"><span className="text-slate-500">IBAN</span><span className="font-mono text-[13px] text-slate-800 text-right">{instr.iban}</span></div>
+        <p className="text-xs text-slate-400 pt-1 border-t border-slate-200">{instr.note}</p>
+      </div>
+      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+        After transferring, enter your bank reference number:
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+          placeholder="e.g. SNB-TRF-2026-001234"
+          className="flex-1 px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-accent"
+        />
+        <button
+          onClick={submit}
+          disabled={isSubmitting}
+          className="px-5 py-2.5 bg-accent hover:bg-accent-600 disabled:bg-accent/50 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+        >
+          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          I&apos;ve paid
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+    </div>
+  );
+}
+
+// Importer-side payment state: awaiting / under review / paid + payout share
+function ImporterPaymentCard({ order }: { order: Order }) {
+  const o = order as unknown as {
+    payment_status?: string;
+    balance_payment?: { amount: number; reference: string } | null;
+    importer_payout?: { commission_pct: number; payout_pct: number; payout_sar: number } | null;
+    status?: string;
+  };
+  if (o.status === "cancelled" || o.status === "refunded") return null;
+  const ps = o.payment_status;
+  const payout = o.importer_payout;
+
+  const state =
+    ps === "paid"
+      ? { cls: "bg-green-50 border-green-200 text-green-700", icon: CheckCircle, label: "Buyer has paid — cleared for delivery" }
+      : ps === "under_review"
+      ? { cls: "bg-amber-50 border-amber-200 text-amber-800", icon: Clock, label: "Buyer submitted payment — WARED is verifying" }
+      : { cls: "bg-slate-50 border-slate-200 text-slate-600", icon: Clock, label: "Waiting for buyer payment" };
+  const Icon = state.icon;
+
+  return (
+    <div className={`rounded-2xl border p-5 ${state.cls}`}>
+      <div className="flex items-center gap-2 font-semibold text-sm">
+        <Icon className="w-5 h-5" /> {state.label}
+      </div>
+      {payout && (
+        <p className="text-[13px] mt-1.5 opacity-85">
+          Your payout after WARED&apos;s {payout.commission_pct}% commission:{" "}
+          <span className="font-bold">{formatSAR(payout.payout_sar)}</span> ({payout.payout_pct}%)
+          {ps === "paid" ? " — released after delivery is confirmed." : "."}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Timeline
 // ---------------------------------------------------------------------------
 function TimelineView({ events, currentStatus }: { events: OrderTimelineEvent[]; currentStatus: string }) {
@@ -645,6 +787,9 @@ export default function OrderDetailPage() {
                 {/* Status Update — importer's main action */}
                 <StatusUpdatePanel order={order} onUpdated={refetchOrder} />
 
+                {/* Payment state (importer POV) */}
+                <ImporterPaymentCard order={order} />
+
                 {/* Buyer Card */}
                 {order.buyer_info && (
                   <div className="bg-white rounded-2xl border border-slate-100 p-5">
@@ -715,6 +860,9 @@ export default function OrderDetailPage() {
             ) : (
               /* ── BUYER VIEW (unchanged) ── */
               <>
+                {/* Payment (buyer POV) — bank transfer to WARED */}
+                <PaymentSection order={order} onUpdated={refetchOrder} />
+
                 {/* Order Summary Card */}
                 <div className="bg-white rounded-2xl border border-slate-100 p-5">
                   <h2 className="text-sm font-semibold text-slate-700 mb-4">Order Summary</h2>
