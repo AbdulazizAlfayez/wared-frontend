@@ -916,7 +916,7 @@ export default function OrderDetailPage() {
                       </div>
                     </div>
                     <Link
-                      href={`/messages?order=${order.id}`}
+                      href={`/messages?importer_user=${order.importer_info.id}${order.car?.id ? `&car_id=${order.car.id}` : ""}`}
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
                     >
                       <MessageSquare className="w-4 h-4" />

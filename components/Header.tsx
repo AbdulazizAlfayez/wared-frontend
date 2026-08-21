@@ -219,6 +219,9 @@ export default function Header() {
             <NavLink href="/calculator">{t("nav.calculator")}</NavLink>
             <NavLink href="/how-it-works">{t("nav.howItWorks")}</NavLink>
             {isDashboardUser && <NavLink href="/dashboard">{t("nav.dashboard")}</NavLink>}
+            {isAuthenticated && !isDashboardUser && (
+              <NavLink href="/orders">{t("nav.myOrders") || "My Orders"}</NavLink>
+            )}
             {isImporter && <NavLink href="/dashboard/importer/list-car">{t("nav.listCar")}</NavLink>}
             {isAdmin && <NavLink href="/admin">{t("nav.admin")}</NavLink>}
           </nav>
