@@ -299,7 +299,17 @@ function MessageThread({
         </button>
         <Avatar name={otherName} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-900 text-sm">{otherName}</p>
+          {conversation.other_party?.id ? (
+            <Link
+              href={`/user/${conversation.other_party.id}`}
+              className="font-semibold text-slate-900 text-sm hover:text-accent hover:underline"
+              title="View profile"
+            >
+              {otherName}
+            </Link>
+          ) : (
+            <p className="font-semibold text-slate-900 text-sm">{otherName}</p>
+          )}
           {listing && (
             <Link
               href={`/car/${listing.id}`}

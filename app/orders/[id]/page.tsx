@@ -467,6 +467,8 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [newStatus, setNewStatus] = useState("");
+  const [statusNote, setStatusNote] = useState("");
+  const [estDelivery, setEstDelivery] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   const nextStatuses = VALID_TRANSITIONS[order.status] ?? [];
@@ -476,9 +478,17 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
     if (!newStatus) return;
     setIsUpdating(true);
     try {
-      await api.patch(`/api/orders/${order.id}/update-status/`, { status: newStatus });
+      await api.patch(`/api/orders/${order.id}/update-status/`, {
+        status: newStatus,
+        // The note becomes the timeline entry the BUYER reads — encourage
+        // real detail ("Car purchased at auction, chassis #…, ship leaves Tuesday")
+        ...(statusNote.trim() ? { notes: statusNote.trim() } : {}),
+        ...(estDelivery ? { estimated_delivery_date: estDelivery } : {}),
+      });
       showToast("success", t("orderDetail.statusUpdated"));
       setNewStatus("");
+      setStatusNote("");
+      setEstDelivery("");
       onUpdated();
     } catch {
       showToast("error", t("orderDetail.statusUpdateFailed"));
@@ -503,6 +513,22 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
           <option key={s} value={s}>{STATUS_LABELS[s] ?? s.replace(/_/g, " ")}</option>
         ))}
       </select>
+      <textarea
+        value={statusNote}
+        onChange={(e) => setStatusNote(e.target.value)}
+        rows={2}
+        placeholder="Details for the buyer — e.g. 'Car purchased at Osaka auction, ships Tuesday on MV Horizon'"
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-3 resize-none"
+      />
+      <label className="block text-xs font-medium text-slate-500 mb-1.5">
+        Estimated delivery date (optional)
+      </label>
+      <input
+        type="date"
+        value={estDelivery}
+        onChange={(e) => setEstDelivery(e.target.value)}
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-3"
+      />
       <button
         onClick={handleUpdate}
         disabled={!newStatus || isUpdating}
