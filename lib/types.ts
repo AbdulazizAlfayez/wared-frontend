@@ -395,11 +395,14 @@ export interface AdminStats {
   pending_listings: number;
   approved_listings: number;
   total_users: number;
+  total_importers?: number;
   total_leads: number;
   total_bookings: number;
   total_workshops: number;
   total_showrooms: number;
   pending_applications: number;
+  active_orders?: number;
+  pending_payments?: number;
 }
 
 export interface ShowroomOwner {

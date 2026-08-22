@@ -39,11 +39,28 @@ import {
   CalendarClock,
   Star,
   MessageSquare,
+  DollarSign,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { getImageUrl } from "@/lib/utils";
 
-type TabType = "listings" | "orders" | "importers" | "pipeline" | "users" | "applications" | "audit" | "verifications" | "moderation" | "reviews" | "fraud";
+type TabType = "listings" | "orders" | "payments" | "importers" | "pipeline" | "users" | "applications" | "audit" | "verifications" | "moderation" | "reviews" | "fraud";
+
+// ---------------------------------------------------------------------------
+// Payments verification queue (bank transfers awaiting WARED confirmation)
+// ---------------------------------------------------------------------------
+interface PendingPayment {
+  id: number;
+  order_id: number;
+  order_number: string;
+  car_title: string;
+  buyer_name: string;
+  importer_name: string;
+  amount: number;
+  reference: string;
+  status: string;
+  submitted_at: string;
+}
 
 interface AuditLogEntry {
   id: number;
@@ -395,6 +412,47 @@ export default function AdminPage() {
     "/api/dashboard/admin/",
     { enabled: isAdmin }
   );
+
+  // ── Payments queue (bank transfers awaiting confirmation) ──────────────────
+  const { data: paymentsResult, refetch: paymentsRefetch } = useApiQuery<{ count: number; results: PendingPayment[] }>(
+    "/api/admin/payments/?status=pending",
+    { enabled: isAdmin }
+  );
+  const pendingPayments = paymentsResult?.results ?? [];
+  const [payingActionId, setPayingActionId] = useState<number | null>(null);
+
+  const handleConfirmPayment = async (p: PendingPayment) => {
+    setPayingActionId(p.id);
+    try {
+      await djangoApi.post(`/api/orders/${p.order_id}/confirm-payment/`);
+      showToast(`Payment confirmed — importer payout released for ${p.order_number}`, "success");
+      paymentsRefetch();
+      statsRefetch();
+    } catch {
+      showToast("Failed to confirm payment", "error");
+    } finally {
+      setPayingActionId(null);
+    }
+  };
+
+  const handleRejectPayment = async (p: PendingPayment) => {
+    const reason = window.prompt(
+      `Reject payment for ${p.order_number}?\nEnter the reason shown to the buyer:`,
+      "Transfer could not be matched to our bank account."
+    );
+    if (reason === null) return;
+    setPayingActionId(p.id);
+    try {
+      await djangoApi.post(`/api/orders/${p.order_id}/reject-payment/`, { reason });
+      showToast("Payment rejected — buyer asked to re-submit", "success");
+      paymentsRefetch();
+      statsRefetch();
+    } catch {
+      showToast("Failed to reject payment", "error");
+    } finally {
+      setPayingActionId(null);
+    }
+  };
 
   // Debug: log stats to help identify field-name mismatches
   useEffect(() => {
@@ -1025,10 +1083,10 @@ export default function AdminPage() {
           {[
             { label: "Listings", value: stats?.total_listings, icon: Car, colorBg: "bg-blue-100", colorTxt: "text-blue-600" },
             { label: "Pending Review", value: stats?.pending_listings, icon: Clock, colorBg: "bg-yellow-100", colorTxt: "text-yellow-600" },
-            { label: "Importers", value: importersResult?.count, icon: Store, colorBg: "bg-[#f3f4f6]", colorTxt: "text-[#0a0a0a]" },
-            { label: "Active Orders", value: ordersResult?.count, icon: TrendingUp, colorBg: "bg-green-100", colorTxt: "text-green-600" },
+            { label: "Pending Payments", value: (stats as { pending_payments?: number })?.pending_payments ?? paymentsResult?.count ?? 0, icon: DollarSign, colorBg: "bg-emerald-100", colorTxt: "text-emerald-600" },
+            { label: "Importers", value: stats?.total_importers, icon: Store, colorBg: "bg-[#f3f4f6]", colorTxt: "text-[#0a0a0a]" },
+            { label: "Active Orders", value: (stats as { active_orders?: number })?.active_orders ?? 0, icon: TrendingUp, colorBg: "bg-green-100", colorTxt: "text-green-600" },
             { label: "Users", value: stats?.total_users, icon: Users, colorBg: "bg-purple-100", colorTxt: "text-purple-600" },
-            { label: "Applications", value: stats?.pending_applications, icon: ShieldCheck, colorBg: "bg-orange-100", colorTxt: "text-orange-600" },
           ].map(({ label, value, icon: Icon, colorBg, colorTxt }) => (
             <div key={label} className="bg-white rounded-xl p-4 border border-slate-100">
               <div className="flex items-center gap-3">
@@ -1042,11 +1100,42 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {/* ── Action Required — the admin's to-do list, one line per queue ── */}
+        {(() => {
+          const queues = ([
+            { label: "Bank transfers to verify", count: paymentsResult?.count ?? 0, tab: "payments" },
+            { label: "Listings awaiting review", count: stats?.pending_listings ?? 0, tab: "listings" },
+            { label: "Importer applications", count: stats?.pending_applications ?? 0, tab: "applications" },
+            { label: "Verification requests", count: verifications.filter((v) => v.status === "pending").length, tab: "verifications" },
+            { label: "Open reports", count: reportStats?.pending_count ?? 0, tab: "moderation" },
+          ] as { label: string; count: number; tab: TabType }[]).filter((q) => q.count > 0);
+          if (queues.length === 0) return null;
+          return (
+            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <p className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4" /> Action required
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {queues.map((q) => (
+                  <button
+                    key={q.tab + q.label}
+                    onClick={() => setActiveTab(q.tab)}
+                    className="px-3 py-1.5 bg-white border border-amber-200 rounded-lg text-sm text-amber-900 hover:bg-amber-100 transition-colors"
+                  >
+                    {q.label}: <span className="font-bold">{q.count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
           {([
             { id: "listings",      icon: Car,        label: "Listings",      count: stats?.total_listings },
             { id: "orders",        icon: TrendingUp,  label: "Orders",        count: ordersResult?.count },
+            { id: "payments",      icon: DollarSign,  label: "Payments",      count: paymentsResult?.count || undefined },
             { id: "importers",     icon: Store,       label: "Importers",     count: importersResult?.count },
             { id: "pipeline",      icon: Clock,       label: "Pipeline",      count: undefined },
             { id: "users",         icon: Users,       label: "Users",         count: usersResult?.count ?? stats?.total_users },
@@ -1240,6 +1329,77 @@ export default function AdminPage() {
                 <div className="text-center py-12"><Car className="w-12 h-12 text-slate-300 mx-auto mb-4" /><p className="text-slate-500">No listings found</p></div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ═══════════════ PAYMENTS TAB — bank-transfer verification queue ═══ */}
+        {activeTab === "payments" && (
+          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h2 className="font-semibold text-slate-900">Bank transfers awaiting verification</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Match each reference against the WARED bank account, then Confirm (releases the deal — importer gets 99%) or Reject (buyer is asked to re-submit).
+              </p>
+            </div>
+            {pendingPayments.length === 0 ? (
+              <div className="p-10 text-center text-slate-400 text-sm">
+                No payments waiting — all transfers are verified. 🎉
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Order #</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Car</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Buyer</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Amount</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Transfer Ref.</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Submitted</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingPayments.map((p) => (
+                      <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                        <td className="px-4 py-3">
+                          <Link href={`/orders/${p.order_id}`} className="font-mono text-sm text-accent hover:underline">
+                            {p.order_number}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700 max-w-[180px] truncate">{p.car_title}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700">{p.buyer_name}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-slate-900 whitespace-nowrap">
+                          SAR {p.amount.toLocaleString("en-SA")}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-mono text-slate-600">{p.reference || "—"}</td>
+                        <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">
+                          {new Date(p.submitted_at).toLocaleDateString("en-SA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleConfirmPayment(p)}
+                              disabled={payingActionId === p.id}
+                              className="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+                            >
+                              {payingActionId === p.id ? "…" : "Confirm"}
+                            </button>
+                            <button
+                              onClick={() => handleRejectPayment(p)}
+                              disabled={payingActionId === p.id}
+                              className="px-3.5 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 text-sm font-semibold rounded-lg transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
