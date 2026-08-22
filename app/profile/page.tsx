@@ -29,6 +29,8 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
+  const [cityObj, setCityObj] = useState<number | "">("");
+  const [cities, setCities] = useState<{ id: number; name_en: string; name_ar: string }[]>([]);
   const [showPhone, setShowPhone] = useState(true);
   const [showEmail, setShowEmail] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,9 +57,21 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"profile" | "security" | "saved">("profile");
 
   useEffect(() => {
+    // Saudi cities for the (required) city selector
+    api
+      .get<{ results?: { id: number; name_en: string; name_ar: string }[] } | { id: number; name_en: string; name_ar: string }[]>(
+        "/api/cities/?page_size=100"
+      )
+      .then((d) => setCities(Array.isArray(d) ? d : (d.results ?? [])))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (user && !initialized) {
       setName(user.name || "");
       setPhone(user.phone || "");
+      setCityObj(((user as { city_obj?: number | null }).city_obj ?? "") as number | "");
       setBio((user as { bio?: string }).bio || "");
       setShowPhone((user as { show_phone?: boolean }).show_phone ?? true);
       setShowEmail((user as { show_email?: boolean }).show_email ?? false);
@@ -67,13 +81,19 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!cityObj) {
+      setProfileError("Please select your city — it is required.");
+      return;
+    }
     setIsSaving(true);
     setProfileError("");
     try {
-      await api.patch("/api/me/", {
+      // NOTE: /api/me/ has no PATCH — the correct endpoint is /api/users/me/profile/
+      await api.patch("/api/users/me/profile/", {
         name,
         phone,
         bio,
+        city_obj: cityObj,
         show_phone: showPhone,
         show_email: showEmail,
       });
@@ -102,7 +122,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("avatar", file);
       const csrf = getCookie("csrftoken");
-      const res = await fetch(`${BASE_URL}/api/me/`, {
+      const res = await fetch(`${BASE_URL}/api/users/me/profile/`, {
         method: "PATCH",
         credentials: "include",
         headers: { ...(csrf ? { "X-CSRFToken": csrf } : {}) },
@@ -291,6 +311,29 @@ export default function ProfilePage() {
                     style={{ paddingInlineStart: "2.5rem", paddingInlineEnd: "1rem" }}
                   />
                 </div>
+              </div>
+
+              {/* City — required, any Saudi city */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={cityObj}
+                  onChange={(e) => setCityObj(e.target.value ? Number(e.target.value) : "")}
+                  required
+                  className="w-full py-3 px-4 border border-slate-200 rounded-xl text-slate-900 bg-white focus:border-accent focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">Select your city…</option>
+                  {cities.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name_en} — {c.name_ar}
+                    </option>
+                  ))}
+                </select>
+                {!cityObj && (
+                  <p className="text-xs text-amber-600">Your city is required to complete your profile.</p>
+                )}
               </div>
 
               {/* Bio */}

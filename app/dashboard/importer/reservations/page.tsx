@@ -9,7 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Loader2, ArrowLeft, Clock, CheckCircle, XCircle,
-  Car, User, Calendar, DollarSign, AlertTriangle,
+  Car, User, Calendar, DollarSign, AlertTriangle, MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 
@@ -249,6 +249,14 @@ export default function ImporterReservationsPage() {
                 {/* Action buttons */}
                 {!isRejecting && (
                   <div className="flex gap-3">
+                    <Link
+                      href={`/messages?buyer_user=${res.buyer.id}&car_id=${res.car.id}`}
+                      className="py-2.5 px-4 border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                      title="Chat with the buyer before deciding"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Message
+                    </Link>
                     <button
                       onClick={() => handleAccept(res.id)}
                       disabled={isProcessing || res.time_remaining_hours <= 0}
