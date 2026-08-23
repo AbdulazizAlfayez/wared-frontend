@@ -1392,7 +1392,7 @@ export default function CarDetailPage() {
                   </div>
                   {ownerId && (
                     <Link
-                      href={`/importers/${ownerId}`}
+                      href={`/user/${ownerId}`}
                       className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-600 font-medium"
                     >
                       {t("carDetail.viewProfile")}

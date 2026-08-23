@@ -237,10 +237,14 @@ const INITIAL: FormData = {
 // Page
 // ---------------------------------------------------------------------------
 export default function ListCarPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, role } = useAuth();
   const router = useRouter();
   const { showToast } = useToast();
   const { t } = useTranslation();
+
+  // Importers only — buyers must not reach the listing form even by URL.
+  // (The backend also rejects non-importer submissions with 403.)
+  const canList = authLoading ? undefined : isAuthenticated && (role === "importer" || role === "admin");
 
   const [activeTab, setActiveTab] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL);
@@ -729,6 +733,35 @@ export default function ListCarPage() {
   // ---------------------------------------------------------------------------
   // Success Screen
   // ---------------------------------------------------------------------------
+  // Role gate — before anything else renders
+  if (canList === undefined) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-24 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+  if (!canList) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-24 pb-12">
+        <div className="max-w-lg mx-auto px-4">
+          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+            <h1 className="text-xl font-bold text-slate-900 mb-3">Importers only</h1>
+            <p className="text-sm text-slate-500 mb-6">
+              Only registered importers can list cars on WARED. Buyers browse, reserve and buy — if you import cars, apply to become a verified importer.
+            </p>
+            <Link
+              href="/become-importer"
+              className="inline-block px-6 py-3 bg-accent hover:bg-accent-600 text-white rounded-xl text-sm font-semibold transition-colors"
+            >
+              Apply to become an importer
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isSubmitted) {
     return (
       <div className="max-w-lg mx-auto py-16 px-4 text-center">
