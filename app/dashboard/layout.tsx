@@ -147,6 +147,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const importerNavItems = [
     { href: "/dashboard/importer",               label: "Overview",       icon: LayoutDashboard, exact: true },
     { href: "/dashboard/importer/reservations",  label: "Reservations",   icon: Package, count: pendingResCount || undefined },
+    { href: "/dashboard/listings",               label: "My Listings",    icon: Car },
     { href: "/dashboard/importer/list-car",      label: "List New Car",   icon: Plus },
     { href: "/dashboard/importer/orders",        label: "Orders",         icon: ClipboardList },
     { href: "/messages",                         label: "Messages",       icon: MessageSquare },

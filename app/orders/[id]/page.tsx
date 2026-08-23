@@ -460,6 +460,111 @@ const STATUS_LABELS: Record<string, string> = Object.fromEntries(
   STATUS_STEPS.map(s => [s.key, s.label])
 );
 
+// What each stage means — shown to the buyer on the tracker and to the
+// importer when picking the next status, so both sides always know
+// exactly where the order stands and what happens next.
+const STATUS_DESCRIPTIONS: Record<string, string> = {
+  pending:            "Reservation placed — waiting for the importer to accept.",
+  deposit_requested:  "The importer requested a deposit to start the order.",
+  deposit_paid:       "Deposit received — the deal is being confirmed.",
+  confirmed:          "Deal confirmed. Waiting for the full payment to WARED before work begins.",
+  sourcing:           "The importer is locating and securing your car in the source market (auctions, dealers).",
+  purchased:          "Car purchased at origin — ownership and export papers are being processed.",
+  preparing_shipment: "Car is being prepared, loaded and booked onto a vessel.",
+  shipped:            "Car is on the ship, sailing to Saudi Arabia.",
+  arrived_port:       "The vessel has arrived at the Saudi port.",
+  in_customs:         "Customs clearance is in progress at the port.",
+  customs_cleared:    "Customs cleared — the car can now move inland.",
+  inspection:         "Technical inspection and conformity checks (Fahas / GCC compliance).",
+  ready:              "The car is ready — delivery or pickup is being arranged.",
+  delivered:          "The car has been handed over to the buyer.",
+  completed:          "Order completed — WARED released the payout to the importer.",
+  cancelled:          "This order was cancelled.",
+  refunded:           "This order was refunded.",
+};
+
+// The import journey shown on the tracker: confirmed → delivered.
+const JOURNEY_START = STATUS_ORDER_MAP["confirmed"];
+const JOURNEY_STEPS = STATUS_STEPS.filter(
+  s => (STATUS_ORDER_MAP[s.key as string] ?? -1) >= JOURNEY_START
+);
+
+// ---------------------------------------------------------------------------
+// Progress tracker — always visible to buyer, importer and admin.
+// ---------------------------------------------------------------------------
+function OrderProgressTracker({ order }: { order: Order }) {
+  const status = order.status;
+  if (status === "cancelled" || status === "refunded" || status === "disputed") {
+    return null; // terminal banner is handled by the status pill in the header
+  }
+
+  const isCompleted = status === "completed";
+  const rawIdx = STATUS_ORDER_MAP[status];
+  // Pre-journey statuses (pending / deposit) sit at step 0
+  const activeIdx = isCompleted
+    ? JOURNEY_STEPS.length
+    : Math.max(0, (rawIdx ?? 0) - JOURNEY_START);
+  const pct = Math.round((activeIdx / JOURNEY_STEPS.length) * 100);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-6">
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+        <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <Truck className="w-4 h-4 text-accent" />
+          Import Journey
+        </h2>
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          {order.estimated_delivery_date && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              Est. delivery {formatDate(order.estimated_delivery_date)}
+            </span>
+          )}
+          <span className="font-semibold text-accent">{pct}%</span>
+        </div>
+      </div>
+      <p className="text-xs text-slate-400 mb-4">
+        {isCompleted
+          ? STATUS_DESCRIPTIONS.completed
+          : STATUS_DESCRIPTIONS[status] ?? ""}
+      </p>
+
+      {/* Progress bar */}
+      <div className="h-1.5 bg-slate-100 rounded-full mb-5 overflow-hidden">
+        <div
+          className="h-full bg-accent rounded-full transition-all duration-500"
+          style={{ width: `${Math.max(pct, 3)}%` }}
+        />
+      </div>
+
+      {/* Steps — horizontal scroll on small screens */}
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {JOURNEY_STEPS.map((step, i) => {
+          const done = isCompleted || i < activeIdx;
+          const active = !isCompleted && i === activeIdx;
+          const StepIcon = step.icon;
+          return (
+            <div key={step.key} className="flex flex-col items-center flex-shrink-0 min-w-[64px]" title={STATUS_DESCRIPTIONS[step.key as string]}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 ${
+                done ? "bg-green-500 text-white"
+                  : active ? "bg-accent text-white ring-4 ring-accent/20"
+                  : "bg-slate-100 text-slate-300"
+              }`}>
+                {done ? <CheckCircle className="w-4 h-4" /> : <StepIcon className="w-4 h-4" />}
+              </div>
+              <span className={`text-[10px] font-medium text-center leading-tight ${
+                active ? "text-accent" : done ? "text-slate-600" : "text-slate-300"
+              }`}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Importer: Status Update Panel
 // ---------------------------------------------------------------------------
@@ -503,16 +608,33 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
         <Package className="w-4 h-4 text-accent" />
         {t("orderDetail.updateStatus")}
       </h2>
+      {/* Where the order is now */}
+      <div className="bg-slate-50 rounded-xl px-3 py-2.5 mb-3">
+        <p className="text-xs text-slate-400 mb-0.5">Current stage</p>
+        <p className="text-sm font-semibold text-slate-800">
+          {STATUS_LABELS[order.status] ?? order.status.replace(/_/g, " ")}
+        </p>
+        {STATUS_DESCRIPTIONS[order.status] && (
+          <p className="text-xs text-slate-500 mt-0.5">{STATUS_DESCRIPTIONS[order.status]}</p>
+        )}
+      </div>
       <select
         value={newStatus}
         onChange={e => setNewStatus(e.target.value)}
-        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-3"
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-1.5"
       >
         <option value="">{t("orderDetail.selectStatus")}</option>
         {nextStatuses.map(s => (
           <option key={s} value={s}>{STATUS_LABELS[s] ?? s.replace(/_/g, " ")}</option>
         ))}
       </select>
+      {/* Explain what the chosen stage tells the buyer */}
+      {newStatus && STATUS_DESCRIPTIONS[newStatus] && (
+        <p className="text-xs text-slate-500 mb-3 px-1">
+          → Buyer will see: “{STATUS_DESCRIPTIONS[newStatus]}”
+        </p>
+      )}
+      {!newStatus && <div className="mb-1.5" />}
       <textarea
         value={statusNote}
         onChange={(e) => setStatusNote(e.target.value)}
@@ -537,6 +659,28 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
         {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
         {t("orderDetail.update")}
       </button>
+
+      {/* Remaining roadmap — so the importer always knows what comes next */}
+      {(() => {
+        const idx = STATUS_ORDER_MAP[order.status];
+        const remaining = idx != null
+          ? STATUS_STEPS.slice(idx + 1).map(s => s.label)
+          : [];
+        if (!remaining.length) return null;
+        return (
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+              Remaining steps
+            </p>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {remaining.join(" → ")}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-2">
+              Every update (with your note) is shown to the buyer on their order timeline — keep them informed at each step.
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -766,6 +910,9 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Import journey tracker — buyer, importer & admin all see it ── */}
+        <OrderProgressTracker order={order} />
 
         {/* ── Shipping map — visible during transit statuses ── */}
         {["purchased", "preparing_shipment", "shipped", "arrived_port",

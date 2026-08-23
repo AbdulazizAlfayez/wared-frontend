@@ -1285,8 +1285,16 @@ export default function AdminPage() {
                           : formatPrice(listing.price)}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm text-slate-900">{listing.owner?.name || "—"}</p>
-                        <p className="text-xs text-slate-400 truncate max-w-[130px]">{listing.owner?.email}</p>
+                        {listing.owner ? (
+                          <>
+                            <Link href={`/user/${listing.owner.id}`} className="text-sm text-slate-900 hover:text-accent hover:underline font-medium">
+                              {listing.owner.name}
+                            </Link>
+                            <p className="text-xs text-slate-400 truncate max-w-[130px]">{listing.owner.email}</p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-slate-400">—</p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {listing.import_status ? (
@@ -1594,7 +1602,13 @@ export default function AdminPage() {
                               {listing.vin && <p className="text-xs font-mono text-slate-400">{listing.vin}</p>}
                             </td>
                             <td className="px-4 py-3 text-sm text-slate-600">{listing.source_country || "—"}</td>
-                            <td className="px-4 py-3 text-sm text-slate-600">{listing.owner?.name || "—"}</td>
+                            <td className="px-4 py-3 text-sm text-slate-600">
+                              {listing.owner ? (
+                                <Link href={`/user/${listing.owner.id}`} className="hover:text-accent hover:underline">
+                                  {listing.owner.name}
+                                </Link>
+                              ) : "—"}
+                            </td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium capitalize ${cfg.bg} ${cfg.color} border border-current/20`}>
                                 {cfg.label}
