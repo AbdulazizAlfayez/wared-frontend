@@ -411,15 +411,9 @@ export default function DealerListingsPage() {
     setBulkResult(null);
   };
 
-  const handleMarkSold = useCallback(async (id: number) => {
-    if (!confirm("Mark this listing as sold?")) return;
-    try {
-      await api.patch(`/api/listings/${id}/`, { status: "sold" });
-      refetch();
-    } catch {
-      alert("Failed to update listing.");
-    }
-  }, [refetch]);
+  // NOTE: manual "Mark Sold" was removed — a car becomes Sold automatically
+  // when WARED confirms the buyer's full payment, and reverts if the order
+  // is cancelled/refunded. Only admins can override statuses.
 
   // ---------------------------------------------------------------------------
   // Selection handlers
@@ -466,26 +460,6 @@ export default function DealerListingsPage() {
   // ---------------------------------------------------------------------------
   // Bulk action handlers
   // ---------------------------------------------------------------------------
-
-  const handleBulkStatusChange = async () => {
-    if (!bulkStatusValue || selectedIds.size === 0) return;
-    setBulkLoading(true);
-    setBulkResult(null);
-    try {
-      const result = await api.post<{ updated: number[]; skipped: number[]; not_found: number[] }>(
-        "/api/listings/bulk/status/",
-        { listing_ids: [...selectedIds], status: bulkStatusValue }
-      );
-      setBulkResult(result);
-      setSelectedIds(new Set());
-      setBulkStatusValue("");
-      refetch();
-    } catch {
-      // leave result null — user can retry
-    } finally {
-      setBulkLoading(false);
-    }
-  };
 
   const handleBulkDelete = async () => {
     setBulkLoading(true);
@@ -873,26 +847,16 @@ export default function DealerListingsPage() {
                           >
                             <Edit className="w-4 h-4" />
                           </Link>
-                          {l.status === "approved" && (
-                            <>
-                              <button
-                                onClick={() => handleMarkSold(l.id)}
-                                className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium transition-colors"
-                              >
-                                Mark Sold
-                              </button>
-                              {/* Boost is only for AVAILABLE cars — reserved/
-                                  sold/deal cars are off-market and can't be promoted */}
-                              {l.import_status === "available" && (
-                                <button
-                                  onClick={() => setPromoteListingId(l.id)}
-                                  className={`p-1.5 rounded-lg transition-colors ${l.is_promoted ? "text-amber-500 hover:bg-amber-50" : "text-slate-500 hover:bg-slate-100 hover:text-accent"}`}
-                                  title={l.is_promoted ? "Active promotion" : "Boost listing"}
-                                >
-                                  <Zap className="w-4 h-4" />
-                                </button>
-                              )}
-                            </>
+                          {/* No manual "Mark Sold": a car becomes Sold automatically
+                              when WARED confirms the buyer's full payment. */}
+                          {l.status === "approved" && l.import_status === "available" && (
+                            <button
+                              onClick={() => setPromoteListingId(l.id)}
+                              className={`p-1.5 rounded-lg transition-colors ${l.is_promoted ? "text-amber-500 hover:bg-amber-50" : "text-slate-500 hover:bg-slate-100 hover:text-accent"}`}
+                              title={l.is_promoted ? "Active promotion" : "Boost listing"}
+                            >
+                              <Zap className="w-4 h-4" />
+                            </button>
                           )}
                           {(l.status === "changes_requested" || l.status === "rejected") && (
                             <Link
@@ -949,30 +913,8 @@ export default function DealerListingsPage() {
               {selectedCount} selected
             </span>
 
-            <div className="w-px h-5 bg-slate-600 flex-shrink-0" />
-
-            {/* Status change */}
-            <div className="flex items-center gap-2">
-              <select
-                value={bulkStatusValue}
-                onChange={e => setBulkStatusValue(e.target.value)}
-                className="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-accent min-w-[140px]"
-              >
-                <option value="">Change Status…</option>
-                <option value="sold">Mark as Sold</option>
-              </select>
-              <button
-                onClick={handleBulkStatusChange}
-                disabled={!bulkStatusValue || bulkLoading}
-                className="px-3 py-1.5 bg-accent hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
-              >
-                {bulkLoading && !showDeleteConfirm && (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                )}
-                Apply
-              </button>
-            </div>
-
+            {/* NOTE: no manual "Mark as Sold" — cars are marked Sold
+                automatically when WARED confirms the buyer's full payment */}
             <div className="w-px h-5 bg-slate-600 flex-shrink-0" />
 
             {/* Delete */}
