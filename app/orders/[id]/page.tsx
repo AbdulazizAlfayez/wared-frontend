@@ -36,6 +36,7 @@ import {
   ExternalLink,
   ChevronRight,
   Upload,
+  Star,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { getImageUrl } from "@/lib/utils";
@@ -576,11 +577,24 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
   const [estDelivery, setEstDelivery] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const nextStatuses = VALID_TRANSITIONS[order.status] ?? [];
-  if (nextStatuses.length === 0) return null;
+  // Terminal states are locked — otherwise EVERY stage is selectable
+  // (jump forward to skip steps, or backward to correct a mistake).
+  const TERMINAL = ["completed", "cancelled", "refunded"];
+  if (TERMINAL.includes(order.status)) return null;
+
+  // The natural next step in the chain — highlighted as "recommended"
+  const recommended = (VALID_TRANSITIONS[order.status] ?? []).find(
+    (s) => s !== "cancelled" && s !== "refunded"
+  );
+  const journeyOptions = [...STATUS_STEPS.map((s) => s.key as string), "completed"]
+    .filter((s) => s !== order.status);
 
   const handleUpdate = async () => {
     if (!newStatus) return;
+    if (newStatus === "cancelled" && !statusNote.trim()) {
+      showToast("error", "Please write the cancellation reason in the details box first.");
+      return;
+    }
     setIsUpdating(true);
     try {
       await api.patch(`/api/orders/${order.id}/update-status/`, {
@@ -588,6 +602,7 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
         // The note becomes the timeline entry the BUYER reads — encourage
         // real detail ("Car purchased at auction, chassis #…, ship leaves Tuesday")
         ...(statusNote.trim() ? { notes: statusNote.trim() } : {}),
+        ...(newStatus === "cancelled" ? { cancellation_reason: statusNote.trim() } : {}),
         ...(estDelivery ? { estimated_delivery_date: estDelivery } : {}),
       });
       showToast("success", t("orderDetail.statusUpdated"));
@@ -624,9 +639,18 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
         className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-1.5"
       >
         <option value="">{t("orderDetail.selectStatus")}</option>
-        {nextStatuses.map(s => (
-          <option key={s} value={s}>{STATUS_LABELS[s] ?? s.replace(/_/g, " ")}</option>
-        ))}
+        <optgroup label="Journey stages">
+          {journeyOptions.map(s => (
+            <option key={s} value={s}>
+              {s === "completed" ? "Completed (final — locks the order)" : (STATUS_LABELS[s] ?? s.replace(/_/g, " "))}
+              {s === recommended ? "  ← next step" : ""}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="Other">
+          <option value="cancelled">Cancelled (reason required)</option>
+          <option value="refunded">Refunded</option>
+        </optgroup>
       </select>
       {/* Explain what the chosen stage tells the buyer */}
       {newStatus && STATUS_DESCRIPTIONS[newStatus] && (
@@ -681,6 +705,152 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Buyer: Rate your importer — available once the order is delivered/completed.
+// POST /api/orders/{id}/review/ (4 dimension ratings, one review per order).
+// ---------------------------------------------------------------------------
+function StarPicker({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs text-slate-500">{label}</span>
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" onClick={() => onChange(n)} className="p-0.5">
+            <Star className={`w-5 h-5 ${n <= value ? "text-amber-400 fill-amber-400" : "text-slate-200"}`} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface OrderReview {
+  id: number;
+  rating: number;
+  communication_rating: number;
+  accuracy_rating: number;
+  delivery_speed_rating: number;
+  overall_rating: number;
+  title?: string;
+  comment?: string;
+  created_at: string;
+}
+
+function ReviewImporterCard({ order, importerName }: { order: Order; importerName: string }) {
+  const { showToast } = useToast();
+  const reviewable = order.status === "delivered" || order.status === "completed";
+  const { data: existing, refetch } = useApiQuery<OrderReview>(
+    `/api/orders/${order.id}/review/`,
+    { enabled: reviewable }
+  );
+  const [communication, setCommunication] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [speed, setSpeed] = useState(0);
+  const [overall, setOverall] = useState(0);
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!reviewable) return null;
+
+  // Already reviewed — show it
+  if (existing?.id) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100 p-5">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+          Your review
+        </h2>
+        <div className="flex gap-0.5 mb-2">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star key={n} className={`w-5 h-5 ${n <= Math.round(existing.rating) ? "text-amber-400 fill-amber-400" : "text-slate-200"}`} />
+          ))}
+        </div>
+        {existing.title && <p className="text-sm font-semibold text-slate-800">{existing.title}</p>}
+        {existing.comment && <p className="text-sm text-slate-600 mt-1">{existing.comment}</p>}
+        <p className="text-xs text-slate-400 mt-2">Thank you — your review helps other buyers choose importers.</p>
+      </div>
+    );
+  }
+
+  const submit = async () => {
+    if (!communication || !accuracy || !speed || !overall) {
+      setError("Please rate all four categories.");
+      return;
+    }
+    setIsSubmitting(true);
+    setError("");
+    try {
+      await api.post(`/api/orders/${order.id}/review/`, {
+        communication_rating: communication,
+        accuracy_rating: accuracy,
+        delivery_speed_rating: speed,
+        overall_rating: overall,
+        ...(title.trim() ? { title: title.trim() } : {}),
+        ...(comment.trim() ? { comment: comment.trim() } : {}),
+      });
+      showToast("success", "Review submitted — thank you!");
+      refetch();
+    } catch (e) {
+      // Surface the real backend reason (e.g. "already submitted")
+      let msg = "Could not submit the review. Please try again.";
+      try {
+        const body = JSON.parse((e as Error).message);
+        const first = body?.detail || body?.non_field_errors?.[0] || Object.values(body || {})?.[0];
+        if (first) msg = Array.isArray(first) ? String(first[0]) : String(first);
+      } catch { /* keep default */ }
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border-2 border-amber-200 p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+        Rate your importer
+      </h2>
+      <p className="text-xs text-slate-400 mb-4">
+        How was your experience with {importerName}? Your review is public on their profile.
+      </p>
+      <div className="space-y-2.5 mb-4">
+        <StarPicker label="Communication" value={communication} onChange={setCommunication} />
+        <StarPicker label="Car as described" value={accuracy} onChange={setAccuracy} />
+        <StarPicker label="Delivery speed" value={speed} onChange={setSpeed} />
+        <StarPicker label="Overall" value={overall} onChange={setOverall} />
+      </div>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Title (optional) — e.g. 'Smooth import, great updates'"
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-2"
+      />
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={3}
+        placeholder="Tell other buyers about your experience (optional)"
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-2 resize-none"
+      />
+      {error && (
+        <p className="text-xs text-red-500 mb-2 flex items-start gap-1">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" /> {error}
+        </p>
+      )}
+      <button
+        onClick={submit}
+        disabled={isSubmitting}
+        className="w-full py-2.5 bg-amber-400 hover:bg-amber-500 disabled:opacity-40 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+      >
+        {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+        Submit Review
+      </button>
     </div>
   );
 }
@@ -1085,7 +1255,10 @@ export default function OrderDetailPage() {
                         <User className="w-6 h-6 text-slate-400" />
                       </div>
                       <div>
-                        <div className="font-semibold text-slate-900">{order.importer_info.business_name ?? order.importer_info.name}</div>
+                        <Link href={`/user/${order.importer_info.id}`} className="font-semibold text-slate-900 hover:text-accent hover:underline">
+                          {order.importer_info.business_name ?? order.importer_info.name}
+                        </Link>
+                        <p className="text-xs text-slate-400">View profile & reviews</p>
                       </div>
                     </div>
                     <Link
@@ -1097,6 +1270,12 @@ export default function OrderDetailPage() {
                     </Link>
                   </div>
                 )}
+
+                {/* Rate your importer — appears once delivered/completed */}
+                <ReviewImporterCard
+                  order={order}
+                  importerName={order.importer_info?.business_name ?? order.importer_info?.name ?? "your importer"}
+                />
 
                 {/* Car Link */}
                 <Link href={`/car/${listing.id}`}
