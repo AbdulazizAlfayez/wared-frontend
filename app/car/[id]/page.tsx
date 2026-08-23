@@ -1340,9 +1340,13 @@ export default function CarDetailPage() {
               <span className="text-slate-300">{formatDate(listing.created_at)}</span>
             </div>
 
-            {/* Importer Info */}
+            {/* Importer Info — title is honest about the seller's actual role */}
             <div className="bg-white rounded-xl p-5 border border-slate-100">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">{t("carDetail.importerInfo")}</h2>
+              <h2 className="text-base font-semibold text-slate-900 mb-4">
+                {ownerProfile && ownerProfile.role !== "importer" && ownerProfile.role !== "admin"
+                  ? "Seller Info"
+                  : t("carDetail.importerInfo")}
+              </h2>
               {ownerProfile ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-4">
@@ -1356,11 +1360,16 @@ export default function CarDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-900">{ownerProfile.name || "Importer"}</span>
-                        {ownerProfile.is_business_verified && (
+                        <span className="font-semibold text-slate-900">{ownerProfile.name || "Seller"}</span>
+                        {ownerProfile.role === "importer" && ownerProfile.is_business_verified && (
                           <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-accent/10 text-accent border border-accent/20 rounded-full font-semibold">
                             <BadgeCheck className="w-3 h-3" />
                             Verified Importer
+                          </span>
+                        )}
+                        {ownerProfile.role !== "importer" && ownerProfile.role !== "admin" && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-full font-medium">
+                            Private seller — not a registered importer
                           </span>
                         )}
                         {/* DEPRECATED: Subscription badge removed — commission-only model */}

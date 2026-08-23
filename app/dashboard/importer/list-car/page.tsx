@@ -413,6 +413,12 @@ export default function ListCarPage() {
       const raw = err instanceof Error ? err.message : String(err);
       try {
         const body = JSON.parse(raw) as Record<string, string | string[]>;
+        // A "detail" key is a whole-request rejection (403 importer-only,
+        // 429 daily limit, …) — show the backend's actual reason verbatim
+        if (typeof body.detail === "string" && body.detail) {
+          showToast("error", body.detail);
+          return;
+        }
         const fieldErrors: Record<string, string> = {};
         for (const [k, v] of Object.entries(body)) {
           if (k === "language") continue;
