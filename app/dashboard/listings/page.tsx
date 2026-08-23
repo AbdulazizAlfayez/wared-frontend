@@ -129,6 +129,10 @@ function PromotionModal({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Payment-first flow: pick package → transfer to WARED → submit reference
+  const [step, setStep] = useState<"pick" | "pay">("pick");
+  const [bank, setBank] = useState<{ bank_name: string; beneficiary: string; iban: string } | null>(null);
+  const [reference, setReference] = useState("");
 
   useEffect(() => {
     api.get<PaginatedResponse<PromotionPackage> | PromotionPackage[]>("/api/listings/promotion-packages/")
@@ -138,20 +142,40 @@ function PromotionModal({
       })
       .catch(() => setError("Failed to load packages."))
       .finally(() => setLoadingPkgs(false));
+    api.get<{ bank_name: string; beneficiary: string; iban: string }>("/api/payments/bank-details/")
+      .then(setBank)
+      .catch(() => {});
   }, []);
+
+  const selectedPkg = packages.find(p => p.id === selectedId) ?? null;
 
   const handleSubmit = async () => {
     if (!selectedId) return;
+    if (step === "pick") {
+      // Move to the payment step — nothing is charged yet
+      setError("");
+      setStep("pay");
+      return;
+    }
+    if (!reference.trim()) {
+      setError("Enter the bank transfer reference number after making the transfer.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
-      await api.post(`/api/listings/${listingId}/promote/`, { package: selectedId });
+      await api.post(`/api/listings/${listingId}/promote/`, {
+        package_id: selectedId,
+        reference: reference.trim(),
+      });
       onSuccess();
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : "Promotion failed.";
       try {
         const parsed = JSON.parse(raw);
-        setError(parsed.detail ?? parsed.non_field_errors?.[0] ?? raw);
+        const first = parsed.detail ?? parsed.error ?? parsed.non_field_errors?.[0]
+          ?? parsed.reference?.[0] ?? parsed.package_id?.[0] ?? raw;
+        setError(Array.isArray(first) ? String(first[0]) : String(first));
       } catch {
         setError(raw);
       }
@@ -182,7 +206,44 @@ function PromotionModal({
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-6 py-4">
-          {loadingPkgs ? (
+          {step === "pay" && selectedPkg ? (
+            /* ── Step 2: transfer to WARED + submit reference ── */
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border-2 border-accent bg-accent/5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-900">{selectedPkg.name}</span>
+                  <span className="text-lg font-bold text-accent">
+                    {Number(selectedPkg.price).toLocaleString("en-SA")} <span className="text-xs font-normal">SAR</span>
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{selectedPkg.duration_days} days — activates after WARED verifies your payment.</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Transfer to WARED</p>
+                <div className="flex justify-between"><span className="text-slate-500">Bank</span><span className="font-medium text-slate-800">{bank?.bank_name || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Beneficiary</span><span className="font-medium text-slate-800">{bank?.beneficiary || "—"}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-slate-500">IBAN</span><span className="font-mono text-xs font-medium text-slate-800 break-all text-right">{bank?.iban || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Amount</span><span className="font-bold text-slate-900">SAR {Number(selectedPkg.price).toLocaleString("en-SA")}</span></div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                  Bank transfer reference number
+                </label>
+                <input
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="e.g. FT26082312345"
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none"
+                />
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Make the transfer first, then paste the reference here. WARED verifies it within 1 business day and your boost goes live.
+                </p>
+              </div>
+              <button onClick={() => { setStep("pick"); setError(""); }} className="text-xs text-slate-500 hover:text-slate-700 underline">
+                ← Choose a different package
+              </button>
+            </div>
+          ) : loadingPkgs ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-accent" />
             </div>
@@ -235,11 +296,11 @@ function PromotionModal({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!selectedId || submitting}
+            disabled={!selectedId || submitting || (step === "pay" && !reference.trim())}
             className="flex items-center gap-2 px-5 py-2 bg-accent hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition-colors"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {submitting ? "Activating…" : "Activate Promotion"}
+            {step === "pick" ? "Continue to Payment" : submitting ? "Submitting…" : "I've Paid — Submit"}
           </button>
         </div>
       </div>
@@ -299,7 +360,9 @@ export default function DealerListingsPage() {
   // Data fetching
   // ---------------------------------------------------------------------------
 
-  const url = `/api/listings/?page=${page}&page_size=20${statusFilter ? `&status=${statusFilter}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+  // mine=1 → ONLY this importer's own listings; cars in a paid deal are
+  // excluded server-side (they live on the Orders page until cancelled/refunded)
+  const url = `/api/listings/?mine=1&page=${page}&page_size=20${statusFilter ? `&status=${statusFilter}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
 
   const { data, isLoading, refetch } = useApiQuery<PaginatedResponse<Listing>>(url, {
     enabled: isAuthenticated,
@@ -818,13 +881,17 @@ export default function DealerListingsPage() {
                               >
                                 Mark Sold
                               </button>
-                              <button
-                                onClick={() => setPromoteListingId(l.id)}
-                                className={`p-1.5 rounded-lg transition-colors ${l.is_promoted ? "text-amber-500 hover:bg-amber-50" : "text-slate-500 hover:bg-slate-100 hover:text-accent"}`}
-                                title={l.is_promoted ? "Active promotion" : "Boost listing"}
-                              >
-                                <Zap className="w-4 h-4" />
-                              </button>
+                              {/* Boost is only for AVAILABLE cars — reserved/
+                                  sold/deal cars are off-market and can't be promoted */}
+                              {l.import_status === "available" && (
+                                <button
+                                  onClick={() => setPromoteListingId(l.id)}
+                                  className={`p-1.5 rounded-lg transition-colors ${l.is_promoted ? "text-amber-500 hover:bg-amber-50" : "text-slate-500 hover:bg-slate-100 hover:text-accent"}`}
+                                  title={l.is_promoted ? "Active promotion" : "Boost listing"}
+                                >
+                                  <Zap className="w-4 h-4" />
+                                </button>
+                              )}
                             </>
                           )}
                           {(l.status === "changes_requested" || l.status === "rejected") && (

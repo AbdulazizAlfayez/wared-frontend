@@ -130,6 +130,8 @@ export interface Listing {
   owner_id?: number;
   showroom?: number | null;
   workshop?: number | null;
+  // Import pipeline stage (available / reserved / sold / shipping / …)
+  import_status?: string | null;
   // Phase 4.6 — Promotion fields
   is_featured?: boolean;
   is_highlighted?: boolean;

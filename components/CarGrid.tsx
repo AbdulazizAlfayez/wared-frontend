@@ -124,7 +124,9 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
 
   return (
     <Link href={`/car/${listing.id}`}>
-      <div className="group bg-white rounded-2xl overflow-hidden border border-[#0B1424]/8 hover:shadow-[0_20px_40px_-20px_rgba(11,20,36,0.2)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer">
+      <div className={`group bg-white rounded-2xl overflow-hidden border hover:shadow-[0_20px_40px_-20px_rgba(11,20,36,0.2)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full cursor-pointer ${
+        listing.is_highlighted ? "border-amber-400 ring-2 ring-amber-300/50" : "border-[#0B1424]/8"
+      }`}>
         {/* Image — locked 4:3 aspect */}
         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 flex-shrink-0">
           {imageUrl ? (
@@ -145,6 +147,13 @@ function ImportedCarCard({ listing }: { listing: ImportedListing }) {
           {statusLabel && statusCls && (
             <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusCls}`}>
               {statusLabel}
+            </span>
+          )}
+
+          {/* Paid promotion badge — Featured / Top Search boosts */}
+          {(listing.is_featured || listing.is_top_search || listing.is_homepage) && (
+            <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-400 text-white shadow-sm">
+              ⭐ Featured
             </span>
           )}
 

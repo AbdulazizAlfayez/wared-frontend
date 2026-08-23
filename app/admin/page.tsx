@@ -51,7 +51,8 @@ type TabType = "listings" | "orders" | "payments" | "importers" | "pipeline" | "
 // ---------------------------------------------------------------------------
 interface PendingPayment {
   id: number;
-  order_id: number;
+  type?: "balance" | "promotion";
+  order_id: number | null;
   order_number: string;
   car_title: string;
   buyer_name: string;
@@ -424,8 +425,14 @@ export default function AdminPage() {
   const handleConfirmPayment = async (p: PendingPayment) => {
     setPayingActionId(p.id);
     try {
-      await djangoApi.post(`/api/orders/${p.order_id}/confirm-payment/`);
-      showToast(`Payment confirmed — importer payout released for ${p.order_number}`, "success");
+      if (p.type === "promotion") {
+        // Promotion boost payment — activating makes the boost live
+        await djangoApi.post(`/api/admin/promotion-payments/${p.id}/confirm/`);
+        showToast(`Promotion payment confirmed — "${p.order_number}" boost is now live`, "success");
+      } else {
+        await djangoApi.post(`/api/orders/${p.order_id}/confirm-payment/`);
+        showToast(`Payment confirmed — importer payout released for ${p.order_number}`, "success");
+      }
       paymentsRefetch();
       statsRefetch();
     } catch {
@@ -437,14 +444,19 @@ export default function AdminPage() {
 
   const handleRejectPayment = async (p: PendingPayment) => {
     const reason = window.prompt(
-      `Reject payment for ${p.order_number}?\nEnter the reason shown to the buyer:`,
+      `Reject payment for ${p.order_number}?\nEnter the reason shown to the ${p.type === "promotion" ? "importer" : "buyer"}:`,
       "Transfer could not be matched to our bank account."
     );
     if (reason === null) return;
     setPayingActionId(p.id);
     try {
-      await djangoApi.post(`/api/orders/${p.order_id}/reject-payment/`, { reason });
-      showToast("Payment rejected — buyer asked to re-submit", "success");
+      if (p.type === "promotion") {
+        await djangoApi.post(`/api/admin/promotion-payments/${p.id}/reject/`, { reason });
+        showToast("Promotion payment rejected — importer notified", "success");
+      } else {
+        await djangoApi.post(`/api/orders/${p.order_id}/reject-payment/`, { reason });
+        showToast("Payment rejected — buyer asked to re-submit", "success");
+      }
       paymentsRefetch();
       statsRefetch();
     } catch {
@@ -1346,7 +1358,8 @@ export default function AdminPage() {
             <div className="px-5 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">Bank transfers awaiting verification</h2>
               <p className="text-sm text-slate-500 mt-0.5">
-                Match each reference against the WARED bank account, then Confirm (releases the deal — importer gets 99%) or Reject (buyer is asked to re-submit).
+                Car payments (buyer → WARED, importer gets 99%) and promotion boosts (importer → WARED).
+                Match each reference against the bank account, then Confirm or Reject.
               </p>
             </div>
             {pendingPayments.length === 0 ? (
@@ -1358,9 +1371,10 @@ export default function AdminPage() {
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Order #</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Type</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Order / Package</th>
                       <th className="px-4 py-3 font-medium text-slate-700 text-left">Car</th>
-                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Buyer</th>
+                      <th className="px-4 py-3 font-medium text-slate-700 text-left">Paid by</th>
                       <th className="px-4 py-3 font-medium text-slate-700 text-left">Amount</th>
                       <th className="px-4 py-3 font-medium text-slate-700 text-left">Transfer Ref.</th>
                       <th className="px-4 py-3 font-medium text-slate-700 text-left">Submitted</th>
@@ -1371,9 +1385,20 @@ export default function AdminPage() {
                     {pendingPayments.map((p) => (
                       <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                         <td className="px-4 py-3">
-                          <Link href={`/orders/${p.order_id}`} className="font-mono text-sm text-accent hover:underline">
-                            {p.order_number}
-                          </Link>
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            p.type === "promotion" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                          }`}>
+                            {p.type === "promotion" ? "Boost" : "Car payment"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {p.type === "promotion" || !p.order_id ? (
+                            <span className="text-sm text-slate-700">{p.order_number}</span>
+                          ) : (
+                            <Link href={`/orders/${p.order_id}`} className="font-mono text-sm text-accent hover:underline">
+                              {p.order_number}
+                            </Link>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-700 max-w-[180px] truncate">{p.car_title}</td>
                         <td className="px-4 py-3 text-sm text-slate-700">{p.buyer_name}</td>

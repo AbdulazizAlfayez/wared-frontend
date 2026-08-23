@@ -272,7 +272,9 @@ const FILTER_PILLS = [
 function BrowseCars() {
   const [activePill, setActivePill] = useState(0);
   const filterParams = FILTER_PILLS[activePill]?.params ?? "";
-  const queryUrl = `/api/imported-cars/?ordering=-created_at&page_size=6${filterParams ? `&${filterParams}` : ""}`;
+  // No explicit ordering — the API default puts paid promotions (Featured /
+  // Top Search) first, then newest, so boosted cars lead the homepage grid.
+  const queryUrl = `/api/imported-cars/?page_size=6${filterParams ? `&${filterParams}` : ""}`;
 
   const { data } = useApiQuery<PaginatedResponse<ImportedListing>>(
     queryUrl,
