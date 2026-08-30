@@ -326,7 +326,6 @@ export default function DealerListingsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Bulk action bar
-  const [bulkStatusValue, setBulkStatusValue] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [bulkResult, setBulkResult] = useState<{
@@ -451,7 +450,6 @@ export default function DealerListingsPage() {
     setSelectedIds(new Set());
     setBulkResult(null);
     setShowDeleteConfirm(false);
-    setBulkStatusValue("");
   };
 
   const pageAllSelected = listings.length > 0 && listings.every(l => selectedIds.has(l.id));

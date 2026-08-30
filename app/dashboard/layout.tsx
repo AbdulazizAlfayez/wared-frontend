@@ -5,21 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useApiQuery } from "@/lib/hooks/use-api";
-import type { PaginatedResponse, VerificationStatus } from "@/lib/types";
+import type { VerificationStatus } from "@/lib/types";
 import { api } from "@/lib/api";
 import {
-  LayoutDashboard, Store, Car, Users, Calendar, Loader2, Wrench,
-  MessageSquare, BarChart2, Zap, ShieldCheck, Flag, Star,
+  LayoutDashboard, Car, Loader2,
+  MessageSquare, ShieldCheck, Star,
   Package, Plus, ClipboardList,
 } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Types for ownership checks
-// ---------------------------------------------------------------------------
-
-interface OwnerBrief { id: number }
-interface ShowroomListItem { id: number; owner?: OwnerBrief }
-interface WorkshopListItem  { id: number; owner?: OwnerBrief | null }
 
 // ---------------------------------------------------------------------------
 // Sidebar link
@@ -74,7 +66,7 @@ function SidebarLink({
 // ---------------------------------------------------------------------------
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, role, user } = useAuth();
+  const { isAuthenticated, isLoading, role } = useAuth();
   const router = useRouter();
 
   const isImporterOrAdmin = isAuthenticated && (role === "importer" || role === "admin");
@@ -98,16 +90,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
   const pendingResCount = pendingResData?.count ?? 0;
 
-  // Fetch showrooms to check if this dealer owns one
-  const { data: showroomsRaw, isLoading: showroomsLoading } = useApiQuery<
-    PaginatedResponse<ShowroomListItem> | ShowroomListItem[]
-  >("/api/showrooms/?page_size=100", { enabled: isImporterOrAdmin });
-
-  // Fetch workshops to check if this dealer owns one
-  const { data: workshopsRaw, isLoading: workshopsLoading } = useApiQuery<
-    PaginatedResponse<WorkshopListItem> | WorkshopListItem[]
-  >("/api/workshops/?page_size=100", { enabled: isImporterOrAdmin });
-
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/auth/signin");
@@ -128,21 +110,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   }
 
-  // Normalize response (paginated or plain array)
-  const showrooms: ShowroomListItem[] = Array.isArray(showroomsRaw)
-    ? showroomsRaw
-    : (showroomsRaw as PaginatedResponse<ShowroomListItem>)?.results ?? [];
-
-  const workshops: WorkshopListItem[] = Array.isArray(workshopsRaw)
-    ? workshopsRaw
-    : (workshopsRaw as PaginatedResponse<WorkshopListItem>)?.results ?? [];
-
-  // Check ownership — compare owner.id to the current user's id
-  const hasShowroom = showrooms.some((s) => s.owner?.id === user?.id);
-  const hasWorkshop = workshops.some((w) => w.owner?.id === user?.id);
-
-  const ownershipLoading = showroomsLoading || workshopsLoading;
-
   // Build dynamic nav based on role
   const importerNavItems = [
     { href: "/dashboard/importer",               label: "Overview",       icon: LayoutDashboard, exact: true },
@@ -155,20 +122,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/dashboard/reviews",                label: "My Reviews",     icon: Star },
   ];
 
-  const dealerNavItems = [
-    { href: "/dashboard",              label: "Overview",             icon: LayoutDashboard, exact: true },
-    { href: "/dashboard/listings",     label: "Listings",             icon: Car },
-    { href: "/dashboard/leads",        label: "Leads",                icon: Users },
-    { href: "/dashboard/appointments", label: "Appointments",         icon: Calendar },
-    { href: "/messages",               label: "Messages",             icon: MessageSquare },
-    { href: "/dashboard/analytics",    label: "Analytics",            icon: BarChart2 },
-    { href: "/dashboard/promotions",   label: "Promotions",           icon: Zap },
-    ...(hasShowroom ? [{ href: "/dashboard/showroom", label: "My Showroom", icon: Store }] : []),
-    ...(hasWorkshop ? [{ href: "/dashboard/workshop", label: "My Workshop", icon: Wrench }] : []),
-{ href: "/dashboard/verification", label: "Verification",          icon: ShieldCheck, showDot: verifIncomplete },
-    { href: "/dashboard/reviews",      label: "My Reviews",            icon: Star },
-    { href: "/dashboard/reports",      label: "My Reports",            icon: Flag },
-  ];
+  // NOTE: the old dealer-marketplace nav was removed as dead code — WARED's
+  // dashboard is importer-only (navItems below was always importerNavItems).
+  // Showroom/workshop/leads/analytics pages still exist and remain reachable
+  // by their direct URLs.
 
   const navItems = importerNavItems;
   const dashboardTitle = "Importer Dashboard";
@@ -187,12 +144,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {navItems.map((item) => (
                   <SidebarLink key={item.href} {...item} />
                 ))}
-                {ownershipLoading && (
-                  <div className="flex items-center gap-2 px-4 py-2 text-xs text-slate-400">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Loading…
-                  </div>
-                )}
               </nav>
             </div>
           </aside>
