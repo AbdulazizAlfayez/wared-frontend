@@ -6,6 +6,7 @@ import { I18nClientProvider } from "./I18nClientProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VerificationGate from "@/components/VerificationGate";
+import AssistantWidget from "@/components/AssistantWidget";
 
 export const metadata: Metadata = {
   title: "وارد | WARED",
@@ -39,6 +40,7 @@ export default function RootLayout({
                   <Header />
                   <main className="flex-1">{children}</main>
                   <Footer />
+                  <AssistantWidget />
                 </I18nClientProvider>
               </VerificationGate>
             </ToastProvider>

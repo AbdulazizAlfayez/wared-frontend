@@ -1227,5 +1227,23 @@
     "makeRequired": "Make is required.",
     "modelRequired": "Model is required.",
     "vinDuplicate": "You already have an active listing with this VIN."
+  },
+  "assistant": {
+    "title": "WARED Assistant",
+    "subtitle": "AI-powered help",
+    "open": "Open WARED Assistant",
+    "newChat": "New chat",
+    "greeting": "Hi! I'm WARED Assistant",
+    "greetingSub": "Ask me about cars, orders, or how WARED works",
+    "placeholder": "Type a message...",
+    "quickHow": "How does buying a car work?",
+    "quickCar": "Find me a car under 100k",
+    "quickSafe": "Is it safe to pay?",
+    "quickOrder": "Where is my order?",
+    "quickPayment": "What do I pay next?",
+    "rateLimited": "You're sending messages too quickly — please wait a bit.",
+    "unavailable": "Assistant unavailable right now. Please try again.",
+    "dismiss": "Dismiss",
+    "disclaimer": "AI assistant — answers may contain mistakes. Official payment details appear only on your order page."
   }
 }
