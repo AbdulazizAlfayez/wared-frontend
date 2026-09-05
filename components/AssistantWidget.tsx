@@ -54,10 +54,14 @@ async function chatRequest(body: Record<string, unknown>): Promise<{ data?: Chat
     });
     if (res.status === 429) return { status: 429 };
     if (res.status === 503) return { status: 503 };
-    if (!res.ok) return { status: res.status };
+    if (!res.ok) {
+      console.warn("[AssistantWidget] API returned", res.status);
+      return { status: res.status };
+    }
     const data = await res.json();
     return { data, status: 200 };
-  } catch {
+  } catch (err) {
+    console.error("[AssistantWidget] fetch error:", err);
     return { status: 0 };
   }
 }
@@ -260,8 +264,14 @@ export default function AssistantWidget() {
       setIsSending(false);
       return;
     }
-    if (!data) {
+    if (status === 403) {
+      // CSRF or auth issue — try refreshing the page
       setError(t("assistant.unavailable"));
+      setIsSending(false);
+      return;
+    }
+    if (!data) {
+      setError(t("assistant.unavailable") + ` (${status})`);
       setIsSending(false);
       return;
     }
