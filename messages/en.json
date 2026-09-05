@@ -1244,6 +1244,9 @@
     "rateLimited": "You're sending messages too quickly — please wait a bit.",
     "unavailable": "Assistant unavailable right now. Please try again.",
     "dismiss": "Dismiss",
-    "disclaimer": "AI assistant — answers may contain mistakes. Official payment details appear only on your order page."
+    "disclaimer": "AI assistant — answers may contain mistakes. Official payment details appear only on your order page.",
+    "viewAll": "View all {n} cars →",
+    "welcomeBack": "Welcome back, {name}",
+    "trackOrder": "Track order →"
   }
 }
