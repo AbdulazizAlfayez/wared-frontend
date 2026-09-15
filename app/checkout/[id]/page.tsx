@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
 import {
   ArrowLeft, Lock, CheckCircle, Loader2, CreditCard,
@@ -46,6 +47,7 @@ const METHODS = [
 export default function CheckoutPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const reservationId = params.id as string;
 
   const { data: reservation, isLoading } = useApiQuery<ReservationDetail>(
@@ -281,34 +283,36 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Fee breakdown */}
+              {/* Fee breakdown — the SAR 99 is a platform service fee, so the
+                  only thing charged today is the fee itself. */}
               <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Holding fee</span>
+                  <span className="text-slate-500">{t("checkout.platformFee")}</span>
                   <span className="font-medium text-[#0B1424]">SAR {fee}</span>
                 </div>
                 <div className="h-px bg-[#0B1424]/8" />
                 <div className="flex justify-between font-semibold">
-                  <span className="text-[#0B1424]">Total today</span>
+                  <span className="text-[#0B1424]">{t("checkout.totalToday")}</span>
                   <span className="text-[#0B1424]">SAR {fee}</span>
                 </div>
               </div>
 
-              {/* Remaining balance */}
+              {/* Car price — the FULL price. The fee is not credited against
+                  it, so nothing is subtracted here. */}
               <div className="mt-4 pt-4 border-t border-[#0B1424]/8">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Remaining balance</span>
-                  <span className="text-slate-500">SAR {(finalPrice - fee).toLocaleString()}</span>
+                  <span className="text-slate-400">{t("checkout.carPrice")}</span>
+                  <span className="text-slate-500">SAR {finalPrice.toLocaleString()}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">Paid on delivery</p>
+                <p className="text-[11px] text-slate-400 mt-1">{t("checkout.carPriceNote")}</p>
               </div>
 
               {/* Trust badges */}
               <div className="mt-6 space-y-2.5">
                 {[
-                  { icon: Shield, text: "Non-refundable reservation fee" },
-                  { icon: Lock, text: "Held in secure escrow" },
-                  { icon: CheckCircle, text: "SAR 99 deducted from final price" },
+                  { icon: Shield, text: t("checkout.badgeNonRefundable") },
+                  { icon: Lock, text: t("checkout.badgeHidden") },
+                  { icon: CheckCircle, text: t("checkout.badgeNotDeducted") },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-start gap-2">
                     <Icon className="w-4 h-4 text-[#0B8470] flex-shrink-0 mt-0.5" />

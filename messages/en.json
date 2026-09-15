@@ -1,4 +1,13 @@
 {
+  "checkout": {
+    "platformFee": "Platform fee",
+    "totalToday": "Total today",
+    "carPrice": "Car price",
+    "carPriceNote": "Paid separately to complete your purchase \u2014 the SAR 99 fee is not deducted from it.",
+    "badgeNonRefundable": "Non-refundable platform fee",
+    "badgeHidden": "Car hidden from other buyers for 7 days",
+    "badgeNotDeducted": "Not deducted from the car's price"
+  },
   "common": {
     "search": "Search",
     "browse": "Browse",
@@ -951,11 +960,11 @@
     "faq3q": "Are all importers on this platform verified?",
     "faq3a": "Yes. All importers go through an application process where we verify their Commercial Registration (CR), customs broker license, and import permits. Verified importers display a 'Verified Importer' badge on their profile.",
     "faq4q": "What is the SAR 99 reservation fee for?",
-    "faq4a": "The SAR 99 reservation fee holds the car for you, prevents other buyers from reserving it, and connects you directly with the importer's contact details. It is fully credited toward your final purchase price — it's not an extra charge.",
+    "faq4a": "The SAR 99 reservation fee reserves the car for you and hides it from other buyers for 7 days while the importer reviews your request. It is a Wared platform service fee: it is non-refundable and is NOT deducted from the car's price. You pay the full price of the car separately.",
     "faq5q": "Can I inspect the car before it arrives in Saudi Arabia?",
     "faq5a": "Yes. Most importers provide pre-purchase inspection reports (Carfax, AutoCheck, auction photos and videos). Some offer third-party inspection services at the source country for an additional fee. You can also request post-arrival inspection once the car reaches the Saudi port.",
     "faq6q": "What happens if the car arrives with undisclosed damage?",
-    "faq6a": "All listings must disclose salvage titles, flood damage, and frame damage. If an importer misrepresents a car's condition, you can file a dispute through our platform. We hold the reservation fee and can refund you in confirmed cases of misrepresentation.",
+    "faq6a": "All listings must disclose salvage titles, flood damage, and frame damage. If an importer misrepresents a car's condition, you can file a dispute through our platform and we will investigate. The SAR 99 reservation fee is non-refundable; refunds are issued only where required by law or under Wared's misrepresentation policy.",
     "ctaTitle1": "Ready to start",
     "ctaTitle2": "your import?",
     "ctaSubtitle": "Calculate any car's landed cost, or browse live listings.",
@@ -1067,7 +1076,6 @@
     "onItsWay": "On its way to a buyer",
     "onItsWayDesc": "This car is in the import pipeline for another buyer. Browse similar available cars from this importer.",
     "reserveThisCar": "Reserve this car",
-    "holdingFee": "SAR 99 holding fee · Fully refundable",
     "save": "Save",
     "saved": "Saved",
     "sourcePrice": "Source Price",
@@ -1169,6 +1177,8 @@
   },
   "reservation": {
     "pendingReservations": "Pending Reservations",
+    "completePayment": "Complete payment",
+    "awaitingPaymentNote": "Your reservation is not active until the SAR 99 fee is paid.",
     "awaitingApproval": "Awaiting importer approval",
     "feePaid": "SAR 99 reservation fee paid",
     "cancelledByBuyer": "Cancelled by you",

@@ -214,8 +214,25 @@ function ReservationCard({ res, t }: { res: BuyerReservation; t: (key: string, p
           </div>
         </div>
 
-        {/* Pending indicator */}
-        {isPending && (
+        {/* Pending indicator. pending_payment and pending_review are both
+            "pending", but they need opposite things: one is waiting on the
+            buyer to pay, the other on the importer to decide. */}
+        {isPending && res.status === "pending_payment" && (
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-sm text-amber-600">
+              <Clock className="w-4 h-4" />
+              <span>{t("reservation.awaitingPaymentNote")}</span>
+            </div>
+            <Link
+              href={`/checkout/${res.id}`}
+              className="px-3.5 py-1.5 text-sm font-semibold text-white bg-[#0B8470] hover:bg-[#096b5b] rounded-lg transition-colors flex-shrink-0"
+            >
+              {t("reservation.completePayment")}
+            </Link>
+          </div>
+        )}
+
+        {isPending && res.status !== "pending_payment" && (
           <div className="mt-3 flex items-center gap-1.5 text-sm text-amber-600">
             <Clock className="w-4 h-4" />
             <span>{t("reservation.awaitingApproval")}</span>
