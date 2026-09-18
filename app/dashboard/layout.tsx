@@ -65,12 +65,37 @@ function SidebarLink({
 // Layout
 // ---------------------------------------------------------------------------
 
+/**
+ * Where each role's dashboard lives.
+ *
+ * `/dashboard/buyer` sits inside this layout, so the gate below must let a
+ * buyer through to it: the old guard allowed only importer/admin and
+ * redirected everyone else *into* the gated route, which bounced buyers and
+ * dealers between the redirect and a blank page and locked them out of every
+ * dashboard page.
+ */
+function dashboardHomeFor(role: string | null): string {
+  if (role === "importer") return "/dashboard/importer";
+  // The dealer overview is `/dashboard` itself.
+  if (role === "dealer") return "/dashboard";
+  if (role === "admin") return "/admin";
+  return "/dashboard/buyer";
+}
+
+/** Buyer pages: any signed-in user, whatever their role. */
+const BUYER_PREFIX = "/dashboard/buyer";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, role } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const isImporterOrAdmin = isAuthenticated && (role === "importer" || role === "admin");
-  const isDashboardUser   = isImporterOrAdmin;
+  /** Seller tooling — listings, leads, showroom, promotions, analytics. */
+  const isSeller = isImporterOrAdmin || (isAuthenticated && role === "dealer");
+  const isBuyerArea = pathname.startsWith(BUYER_PREFIX);
+  // The buyer area is open to everyone signed in; the rest is seller tooling.
+  const isDashboardUser = isAuthenticated && (isBuyerArea || isSeller);
 
   // Fetch verification status for the dot indicator
   const [verifLevel, setVerifLevel] = useState<string | null>(null);
@@ -91,12 +116,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pendingResCount = pendingResData?.count ?? 0;
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isLoading) return;
+    if (!isAuthenticated) {
       router.replace("/auth/signin");
-    } else if (!isLoading && isAuthenticated && !isDashboardUser) {
-      router.replace("/dashboard/buyer");
+      return;
     }
-  }, [isLoading, isAuthenticated, isDashboardUser, router]);
+    // Send each role to its own dashboard rather than to a page it cannot open.
+    const home = dashboardHomeFor(role);
+    if (pathname === "/dashboard" || !isDashboardUser) {
+      if (pathname !== home) router.replace(home);
+    }
+  }, [isLoading, isAuthenticated, isDashboardUser, role, pathname, router]);
 
   if (isLoading) {
     return (
@@ -127,8 +157,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Showroom/workshop/leads/analytics pages still exist and remain reachable
   // by their direct URLs.
 
-  const navItems = importerNavItems;
-  const dashboardTitle = "Importer Dashboard";
+  /** What a buyer can actually open from here; the rest is seller tooling. */
+  const buyerNavItems = [
+    { href: "/dashboard/buyer", label: "Overview", icon: LayoutDashboard, exact: true },
+    { href: "/orders", label: "My Orders", icon: Package },
+    { href: "/favorites", label: "Saved Cars", icon: Star },
+    { href: "/messages", label: "Messages", icon: MessageSquare },
+    { href: "/dashboard/verification", label: "Verification", icon: ShieldCheck, showDot: verifIncomplete },
+  ];
+
+  const showSellerNav = isSeller && !isBuyerArea;
+  const navItems = showSellerNav ? importerNavItems : buyerNavItems;
+  const dashboardTitle = showSellerNav ? "Importer Dashboard" : "My Dashboard";
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
