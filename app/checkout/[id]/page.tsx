@@ -9,6 +9,7 @@ import { ListingUnavailable } from "@/components/ListingUnavailable";
 import {
   isCurrentlyReserved,
   isNotFound,
+  isNotMine,
   notifyReservationsChanged,
 } from "@/lib/reservations";
 import Link from "next/link";
@@ -67,7 +68,7 @@ export default function CheckoutPage() {
    * the same story as a car that is gone, told the same way.
    */
   const [refusedByServer, setRefusedByServer] = useState(false);
-  const notMine = isNotFound(reservationError) || refusedByServer;
+  const notMine = isNotMine(reservationError) || refusedByServer;
 
   const [method, setMethod] = useState("mada");
   const [isPaying, setIsPaying] = useState(false);

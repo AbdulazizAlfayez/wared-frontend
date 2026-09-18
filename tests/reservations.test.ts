@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   browseSimilarHref,
+  isNotMine,
   isAlreadyMine,
   isCurrentlyReserved,
   isNotFound,
@@ -30,6 +31,14 @@ test("a 404 means gone, or hidden from this viewer", () => {
   assert.equal(isNotFound(apiError(500, { detail: "Server error" })), false);
   assert.equal(isNotFound(new Error("network")), false);
   assert.equal(isNotFound(null), false);
+});
+
+test("another buyer's reservation is a 403, not a 404", () => {
+  // GET /api/reservations/{id}/ answers "Not authorized." with 403; checkout
+  // has to treat that as "not yours" or it falls through to a blank page.
+  assert.equal(isNotMine(apiError(403, { detail: "Not authorized." })), true);
+  assert.equal(isNotMine(apiError(404, { detail: "Not found." })), true);
+  assert.equal(isNotMine(apiError(500, { detail: "boom" })), false);
 });
 
 test("409 is someone else holding the car", () => {

@@ -65,6 +65,18 @@ export function isNotFound(error: unknown): boolean {
 }
 
 /**
+ * Someone else's reservation, or one that no longer exists.
+ *
+ * `GET /api/reservations/{id}/` answers 403 "Not authorized." for a
+ * reservation belonging to another buyer — not the 404 the listing endpoint
+ * gives for a car — so checkout has to watch for both.
+ */
+export function isNotMine(error: unknown): boolean {
+  const status = asFailure(error)?.status;
+  return status === 403 || status === 404;
+}
+
+/**
  * The reserve call refusing because the car is locked.
  *
  * The contract is 409 ("This car is currently reserved."); a 400 carrying the

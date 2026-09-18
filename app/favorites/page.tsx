@@ -35,18 +35,42 @@ export default function FavoritesPage() {
     []
   );
 
-  const displayedFavorites = favorites.filter((listing) => !removedIds.has(listing.id));
-
   /*
-   * A saved car someone else has reserved, or that has sold, keeps its place
-   * as a greyed row: favourites are deliberately kept (the endpoint still
-   * returns a car this buyer reserved), and a card that silently disappears
-   * reads as data loss.
+   * Saved cars this page has already shown, by id.
+   *
+   * The favourites endpoint applies the same visibility rules as browse: the
+   * moment another buyer reserves a saved car, it stops coming back at all
+   * (verified against the API — the row disappears, it does not arrive with a
+   * flag). Keeping the last copy means Saved can grey the row out instead of
+   * losing it silently, which is what the mobile app does.
    */
+  const [seenRows, setSeenRows] = useState<Record<number, Listing>>({});
+  useEffect(() => {
+    if (favorites.length === 0) return;
+    setSeenRows((prev) => {
+      const next = { ...prev };
+      for (const listing of favorites) next[listing.id] = listing;
+      return next;
+    });
+  }, [favorites]);
+
+  const presentIds = new Set(favorites.map((listing) => listing.id));
+  const vanished = Object.values(seenRows).filter(
+    (listing) => !presentIds.has(listing.id) && !removedIds.has(listing.id)
+  );
+
+  const displayedFavorites = [...favorites, ...vanished].filter(
+    (listing) => !removedIds.has(listing.id)
+  );
+
+  /** Gone for this viewer: dropped by the server, reserved elsewhere, or sold. */
   const isUnavailable = useCallback(
     (listing: Listing) =>
-      isReservedForOthers(listing, user) || listing.import_status === "sold",
-    [user]
+      !presentIds.has(listing.id) ||
+      isReservedForOthers(listing, user) ||
+      listing.import_status === "sold",
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, favorites]
   );
 
   // A reservation made or cancelled in this tab can change these rows.
