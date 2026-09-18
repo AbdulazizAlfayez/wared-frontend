@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Heart, ArrowRight } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/use-api";
@@ -11,9 +11,10 @@ import CarCard from "@/components/CarCard";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { toggleFavorite } from "@/lib/favorites";
+import { isReservedForOthers, RESERVATIONS_CHANGED_EVENT } from "@/lib/reservations";
 
 export default function FavoritesPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   const { data, isLoading, refetch } = useApiQuery<PaginatedResponse<Listing>>(
     "/api/favorites/",
@@ -34,7 +35,50 @@ export default function FavoritesPage() {
     []
   );
 
-  const displayedFavorites = favorites.filter((listing) => !removedIds.has(listing.id));
+  /*
+   * Saved cars this page has already shown, by id.
+   *
+   * The favourites endpoint applies the same visibility rules as browse: the
+   * moment another buyer reserves a saved car, it stops coming back at all
+   * (verified against the API — the row disappears, it does not arrive with a
+   * flag). Keeping the last copy means Saved can grey the row out instead of
+   * losing it silently, which is what the mobile app does.
+   */
+  const [seenRows, setSeenRows] = useState<Record<number, Listing>>({});
+  useEffect(() => {
+    if (favorites.length === 0) return;
+    setSeenRows((prev) => {
+      const next = { ...prev };
+      for (const listing of favorites) next[listing.id] = listing;
+      return next;
+    });
+  }, [favorites]);
+
+  const presentIds = new Set(favorites.map((listing) => listing.id));
+  const vanished = Object.values(seenRows).filter(
+    (listing) => !presentIds.has(listing.id) && !removedIds.has(listing.id)
+  );
+
+  const displayedFavorites = [...favorites, ...vanished].filter(
+    (listing) => !removedIds.has(listing.id)
+  );
+
+  /** Gone for this viewer: dropped by the server, reserved elsewhere, or sold. */
+  const isUnavailable = useCallback(
+    (listing: Listing) =>
+      !presentIds.has(listing.id) ||
+      isReservedForOthers(listing, user) ||
+      listing.import_status === "sold",
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, favorites]
+  );
+
+  // A reservation made or cancelled in this tab can change these rows.
+  useEffect(() => {
+    const onChange = () => refetch();
+    window.addEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+  }, [refetch]);
 
   if (authLoading || (isLoading && isAuthenticated)) {
     return (
@@ -108,6 +152,7 @@ export default function FavoritesPage() {
               <CarCard
                 key={listing.id}
                 listing={listing}
+                unavailable={isUnavailable(listing)}
                 onFavoriteToggle={(_id, isFav) => { if (!isFav) handleUnfavorite(listing.id); }}
               />
             ))}

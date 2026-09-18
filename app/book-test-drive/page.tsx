@@ -9,6 +9,7 @@ import Link from "next/link";
 import { ArrowLeft, Car, User, Phone, Calendar, Clock, MapPin, CheckCircle, Loader2 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { api } from "@/lib/api";
+import { useAuth, parseApiError } from "@/lib/auth-context";
 
 const cities = [
   "Riyadh",
@@ -26,22 +27,29 @@ const cities = [
   "Najran",
 ];
 
+/**
+ * The slots the form offers, as 12-hour labels paired with the 24-hour value
+ * the API wants: `appointment_time` is a Django TimeField, which rejects
+ * "09:00 AM".
+ */
 const timeSlots = [
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "01:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-  "04:00 PM",
-  "05:00 PM",
+  { label: "09:00 AM", value: "09:00" },
+  { label: "10:00 AM", value: "10:00" },
+  { label: "11:00 AM", value: "11:00" },
+  { label: "12:00 PM", value: "12:00" },
+  { label: "01:00 PM", value: "13:00" },
+  { label: "02:00 PM", value: "14:00" },
+  { label: "03:00 PM", value: "15:00" },
+  { label: "04:00 PM", value: "16:00" },
+  { label: "05:00 PM", value: "17:00" },
 ];
 
 function BookTestDriveContent() {
   const { t, dir } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
+  // The endpoint is IsAuthenticated: a guest would only ever get a 401.
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   
   const carId = searchParams.get("carId") || "";
   const carTitle = searchParams.get("title") || "";
@@ -55,6 +63,7 @@ function BookTestDriveContent() {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   // Get minimum date (tomorrow)
   const tomorrow = new Date();
@@ -65,16 +74,33 @@ function BookTestDriveContent() {
     e.preventDefault();
     if (!carId) return;
     setIsSubmitting(true);
+    setError("");
     try {
-      await api.post("/api/bookings/", {
+      /*
+       * `POST /api/bookings/` never existed — the bookings app registers
+       * `appointments` and `service-bookings`, so every submission 404'd. The
+       * real endpoint takes `appointment_date` / `appointment_time` (24h) and
+       * `location`, and derives the buyer from the session.
+       *
+       * Name and phone have nowhere to go on the appointment model, so they
+       * ride along in the notes the importer reads rather than being collected
+       * and dropped.
+       */
+      const contact = [name.trim(), phone.trim()].filter(Boolean).join(" · ");
+      const composedNotes = [notes.trim(), contact].filter(Boolean).join("\n");
+
+      await api.post("/api/appointments/", {
         listing: parseInt(carId, 10),
-        preferred_date: date,
-        preferred_time: time,
-        message: notes || undefined,
+        appointment_date: date,
+        appointment_time: time,
+        location: city || undefined,
+        notes: composedNotes || undefined,
       });
       setIsSubmitted(true);
-    } catch {
-      alert("Failed to submit booking. Please try again.");
+    } catch (err) {
+      // The server explains itself — own listing, three pending already, a
+      // date in the past — and that is more useful than "try again".
+      setError(parseApiError(err, t("testDrive.failed")));
     } finally {
       setIsSubmitting(false);
     }
@@ -176,6 +202,14 @@ function BookTestDriveContent() {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
+          {!authLoading && !isAuthenticated && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {t("testDrive.signInRequired")}{" "}
+              <Link href="/auth/signin" className="font-semibold underline">
+                {t("nav.signIn")}
+              </Link>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name */}
             <div className="space-y-2">
@@ -266,8 +300,8 @@ function BookTestDriveContent() {
                   >
                     <option value="">{t("testDrive.selectTime")}</option>
                     {timeSlots.map((slot) => (
-                      <option key={slot} value={slot}>
-                        {slot}
+                      <option key={slot.value} value={slot.value}>
+                        {slot.label}
                       </option>
                     ))}
                   </select>
@@ -316,10 +350,16 @@ function BookTestDriveContent() {
               />
             </div>
 
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                {error}
+              </p>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isAuthenticated}
               className={`w-full py-3 bg-accent hover:bg-accent-600 disabled:bg-accent/50 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${dir === "rtl" ? "flex-row-reverse" : ""}`}
             >
               {isSubmitting ? (

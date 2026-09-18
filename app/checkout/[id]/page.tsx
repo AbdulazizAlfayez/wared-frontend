@@ -5,6 +5,13 @@ import { useState } from "react";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { api } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n";
+import { ListingUnavailable } from "@/components/ListingUnavailable";
+import {
+  isCurrentlyReserved,
+  isNotFound,
+  isNotMine,
+  notifyReservationsChanged,
+} from "@/lib/reservations";
 import Link from "next/link";
 import {
   ArrowLeft, Lock, CheckCircle, Loader2, CreditCard,
@@ -50,10 +57,18 @@ export default function CheckoutPage() {
   const { t } = useTranslation();
   const reservationId = params.id as string;
 
-  const { data: reservation, isLoading } = useApiQuery<ReservationDetail>(
-    `/api/reservations/${reservationId}/`,
-    { enabled: !!reservationId }
-  );
+  const { data: reservation, isLoading, error: reservationError } =
+    useApiQuery<ReservationDetail>(`/api/reservations/${reservationId}/`, {
+      enabled: !!reservationId,
+    });
+
+  /*
+   * The reservations endpoint is scoped to the buyer, so someone else's
+   * reservation — or one that has been cancelled — comes back 404. That is
+   * the same story as a car that is gone, told the same way.
+   */
+  const [refusedByServer, setRefusedByServer] = useState(false);
+  const notMine = isNotMine(reservationError) || refusedByServer;
 
   const [method, setMethod] = useState("mada");
   const [isPaying, setIsPaying] = useState(false);
@@ -72,6 +87,7 @@ export default function CheckoutPage() {
       );
 
       if (result.success) {
+        notifyReservationsChanged();
         setSuccess(true);
         setTimeout(() => {
           router.push(`/orders`);
@@ -80,6 +96,14 @@ export default function CheckoutPage() {
         setError(result.error || "Payment failed. Please try again.");
       }
     } catch (err: any) {
+      // Someone else's reservation took the car while this page sat open.
+      // That is a state, not a card problem: a red line under the methods
+      // would read as "try another card".
+      if (isCurrentlyReserved(err) || isNotFound(err)) {
+        setRefusedByServer(true);
+        notifyReservationsChanged();
+        return;
+      }
       let msg = "Payment failed. Please try again.";
       try {
         const body = typeof err?.message === "string" ? JSON.parse(err.message) : err;
@@ -98,6 +122,11 @@ export default function CheckoutPage() {
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
+  }
+
+  // Not this buyer's reservation, or the car is gone.
+  if (notMine) {
+    return <ListingUnavailable make={reservation?.car?.make ?? null} />;
   }
 
   // Not found

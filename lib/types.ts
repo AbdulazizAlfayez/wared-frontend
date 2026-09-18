@@ -2,6 +2,8 @@
 // Shared TypeScript interfaces for the Django REST Framework backend
 // ---------------------------------------------------------------------------
 
+import type { ReservationState } from "./reservations";
+
 export interface ListingImage {
   id: number;
   /** Cloudinary public_id (may be a relative path like "image/upload/...") */
@@ -132,6 +134,17 @@ export interface Listing {
   workshop?: number | null;
   // Import pipeline stage (available / reserved / sold / shipping / …)
   import_status?: string | null;
+  /**
+   * A reservation holds this car. The backend hides such a car from everyone
+   * but its buyer, its importer and staff (`cars/visibility.py`).
+   */
+  is_reserved?: boolean;
+  /**
+   * Who the lock belongs to, from the viewer's point of view:
+   * `reserved_by_you` for the buyer holding it, `reserved` for the importer
+   * who owns it (or staff), `null` otherwise. See `lib/reservations.ts`.
+   */
+  reservation_state?: ReservationState;
   // Phase 4.6 — Promotion fields
   is_featured?: boolean;
   is_highlighted?: boolean;

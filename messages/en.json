@@ -3,7 +3,7 @@
     "platformFee": "Platform fee",
     "totalToday": "Total today",
     "carPrice": "Car price",
-    "carPriceNote": "Paid separately to complete your purchase \u2014 the SAR 99 fee is not deducted from it.",
+    "carPriceNote": "Paid separately to complete your purchase — the SAR 99 fee is not deducted from it.",
     "badgeNonRefundable": "Non-refundable platform fee",
     "badgeHidden": "Car hidden from other buyers for 7 days",
     "badgeNotDeducted": "Not deducted from the car's price"
@@ -247,7 +247,9 @@
     "requestSent": "Request Sent!",
     "city": "City",
     "selectCity": "Select city",
-    "bookingFor": "Booking test drive for"
+    "bookingFor": "Booking test drive for",
+    "failed": "Could not book the test drive. Please try again.",
+    "signInRequired": "Sign in to book a test drive."
   },
   "profile": {
     "title": "My Profile",
@@ -347,7 +349,8 @@
     "carsForLater": "Cars you've saved for later",
     "noFavorites": "No favorites yet",
     "noFavoritesMessage": "Browse our collection and tap the heart icon on cars you like to save them here.",
-    "browseCars": "Browse Cars"
+    "browseCars": "Browse Cars",
+    "remove": "Remove"
   },
   "compare": {
     "title": "Compare Cars",
@@ -1258,5 +1261,15 @@
     "viewAll": "View all {n} cars →",
     "welcomeBack": "Welcome back, {name}",
     "trackOrder": "Track order →"
+  },
+  "availability": {
+    "title": "This car is no longer available",
+    "body": "It was reserved or sold.",
+    "browseSimilar": "Browse similar cars",
+    "row": "No longer available",
+    "viewReservation": "View reservation",
+    "reserved": "Reserved",
+    "reservedByYouNote": "You are holding this car. The SAR 99 fee is already paid.",
+    "reservedForOwner": "A buyer is holding this car. It is hidden from everyone else until the reservation ends."
   }
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Globe, Loader2, MapPin, RefreshCw } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { useTranslation } from "@/lib/i18n";
+import { RESERVATIONS_CHANGED_EVENT } from "@/lib/reservations";
 import CarGrid from "@/components/CarGrid";
 import CountryCardGrid from "@/components/CountryCardGrid";
 import type { ByCountryResponse } from "@/types/source-country";
@@ -31,6 +32,17 @@ function MapPageInner() {
   const { data, isLoading, error, refetch } = useApiQuery<ByCountryResponse>(
     "/api/imported-cars/by-country/"
   );
+
+  /*
+   * Reserving a car takes it off the market, and the per-country totals here
+   * drop with it — so this refetches when a reservation is made or cancelled
+   * in this tab, rather than showing a count that no longer matches the grid.
+   */
+  useEffect(() => {
+    const onChange = () => refetch();
+    window.addEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+  }, [refetch]);
 
   const selectedCountry = data?.countries.find((c) => c.code === selectedCode);
 
