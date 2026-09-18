@@ -14,6 +14,8 @@ import { useApiQuery } from "@/lib/hooks/use-api";
 import { getImageUrl } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import type { ImportedListing, PaginatedResponse } from "@/lib/types";
+import { useAuth } from "@/lib/auth-context";
+import { RESERVATIONS_CHANGED_EVENT, visibleListings } from "@/lib/reservations";
 
 // ---------------------------------------------------------------------------
 // Legacy sample-car exports (used by Favorites page & compare — keep shape)
@@ -361,15 +363,27 @@ export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm
     setAllListings([]);
   }, [filterKey]);
 
+  const { user } = useAuth();
+
   const queryString = useMemo(
     () => buildQueryString(filters, page, limit),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filterKey, page, limit]
   );
 
-  const { data: listingsPage, isLoading } = useApiQuery<PaginatedResponse<ImportedListing>>(
-    `/api/imported-cars/?${queryString}`
-  );
+  const { data: listingsPage, isLoading, refetch } = useApiQuery<
+    PaginatedResponse<ImportedListing>
+  >(`/api/imported-cars/?${queryString}`);
+
+  // A reservation made or cancelled in this tab changes what is on the market.
+  useEffect(() => {
+    const onChange = () => {
+      setPage(1);
+      refetch();
+    };
+    window.addEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+  }, [refetch]);
 
   useEffect(() => {
     if (!listingsPage) return;
@@ -384,7 +398,13 @@ export default function CarGrid({ filters = {}, limit, onResultCount, searchTerm
   }, [listingsPage, page, onResultCount]);
 
   const hasNextPage  = !Array.isArray(listingsPage) && !!listingsPage?.next;
-  const displayCars  = limit ? allListings.slice(0, limit) : allListings;
+  /*
+   * The server already hides reserved cars from browse; this drops any row a
+   * page loaded earlier still holds, so a car that has just been reserved
+   * cannot be clicked through to a 404.
+   */
+  const onMarket     = visibleListings(allListings, user);
+  const displayCars  = limit ? onMarket.slice(0, limit) : onMarket;
 
   // Loading skeleton
   if (isLoading && page === 1) {

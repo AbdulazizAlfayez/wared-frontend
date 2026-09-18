@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useApiQuery } from "@/lib/hooks/use-api";
+import { visibleListings } from "@/lib/reservations";
 import { api } from "@/lib/api";
 import { getImageUrl } from "@/lib/utils";
 import type { SavedSearch, PaginatedResponse, Listing } from "@/lib/types";
@@ -75,7 +76,10 @@ function SavedSearchResults({
   const { data, isLoading } = useApiQuery<PaginatedResponse<Listing>>(
     `/api/saved-searches/${searchId}/results/?page_size=6`
   );
-  const listings = data?.results ?? [];
+  const { user } = useAuth();
+  // Saved-search results hide reserved cars server-side; this drops anything a
+  // cached page still holds, so a preview never links to a 404.
+  const listings = visibleListings(data?.results, user);
 
   return (
     <div className="mt-4 border-t border-slate-100 pt-4">

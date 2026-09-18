@@ -10,11 +10,18 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { getImageUrl } from "@/lib/utils";
 import type { Listing } from "@/lib/types";
+import { useTranslation } from "@/lib/i18n";
 
 interface CarCardProps {
   listing: Listing;
   favoriteId?: number;
   onFavoriteToggle?: (listingId: number, isFav: boolean, favoriteId?: number) => void;
+  /**
+   * The car has gone off the market — reserved by another buyer, or sold.
+   * Saved keeps the row rather than dropping it silently, greyed and not
+   * clickable, because the user put it there on purpose.
+   */
+  unavailable?: boolean;
 }
 
 // Import status config
@@ -35,8 +42,14 @@ const fuelShort: Record<string, string> = {
   hybrid: "Hybrid", electric: "EV", "plug-in hybrid": "PHEV",
 };
 
-export default function CarCard({ listing, favoriteId, onFavoriteToggle }: CarCardProps) {
+export default function CarCard({
+  listing,
+  favoriteId,
+  onFavoriteToggle,
+  unavailable = false,
+}: CarCardProps) {
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [isFav, setIsFav] = useState(favoriteId !== undefined);
   const [currentFavoriteId, setCurrentFavoriteId] = useState<number | undefined>(favoriteId);
   const [isToggling, setIsToggling] = useState(false);
@@ -94,6 +107,35 @@ export default function CarCard({ listing, favoriteId, onFavoriteToggle }: CarCa
     new Intl.NumberFormat("en-SA").format(mileage) + " km";
 
   const statusInfo = importStatus ? importStatusConfig[importStatus] : null;
+
+  if (unavailable) {
+    // Greyed and inert: the row stays so the save is not silently lost, but
+    // it cannot be clicked through to a 404.
+    return (
+      <article
+        data-testid={`favorite-unavailable-${listing.id}`}
+        className="relative h-full flex flex-col rounded-2xl overflow-hidden bg-white border border-slate-100 opacity-60"
+      >
+        <div className="relative aspect-[16/10] bg-slate-100 flex items-center justify-center">
+          <CarIcon className="w-10 h-10 text-slate-300" />
+        </div>
+        <div className="flex-1 p-4">
+          <h3 className="text-[15px] font-semibold text-slate-500 line-clamp-1">
+            {listing.year} {listing.make} {listing.model}
+          </h3>
+          <p className="mt-1 text-sm font-medium text-slate-400">{t("availability.row")}</p>
+          {onFavoriteToggle && (
+            <button
+              onClick={() => onFavoriteToggle(listing.id, false, favoriteId)}
+              className="mt-3 text-xs font-medium text-slate-500 hover:text-red-500 underline"
+            >
+              {t("favorites.remove")}
+            </button>
+          )}
+        </div>
+      </article>
+    );
+  }
 
   return (
     <Link href={`/car/${listing.id}`} className="group block h-full">

@@ -349,7 +349,8 @@
     "carsForLater": "Cars you've saved for later",
     "noFavorites": "No favorites yet",
     "noFavoritesMessage": "Browse our collection and tap the heart icon on cars you like to save them here.",
-    "browseCars": "Browse Cars"
+    "browseCars": "Browse Cars",
+    "remove": "Remove"
   },
   "compare": {
     "title": "Compare Cars",
@@ -1260,5 +1261,15 @@
     "viewAll": "View all {n} cars →",
     "welcomeBack": "Welcome back, {name}",
     "trackOrder": "Track order →"
+  },
+  "availability": {
+    "title": "This car is no longer available",
+    "body": "It was reserved or sold.",
+    "browseSimilar": "Browse similar cars",
+    "row": "No longer available",
+    "viewReservation": "View reservation",
+    "reserved": "Reserved",
+    "reservedByYouNote": "You are holding this car. The SAR 99 fee is already paid.",
+    "reservedForOwner": "A buyer is holding this car. It is hidden from everyone else until the reservation ends."
   }
 }

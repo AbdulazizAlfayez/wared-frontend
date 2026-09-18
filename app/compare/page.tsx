@@ -10,6 +10,8 @@ import { ArrowLeft, X, Loader2, GitCompare, Gauge, Fuel, Calendar, MapPin, Car, 
 import { getCompareIds, removeFromCompare, clearCompare } from "@/lib/compare";
 import { sampleCars, type SampleCar } from "@/components/CarGrid";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { visibleListings } from "@/lib/reservations";
 import { getImageUrl } from "@/lib/utils";
 import type { Listing } from "@/lib/types";
 
@@ -38,6 +40,7 @@ function listingToCompareCar(listing: Listing): SampleCar {
 function CompareContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareCars, setCompareCars] = useState<SampleCar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +85,15 @@ function CompareContent() {
       )
     )
       .then((results) => {
-        const valid = results.filter((r): r is Listing => r !== null);
+        /*
+         * A 404 is already dropped above — that is how a car someone else
+         * reserved arrives here. `reserved` reaching a third party means a
+         * stale id from localStorage, so it goes too.
+         */
+        const valid = visibleListings(
+          results.filter((r): r is Listing => r !== null),
+          user
+        );
         if (valid.length > 0) {
           setCompareCars(valid.map(listingToCompareCar));
         } else {
@@ -94,7 +105,7 @@ function CompareContent() {
         setCompareCars(sampleCars.filter((car) => compareIds.includes(car.id)));
       })
       .finally(() => setIsLoading(false));
-  }, [compareIds]);
+  }, [compareIds, user]);
 
   const handleRemoveCar = useCallback((id: string) => {
     removeFromCompare(id);

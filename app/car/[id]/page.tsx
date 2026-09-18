@@ -58,12 +58,24 @@ import {
   FileCheck2,
   ChevronDown,
   Info,
+  ShieldCheck,
 } from "lucide-react";
 import VerificationBadge from "@/components/VerificationBadge";
 import ReportModal from "@/components/ReportModal";
 import ReviewsSection from "@/components/ReviewsSection";
 import { useToast } from "@/components/Toast";
 import { useTranslation } from "@/lib/i18n";
+import { ListingUnavailable, ReservedBadge } from "@/components/ListingUnavailable";
+import {
+  isAlreadyMine,
+  isCurrentlyReserved,
+  isNotFound,
+  isReservedByYou,
+  isReservedForOthers,
+  notifyReservationsChanged,
+  reservationHref,
+} from "@/lib/reservations";
+import { findMyReservationForCar } from "@/lib/reservationLookup";
 import { getImageUrl } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -799,10 +811,45 @@ export default function CarDetailPage() {
   const { showToast } = useToast();
   const isArabic = dir === "rtl";
 
-  const { data: listing, isLoading } = useApiQuery<ImportedListing>(
-    `/api/listings/${listingId}/`,
-    { enabled: !!listingId }
-  );
+  const { data: listing, isLoading, error: listingError, refetch: refetchListing } =
+    useApiQuery<ImportedListing>(`/api/listings/${listingId}/`, { enabled: !!listingId });
+
+  /*
+   * Gone for this viewer: the detail 404s for anyone who is not the buyer,
+   * the importer or staff, and `reserved` reaching a third party means a
+   * stale cache. `refusedByServer` is set when the reserve call reports the
+   * car is held by someone else.
+   */
+  const [refusedByServer, setRefusedByServer] = useState(false);
+  const gone =
+    isNotFound(listingError) || refusedByServer || isReservedForOthers(listing, user);
+
+  /** The buyer holds this car: offer the reservation, never a second charge. */
+  const reservedByYou = isReservedByYou(listing);
+  /** The importer who owns it, or staff, looking at a car a buyer holds. */
+  const reservedForParty = listing?.reservation_state === "reserved" && !gone;
+  const [myReservationHref, setMyReservationHref] = useState<string | null>(null);
+
+  // Resolve which page "View reservation" should open: the listing payload
+  // carries no reservation id, and /orders/{id} is an order id on this site.
+  useEffect(() => {
+    if (!reservedByYou || !listing) return;
+    let cancelled = false;
+    void findMyReservationForCar(listing.id).then((reservation) => {
+      if (!cancelled) setMyReservationHref(reservationHref(reservation));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [reservedByYou, listing]);
+
+  // A reservation made or cancelled anywhere in this tab changes who may see
+  // this car; `lib/favorites.ts` uses the same event convention.
+  useEffect(() => {
+    const onChange = () => refetchListing();
+    window.addEventListener("reservationsUpdated", onChange);
+    return () => window.removeEventListener("reservationsUpdated", onChange);
+  }, [refetchListing]);
 
   const ownerId = listing?.owner_id ?? listing?.owner?.id;
   const isOwner = isAuthenticated && user?.id === ownerId;
@@ -903,8 +950,28 @@ export default function CarDetailPage() {
       const result = await api.post<{ id: number; reservation_number: string }>("/api/reservations/", {
         car_id: listing.id,
       });
+      notifyReservationsChanged();
       window.location.href = `/checkout/${result.id}`;
     } catch (err: any) {
+      /*
+       * Two refusals mean the car is spoken for, and neither is a payment
+       * error the buyer can retry:
+       *  - 400 "You already have an active reservation for this car." — it is
+       *    theirs, so open it rather than charging again;
+       *  - 409 "This car is currently reserved." — someone else holds it, so
+       *    the page becomes the unavailable state.
+       */
+      if (isAlreadyMine(err)) {
+        const mine = await findMyReservationForCar(listing.id);
+        notifyReservationsChanged();
+        window.location.href = reservationHref(mine);
+        return;
+      }
+      if (isCurrentlyReserved(err)) {
+        setRefusedByServer(true);
+        notifyReservationsChanged();
+        return;
+      }
       let message = "Failed to reserve. Please try again.";
       try {
         const body = typeof err?.message === "string" ? JSON.parse(err.message) : err;
@@ -974,6 +1041,13 @@ export default function CarDetailPage() {
         <Loader2 className="w-8 h-8 animate-spin text-accent" />
       </div>
     );
+  }
+
+  // Reserved or sold: a calm state, not the generic "Car Not Found" error.
+  if (gone) {
+    // A 404 carries no body, so the make is only known when the car was
+    // loaded first (reserved-for-others, or refused mid-flow).
+    return <ListingUnavailable make={listing?.make ?? null} />;
   }
 
   if (!listing) {
@@ -1469,8 +1543,48 @@ export default function CarDetailPage() {
                   );
                 }
 
+                // Case: this buyer holds the car — open the reservation, never
+                // offer the SAR 99 charge a second time.
+                if (reservedByYou) {
+                  return (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ShieldCheck className="w-5 h-5 text-slate-700" />
+                        <span className="font-medium text-slate-900">
+                          {t("availability.reserved")}
+                        </span>
+                      </div>
+                      <p className="text-[13.5px] text-slate-500 mb-4">
+                        {t("availability.reservedByYouNote")}
+                      </p>
+                      <Link
+                        href={myReservationHref ?? "/orders"}
+                        data-testid="view-reservation"
+                        className="block w-full text-center py-3 rounded-xl bg-[#0B1424] text-white text-[14px] font-semibold hover:bg-[#16243c] transition-colors"
+                      >
+                        {t("availability.viewReservation")}
+                      </Link>
+                    </div>
+                  );
+                }
+
+                // Case: the importer who owns it, or staff, sees a quiet badge
+                // and no reserve button.
+                if (reservedForParty) {
+                  return (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ReservedBadge />
+                      </div>
+                      <p className="text-[13.5px] text-slate-500">
+                        {t("availability.reservedForOwner")}
+                      </p>
+                    </div>
+                  );
+                }
+
                 const status = listing.import_status ?? "available";
-                const isReserved = status === "reserved" || !!(listing as any).is_reserved;
+                const isReserved = status === "reserved" || !!listing.is_reserved;
 
                 // Case: Reserved by someone else
                 if (isReserved) {

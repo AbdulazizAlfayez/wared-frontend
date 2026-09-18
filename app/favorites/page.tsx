@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Heart, ArrowRight } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/use-api";
@@ -11,9 +11,10 @@ import CarCard from "@/components/CarCard";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { toggleFavorite } from "@/lib/favorites";
+import { isReservedForOthers, RESERVATIONS_CHANGED_EVENT } from "@/lib/reservations";
 
 export default function FavoritesPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   const { data, isLoading, refetch } = useApiQuery<PaginatedResponse<Listing>>(
     "/api/favorites/",
@@ -35,6 +36,25 @@ export default function FavoritesPage() {
   );
 
   const displayedFavorites = favorites.filter((listing) => !removedIds.has(listing.id));
+
+  /*
+   * A saved car someone else has reserved, or that has sold, keeps its place
+   * as a greyed row: favourites are deliberately kept (the endpoint still
+   * returns a car this buyer reserved), and a card that silently disappears
+   * reads as data loss.
+   */
+  const isUnavailable = useCallback(
+    (listing: Listing) =>
+      isReservedForOthers(listing, user) || listing.import_status === "sold",
+    [user]
+  );
+
+  // A reservation made or cancelled in this tab can change these rows.
+  useEffect(() => {
+    const onChange = () => refetch();
+    window.addEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(RESERVATIONS_CHANGED_EVENT, onChange);
+  }, [refetch]);
 
   if (authLoading || (isLoading && isAuthenticated)) {
     return (
@@ -108,6 +128,7 @@ export default function FavoritesPage() {
               <CarCard
                 key={listing.id}
                 listing={listing}
+                unavailable={isUnavailable(listing)}
                 onFavoriteToggle={(_id, isFav) => { if (!isFav) handleUnfavorite(listing.id); }}
               />
             ))}
