@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { api as djangoApi } from "@/lib/api";
+import { parseApiError } from "@/lib/auth-context";
 import type { Listing, PaginatedResponse, AdminStats, AdminVerificationRequest, AdminReport, ReportStats, UserModerationRecord, AdminReview, ReviewStats, FraudFlag, FraudStats, SuspiciousIP } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
@@ -973,14 +974,27 @@ export default function AdminPage() {
   };
 
   // ── Importer handlers ─────────────────────────────────────────────────────
-  const handleVerifyImporter = async (importer: AdminImporter) => {
+  /**
+   * Approve the importer's commercial registration.
+   *
+   * The old call, POST /api/importers/{id}/verify/, does not exist and 404'd
+   * on every click. The real admin action is the CR review, keyed by the same
+   * ImporterProfile id this table already holds. It sets
+   * `cr_verification_status` to verified, records the confirmation date and
+   * un-archives listings that a lapsed CR had suspended.
+   *
+   * Note: no API writes `ImporterProfile.is_verified` — that flag is only
+   * editable in Django admin — so the row's "Verified" column may still read
+   * false after this succeeds.
+   */
+  const handleApproveImporterCR = async (importer: AdminImporter) => {
     setProcessingId(`imp-${importer.id}`);
     try {
-      await djangoApi.post(`/api/importers/${importer.id}/verify/`, {});
-      showToast(`${importer.business_name} verified`, "success");
+      await djangoApi.post(`/api/admin/cr-reviews/${importer.id}/approve/`, {});
+      showToast(`CR approved for ${importer.business_name}`, "success");
       importersRefetch();
-    } catch {
-      showToast("Failed to verify importer", "error");
+    } catch (err) {
+      showToast(parseApiError(err, "Failed to approve the CR"), "error");
     } finally {
       setProcessingId(null);
     }
@@ -1539,10 +1553,11 @@ export default function AdminPage() {
                         <div className="flex items-center gap-1">
                           <Link href={`/importers/${imp.id}`} className="p-2 text-slate-500 hover:text-accent hover:bg-slate-100 rounded-lg inline-flex" title="View"><Eye className="w-4 h-4" /></Link>
                           {!imp.is_verified && (
-                            <button onClick={() => handleVerifyImporter(imp)} disabled={processingId === `imp-${imp.id}`}
+                            <button onClick={() => handleApproveImporterCR(imp)} disabled={processingId === `imp-${imp.id}`}
+                              title="Approve this importer's commercial registration"
                               className="flex items-center gap-1 px-2.5 py-1.5 bg-[#0a0a0a] hover:bg-[#1a1a1a] disabled:bg-[#737373] text-white rounded-lg text-xs font-medium">
                               {processingId === `imp-${imp.id}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
-                              Verify
+                              Approve CR
                             </button>
                           )}
                           <button onClick={() => handleSuspendImporter(imp)} disabled={processingId === `imp-${imp.id}`}
