@@ -3,7 +3,7 @@
     "platformFee": "Platform fee",
     "totalToday": "Total today",
     "carPrice": "Car price",
-    "carPriceNote": "Paid separately to complete your purchase \u2014 the SAR 99 fee is not deducted from it.",
+    "carPriceNote": "Paid separately to complete your purchase — the SAR 99 fee is not deducted from it.",
     "badgeNonRefundable": "Non-refundable platform fee",
     "badgeHidden": "Car hidden from other buyers for 7 days",
     "badgeNotDeducted": "Not deducted from the car's price"
@@ -247,7 +247,9 @@
     "requestSent": "Request Sent!",
     "city": "City",
     "selectCity": "Select city",
-    "bookingFor": "Booking test drive for"
+    "bookingFor": "Booking test drive for",
+    "failed": "Could not book the test drive. Please try again.",
+    "signInRequired": "Sign in to book a test drive."
   },
   "profile": {
     "title": "My Profile",
