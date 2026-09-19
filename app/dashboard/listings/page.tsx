@@ -14,6 +14,11 @@ import {
   FileText, AlertTriangle, CheckCircle, Lock, CheckSquare, Zap, RefreshCw,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import {
+  isSubmittable,
+  statusLabelKey,
+  statusPillClass,
+} from "@/lib/listingLifecycle";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -30,15 +35,6 @@ const STATUS_OPTIONS = [
   { value: "sold", label: "Sold" },
   { value: "draft", label: "Draft" },
 ];
-
-const STATUS_COLORS: Record<string, string> = {
-  approved:           "bg-green-100 text-green-700",
-  pending:            "bg-amber-100 text-amber-700",
-  rejected:           "bg-red-100 text-red-700",
-  changes_requested:  "bg-orange-100 text-orange-700",
-  sold:               "bg-slate-200 text-slate-700",
-  draft:              "bg-slate-100 text-slate-600",
-};
 
 const UPLOAD_STATUS_COLORS: Record<string, string> = {
   pending:    "bg-yellow-100 text-yellow-700",
@@ -812,9 +808,15 @@ export default function DealerListingsPage() {
                         }).format(l.price)}
                       </td>
                       <td className="px-5 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[l.status] ?? "bg-slate-100 text-slate-600"}`}>
-                          {l.status === "changes_requested" ? t("listingStatus.changes_requested") : l.status}
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusPillClass(l.status)}`}>
+                          {t(statusLabelKey(l.status))}
                         </span>
+                        {isSubmittable(l.status) && (
+                          <SubmitForReview
+                            listing={l as any}
+                            onDone={() => refetch()}
+                          />
+                        )}
                         {l.status === "changes_requested" && (l as any).admin_notes && (
                           <div className="mt-1.5 px-2 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-800">
                             <span className="font-medium">{t("listingStatus.adminNote")}:</span> {(l as any).admin_notes}
@@ -1314,6 +1316,64 @@ function HistoryRow({ record }: { record: BulkUploadRecord }) {
           </div>
         </details>
       )}
+    </div>
+  );
+}
+
+/**
+ * "Submit for review" on a listing that has not been reviewed yet.
+ *
+ * Disabled until the server says nothing is missing: `missing_for_submit`
+ * comes back on every owner read, and enabling the button without it would
+ * mean a round trip that can only ever 400. Submitting requires no prior
+ * approval — approval is what it asks for.
+ */
+function SubmitForReview({
+  listing,
+  onDone,
+}: {
+  listing: Listing & { missing_for_submit?: string[] };
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const missing = listing.missing_for_submit ?? [];
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/api/listings/${listing.id}/submit/`, {});
+      onDone();
+    } catch (caught) {
+      // The server's own field map, shown as it was written.
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-1.5">
+      <button
+        type="button"
+        onClick={submit}
+        disabled={busy || missing.length > 0}
+        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-white disabled:bg-slate-200 disabled:text-slate-500"
+      >
+        {missing.length > 0
+          ? t("listingStatus.detailsMissing", { count: String(missing.length) })
+          : t("listingStatus.submitForReview")}
+      </button>
+      {missing.length > 0 && (
+        <p className="mt-1 text-xs text-slate-500">
+          {t("listingStatus.finishInEdit")}
+        </p>
+      )}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

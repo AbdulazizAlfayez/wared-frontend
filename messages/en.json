@@ -1229,7 +1229,13 @@
     "requestChanges": "Request Changes",
     "enterNote": "Enter a note for the importer explaining what needs to change...",
     "enterReason": "Enter the reason for rejection...",
-    "viewMyListings": "View My Listings"
+    "viewMyListings": "View My Listings",
+    "submitForReview": "Submit for review",
+    "detailsMissing": "{count} details missing",
+    "finishInEdit": "Open Edit to fill in what is left.",
+    "saveDraft": "Save draft",
+    "draftNote": "You need make, model and year to save a draft. Everything else can wait.",
+    "draftSaved": "Draft saved. It stays private until you submit it."
   },
   "validation": {
     "yearRange": "Year must be between 1980 and {max}.",
