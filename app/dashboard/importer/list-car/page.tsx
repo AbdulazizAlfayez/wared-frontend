@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { useTranslation } from "@/lib/i18n";
+import { canSaveDraft, draftPayload } from "@/lib/listingLifecycle";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -330,6 +331,45 @@ export default function ListCarPage() {
   };
 
   const goPrev = () => setActiveTab(t => Math.max(t - 1, 1));
+
+  /**
+   * Save what there is and come back later.
+   *
+   * Needs make, model and year only — the server composes a title from them
+   * and leaves every other column blank. A draft is private, notifies nobody
+   * and never enters the review queue.
+   */
+  const handleSaveDraft = async () => {
+    if (!canSaveDraft({ make: form.make, model: form.model, year: form.year })) { showToast("error", t("listingStatus.draftNote")); return; }
+    if (!isAuthenticated) { showToast("error", "Please sign in."); return; }
+
+    setIsSubmitting(true);
+    try {
+      const listing = await api.post<{ id: number }>(
+        "/api/listings/",
+        draftPayload({
+          make: form.make,
+          model: form.model,
+          year: form.year ? parseInt(form.year) : "",
+          mileage: form.mileage ? parseInt(form.mileage) : "",
+          final_price_sar: form.final_price_sar ? parseFloat(form.final_price_sar) : "",
+          source_country: form.source_country,
+          source_price: form.source_price ? parseFloat(form.source_price) : "",
+          vin: form.vin,
+          body_type: form.body_type,
+          color: form.color,
+          fuel_type: form.fuel_type,
+          transmission: form.transmission,
+        }),
+      );
+      showToast("success", t("listingStatus.draftSaved"));
+      router.push(`/listing/edit/${listing.id}`);
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!validateTab(activeTab)) return;
@@ -866,6 +906,14 @@ export default function ListCarPage() {
         >
           <ArrowLeft className="w-4 h-4" />
           Previous
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveDraft}
+          disabled={isSubmitting || !canSaveDraft({ make: form.make, model: form.model, year: form.year })}
+          className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:text-slate-400 disabled:hover:bg-transparent transition-colors"
+        >
+          {t("listingStatus.saveDraft")}
         </button>
         {activeTab < 6 ? (
           <button
