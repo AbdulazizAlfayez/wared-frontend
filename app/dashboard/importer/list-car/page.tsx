@@ -201,7 +201,7 @@ interface FormData {
   // Tab 3
   shipping_cost: string; customs_duty: string; vat_amount: string;
   inspection_fee: string; transportation_cost: string; agent_fees: string;
-  other_fees: string; profit_margin: string; final_price_sar: string;
+  other_fees: string; final_price_sar: string;
   // Tab 4
   import_status: string; vessel_name: string; shipping_line: string;
   bill_of_lading: string; port_of_origin: string; port_of_entry: string;
@@ -221,7 +221,7 @@ const INITIAL: FormData = {
   source_country:"", source_city:"", auction_source:"", auction_lot:"",
   original_listing_url:"", source_price:"", source_currency:"usd",
   shipping_cost:"", customs_duty:"", vat_amount:"", inspection_fee:"",
-  transportation_cost:"", agent_fees:"", other_fees:"", profit_margin:"",
+  transportation_cost:"", agent_fees:"", other_fees:"",
   final_price_sar:"",
   import_status:"available", vessel_name:"", shipping_line:"", bill_of_lading:"",
   port_of_origin:"", port_of_entry:"", estimated_arrival_date:"",
@@ -276,8 +276,11 @@ export default function ListCarPage() {
   // Helper: render field error message
   const fieldError = (key: keyof FormData) => errors[key] ? <p className="text-red-500 text-xs mt-1">{errors[key]}</p> : null;
 
-  // Auto-calculate total landed cost
-  const calcLanded = () => {
+  // The SAR fees, added up for the importer's reference. Not the price, and
+  // not the landed cost either — it excludes the car's own purchase price,
+  // which is in a foreign currency. The server computes total_landed_cost
+  // properly (cars/pricing.py) and returns it on the listing.
+  const calcFees = () => {
     const nums = [form.shipping_cost, form.customs_duty, form.vat_amount, form.inspection_fee,
       form.transportation_cost, form.agent_fees, form.other_fees];
     const sum = nums.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
@@ -361,6 +364,8 @@ export default function ListCarPage() {
         customs_duty_amount: form.customs_duty     ? parseFloat(form.customs_duty)    : undefined,
         vat_amount:          form.vat_amount       ? parseFloat(form.vat_amount)      : undefined,
         inspection_fee:      form.inspection_fee   ? parseFloat(form.inspection_fee)  : undefined,
+        // The importer's asking price. Sent under both names: the API mirrors
+        // them, and older clients read `price`.
         final_price_sar:     form.final_price_sar  ? parseFloat(form.final_price_sar) : undefined,
         // Shipping
         import_status:           form.import_status || "available",
@@ -380,8 +385,7 @@ export default function ListCarPage() {
         service_history:         form.service_history,
         customs_cleared:         form.customs_cleared,
         damage_description:      form.damage_description || undefined,
-        // Price (backward compat)
-        price:                   form.final_price_sar ? parseFloat(form.final_price_sar) : 0,
+        price:                   form.final_price_sar ? parseFloat(form.final_price_sar) : undefined,
         condition:               "used",
       };
 
@@ -547,7 +551,7 @@ export default function ListCarPage() {
         );
 
       case 3: {
-        const landed = calcLanded();
+        const fees = calcFees();
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label="Shipping Cost (SAR)">
@@ -571,24 +575,22 @@ export default function ListCarPage() {
             <Field label="Other Fees (SAR)">
               <NumberInput value={form.other_fees} onChange={set("other_fees")} placeholder="e.g. 0" prefix="SAR" />
             </Field>
-            {landed != null && (
+            {fees != null && (
               <div className="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-slate-700">Auto-calculated Landed Cost</span>
+                  <span className="text-sm font-semibold text-slate-700">Fees subtotal</span>
                   <span className="text-lg font-black text-accent">
-                    SAR {new Intl.NumberFormat("en-SA").format(landed)}
+                    SAR {new Intl.NumberFormat("en-SA").format(fees)}
                   </span>
                 </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  For your reference. Costs are shown to buyers as a breakdown — they do not set the price.
+                </p>
               </div>
             )}
             <div className="sm:col-span-2">
-              <Field label="Profit Margin (SAR)">
-                <NumberInput value={form.profit_margin} onChange={set("profit_margin")} placeholder="Your markup" prefix="SAR" />
-              </Field>
-            </div>
-            <div className="sm:col-span-2">
-              <Field label="Final Asking Price (SAR) *">
-                <NumberInput value={form.final_price_sar} onChange={set("final_price_sar")} placeholder="Total price buyer pays" prefix="SAR" />
+              <Field label="Asking Price (SAR) *" hint="What the buyer pays. You set this — SAR 5,000 to 5,000,000.">
+                <NumberInput value={form.final_price_sar} onChange={set("final_price_sar")} placeholder="e.g. 165000" prefix="SAR" />
                 {fieldError("final_price_sar")}
               </Field>
             </div>
