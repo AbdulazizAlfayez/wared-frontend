@@ -44,6 +44,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { getImageUrl } from "@/lib/utils";
+// "View" on a listing opens the internal record, not the buyer's car page.
+import { inspectorHref } from "@/lib/inspector";
 
 type TabType = "listings" | "orders" | "payments" | "importers" | "pipeline" | "users" | "applications" | "audit" | "verifications" | "moderation" | "reviews" | "fraud";
 
@@ -1334,7 +1336,7 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Link href={`/car/${listing.id}`} className="p-2 text-slate-500 hover:text-accent hover:bg-slate-100 rounded-lg" title="View"><Eye className="w-4 h-4" /></Link>
+                          <Link href={inspectorHref("listing", listing.id)} className="p-2 text-slate-500 hover:text-accent hover:bg-slate-100 rounded-lg" title="Inspect"><Eye className="w-4 h-4" /></Link>
                           <button onClick={() => setEditingListing(listing)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit"><Edit className="w-4 h-4" /></button>
                           {(listing.status === "pending" || listing.status === "changes_requested") && (
                             <>
@@ -1661,7 +1663,7 @@ export default function AdminPage() {
                               {listing.final_price_sar ? formatPrice(Number(listing.final_price_sar)) : formatPrice(listing.price)}
                             </td>
                             <td className="px-4 py-3">
-                              <Link href={`/car/${listing.id}`} className="p-2 text-slate-500 hover:text-accent hover:bg-slate-100 rounded-lg inline-flex" title="View">
+                              <Link href={inspectorHref("listing", listing.id)} className="p-2 text-slate-500 hover:text-accent hover:bg-slate-100 rounded-lg inline-flex" title="Inspect">
                                 <Eye className="w-4 h-4" />
                               </Link>
                             </td>
@@ -2776,7 +2778,7 @@ export default function AdminPage() {
                         <span className="text-slate-500">Listing:</span>
                         <span className="text-slate-800 font-medium">{selectedFraud.listing_title}</span>
                         {selectedFraud.listing && (
-                          <Link href={`/car/${selectedFraud.listing}`} className="text-accent text-xs hover:underline ml-auto">View</Link>
+                          <Link href={inspectorHref("listing", selectedFraud.listing)} className="text-accent text-xs hover:underline ml-auto">Inspect</Link>
                         )}
                       </div>
                     )}
