@@ -9,6 +9,8 @@ import {
   isPubliclyVisible,
   isSubmittable,
   missingForSubmit,
+  needsOwnerFix,
+  reviewNote,
   statusLabelKey,
   statusPillClass,
 } from '../lib/listingLifecycle.ts';
@@ -123,4 +125,50 @@ test('each status has its own pill colour, with a fallback', () => {
   assert.match(statusPillClass('approved'), /green/);
   assert.match(statusPillClass('draft'), /slate/);
   assert.match(statusPillClass('nonsense'), /slate/);
+});
+
+/* ── the reviewer's note ─────────────────────────────────────────────── */
+
+/*
+ * `request-changes` writes to `admin_notes`, which the serializer strips for
+ * everyone who is not an admin. Reading that field showed the owner — the one
+ * person it was written for — nothing at all.
+ */
+test('the note comes from owner_feedback, not admin_notes', () => {
+  const note = reviewNote({ status: 'changes_requested', owner_feedback: '  put vin  ' });
+
+  assert.deepEqual(note, { text: 'put vin', at: null });
+});
+
+test('the note carries its timestamp when the server sends one', () => {
+  const note = reviewNote({
+    status: 'rejected',
+    owner_feedback: 'Duplicate listing.',
+    feedback_at: '2026-09-20T09:00:00Z',
+  });
+
+  assert.equal(note?.at, '2026-09-20T09:00:00Z');
+});
+
+/* Older rows carry a rejection_reason and no owner_feedback. */
+test('the rejection reason is the fallback', () => {
+  assert.equal(reviewNote({ status: 'rejected', rejection_reason: 'Blurry.' })?.text, 'Blurry.');
+});
+
+test('a state with nothing to act on has no note', () => {
+  for (const status of ['approved', 'pending', 'draft', 'sold']) {
+    assert.equal(reviewNote({ status, owner_feedback: 'internal' }), null, status);
+  }
+});
+
+test('an empty note is null, so the caller can say so instead', () => {
+  assert.equal(reviewNote({ status: 'rejected', owner_feedback: '   ' }), null);
+});
+
+test('the owner has to act on exactly the two sent-back states', () => {
+  assert.equal(needsOwnerFix('changes_requested'), true);
+  assert.equal(needsOwnerFix('rejected'), true);
+  for (const status of ['approved', 'pending', 'draft', 'sold', undefined]) {
+    assert.equal(needsOwnerFix(status), false, String(status));
+  }
 });
