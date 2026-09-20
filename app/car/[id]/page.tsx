@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useParams } from "next/navigation";
+import { needsOwnerFix, reviewNote } from "@/lib/listingLifecycle";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/use-api";
@@ -1521,17 +1522,26 @@ export default function CarDetailPage() {
                     draft:             { bg: "bg-slate-50 border-slate-200",   text: "text-slate-600",  label: t("listingStatus.draft") },
                   };
                   const cfg = statusConfig[listingApprovalStatus] || statusConfig.pending;
-                  const adminNotes = (listing as any).admin_notes || (listing as any).rejection_reason;
+                  // `owner_feedback` is the only field that reaches an
+                  // owner: `admin_notes` is stripped for non-admins, so
+                  // reading it here showed the owner nothing at all.
+                  const note = reviewNote(listing as never);
                   return (
                     <div className={`rounded-2xl border p-5 ${cfg.bg}`}>
                       <div className="flex items-center gap-2 mb-2">
                         <AlertCircle className={`w-5 h-5 ${cfg.text}`} />
                         <span className={`font-medium ${cfg.text}`}>{cfg.label}</span>
                       </div>
-                      {adminNotes && (listingApprovalStatus === "rejected" || listingApprovalStatus === "changes_requested") && (
-                        <p className={`text-[13.5px] mb-4 ${cfg.text} opacity-85`}>
-                          {t("listingStatus.adminNote")}: {adminNotes}
-                        </p>
+                      {needsOwnerFix(listingApprovalStatus) && (
+                        <div className="mb-4">
+                          <p className={`text-[11.5px] ${cfg.text} opacity-70`}>
+                            {t("listingStatus.adminNote")}
+                            {note?.at ? ` · ${new Date(note.at).toLocaleDateString()}` : ""}
+                          </p>
+                          <p className={`text-[13.5px] ${cfg.text} opacity-90`}>
+                            {note ? `\u201c${note.text}\u201d` : t("listingStatus.noNote")}
+                          </p>
+                        </div>
                       )}
                       <Link
                         href={`/listing/edit/${listingId}`}

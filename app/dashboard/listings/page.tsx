@@ -16,6 +16,8 @@ import {
 import { useTranslation } from "@/lib/i18n";
 import {
   isSubmittable,
+  needsOwnerFix,
+  reviewNote,
   statusLabelKey,
   statusPillClass,
 } from "@/lib/listingLifecycle";
@@ -817,14 +819,28 @@ export default function DealerListingsPage() {
                             onDone={() => refetch()}
                           />
                         )}
-                        {l.status === "changes_requested" && (l as any).admin_notes && (
-                          <div className="mt-1.5 px-2 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-800">
-                            <span className="font-medium">{t("listingStatus.adminNote")}:</span> {(l as any).admin_notes}
-                          </div>
-                        )}
-                        {l.status === "rejected" && (l as any).rejection_reason && (
-                          <div className="mt-1.5 px-2 py-1.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
-                            <span className="font-medium">{t("listingStatus.rejectionReason")}:</span> {(l as any).rejection_reason}
+                        {/*
+                          One block for both states, reading `owner_feedback`.
+                          `admin_notes` is stripped for non-admins, so the
+                          owner — the one person the note is for — saw nothing.
+                        */}
+                        {needsOwnerFix(l.status) && (
+                          <div
+                            className={`mt-1.5 px-2 py-1.5 rounded-lg text-xs ${
+                              l.status === "rejected"
+                                ? "bg-red-50 border border-red-200 text-red-800"
+                                : "bg-orange-50 border border-orange-200 text-orange-800"
+                            }`}
+                          >
+                            <span className="font-medium">{t("listingStatus.adminNote")}</span>
+                            {reviewNote(l as never)?.at
+                              ? ` · ${new Date(reviewNote(l as never)!.at!).toLocaleDateString()}`
+                              : ""}
+                            <div className="mt-0.5">
+                              {reviewNote(l as never)
+                                ? `\u201c${reviewNote(l as never)!.text}\u201d`
+                                : t("listingStatus.noNote")}
+                            </div>
                           </div>
                         )}
                       </td>

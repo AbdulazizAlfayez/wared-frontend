@@ -125,3 +125,34 @@ export const STATUS_PILL_CLASSES: Record<string, string> = {
 export function statusPillClass(status: string | null | undefined): string {
   return STATUS_PILL_CLASSES[String(status ?? '')] ?? 'bg-slate-100 text-slate-600';
 }
+
+/**
+ * The reviewer's note, as it reaches the person who has to act on it.
+ *
+ * `owner_feedback` is the field to read. `request-changes` writes the note to
+ * `admin_notes`, which the serializer strips for everyone who is not an admin
+ * — so reading that directly returned nothing for the owner it was written
+ * for. `rejection_reason` stays as a fallback for older rows.
+ */
+export interface ReviewNote {
+  text: string;
+  /** ISO timestamp, when the server sent one. */
+  at: string | null;
+}
+
+export function reviewNote(listing: {
+  status?: string | null;
+  owner_feedback?: string | null;
+  rejection_reason?: string | null;
+  feedback_at?: string | null;
+}): ReviewNote | null {
+  if (!needsOwnerFix(listing.status)) return null;
+  const text = listing.owner_feedback?.trim() || listing.rejection_reason?.trim();
+  if (!text) return null;
+  return { text, at: listing.feedback_at ?? null };
+}
+
+/** The states where the owner is the one who has to do something next. */
+export function needsOwnerFix(status: string | null | undefined): boolean {
+  return status === 'rejected' || status === 'changes_requested';
+}
