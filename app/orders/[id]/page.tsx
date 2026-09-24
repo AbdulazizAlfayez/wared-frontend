@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { useTranslation } from "@/lib/i18n";
 import type { Order, OrderTimelineEvent, OrderDocument } from "@/lib/types";
+import { partyProfileHref } from "@/lib/profiles";
 import {
   hasShipment,
   shipmentErrorOf,
@@ -1385,7 +1386,7 @@ export default function OrderDetailPage() {
                         <User className="w-6 h-6 text-slate-400" />
                       </div>
                       <div>
-                        <Link href={`/user/${order.importer_info.id}`} className="font-semibold text-slate-900 hover:text-accent hover:underline">
+                        <Link href={partyProfileHref({ id: order.importer_info.id, role: "importer", profile_url_id: order.importer_info.profile_url_id })} className="font-semibold text-slate-900 hover:text-accent hover:underline">
                           {order.importer_info.business_name ?? order.importer_info.name}
                         </Link>
                         <p className="text-xs text-slate-400">View profile & reviews</p>
