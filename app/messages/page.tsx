@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import type { Conversation, Message, PaginatedResponse } from "@/lib/types";
+import { partyProfileHref } from "@/lib/profiles";
 import {
   MessageSquare, Send, Loader2, ArrowLeft, MoreVertical,
   ShieldAlert, Search, Car,
@@ -301,7 +302,7 @@ function MessageThread({
         <div className="flex-1 min-w-0">
           {conversation.other_party?.id ? (
             <Link
-              href={`/user/${conversation.other_party.id}`}
+              href={partyProfileHref(conversation.other_party)}
               className="font-semibold text-slate-900 text-sm hover:text-accent hover:underline"
               title="View profile"
             >

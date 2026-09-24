@@ -8,6 +8,11 @@ import { api } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { useTranslation } from "@/lib/i18n";
 import type { Order, OrderTimelineEvent, OrderDocument } from "@/lib/types";
+import {
+  hasShipment,
+  shipmentErrorOf,
+  SHIPMENT_REQUIRED_MESSAGE,
+} from "@/lib/shipment";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useRef } from "react";
@@ -37,6 +42,8 @@ import {
   ChevronRight,
   Upload,
   Star,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { getImageUrl } from "@/lib/utils";
@@ -284,6 +291,59 @@ function ImporterPaymentCard({ order }: { order: Order }) {
 // ---------------------------------------------------------------------------
 // Timeline
 // ---------------------------------------------------------------------------
+/**
+ * The number the buyer takes to the carrier's website.
+ *
+ * Monospaced and copyable, because it is a string to be transcribed rather
+ * than read: getting one character wrong is the whole difference between
+ * tracking a car and staring at an error page.
+ */
+function ShipmentNumber({ order, compact = false }: { order: Order; compact?: boolean }) {
+  const { showToast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  if (!hasShipment(order)) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(order.shipment_number ?? "");
+      setCopied(true);
+      showToast("success", "Copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be refused outright (an insecure origin, or a
+      // browser policy). Saying so beats a button that silently does nothing.
+      showToast("error", "Could not copy — select the number and copy it by hand.");
+    }
+  };
+
+  return (
+    <div
+      className={`flex items-center gap-2 ${compact ? "" : "bg-slate-50 rounded-xl px-3 py-2.5"}`}
+      data-testid="shipment-number"
+    >
+      <div className="min-w-0">
+        {!compact && <p className="text-xs text-slate-400 mb-0.5">Shipment number</p>}
+        <p className="text-sm font-mono font-semibold text-slate-800 break-all">
+          {order.shipment_number}
+        </p>
+        {!compact && order.carrier && (
+          <p className="text-xs text-slate-500 mt-0.5">{order.carrier}</p>
+        )}
+      </div>
+      <button
+        onClick={copy}
+        title="Copy shipment number"
+        aria-label="Copy shipment number"
+        data-testid="shipment-copy"
+        className="ms-auto p-2 rounded-lg text-slate-400 hover:text-accent hover:bg-slate-100 transition-colors"
+      >
+        {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
+
 function TimelineView({ events, currentStatus }: { events: OrderTimelineEvent[]; currentStatus: string }) {
   const currentStep = STATUS_ORDER_MAP[currentStatus] ?? 0;
 
@@ -576,6 +636,15 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
   const [statusNote, setStatusNote] = useState("");
   const [estDelivery, setEstDelivery] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  // Shipping a car requires something the buyer can follow it with. Seeded
+  // from the order so correcting a carrier name does not mean retyping the
+  // number, which is also what the server accepts.
+  const [shipmentNumber, setShipmentNumber] = useState(order.shipment_number ?? "");
+  const [carrier, setCarrier] = useState(order.carrier ?? "");
+  const [shipmentError, setShipmentError] = useState<string | null>(null);
+
+  const needsShipment = newStatus === "shipped";
+  const shipmentMissing = needsShipment && !shipmentNumber.trim();
 
   // Terminal states are locked — otherwise EVERY stage is selectable
   // (jump forward to skip steps, or backward to correct a mistake).
@@ -595,7 +664,12 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
       showToast("error", "Please write the cancellation reason in the details box first.");
       return;
     }
+    if (shipmentMissing) {
+      setShipmentError(SHIPMENT_REQUIRED_MESSAGE);
+      return;
+    }
     setIsUpdating(true);
+    setShipmentError(null);
     try {
       await api.patch(`/api/orders/${order.id}/update-status/`, {
         status: newStatus,
@@ -604,14 +678,21 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
         ...(statusNote.trim() ? { notes: statusNote.trim() } : {}),
         ...(newStatus === "cancelled" ? { cancellation_reason: statusNote.trim() } : {}),
         ...(estDelivery ? { estimated_delivery_date: estDelivery } : {}),
+        ...(shipmentNumber.trim() ? { shipment_number: shipmentNumber.trim() } : {}),
+        ...(carrier.trim() ? { carrier: carrier.trim() } : {}),
       });
       showToast("success", t("orderDetail.statusUpdated"));
       setNewStatus("");
       setStatusNote("");
       setEstDelivery("");
       onUpdated();
-    } catch {
-      showToast("error", t("orderDetail.statusUpdateFailed"));
+    } catch (err) {
+      // The server refuses a shipment with no number using a field error. Put
+      // it on the field rather than in a toast, where it would vanish before
+      // the importer had somewhere to type the answer.
+      const message = shipmentErrorOf(err);
+      if (message) setShipmentError(message);
+      else showToast("error", t("orderDetail.statusUpdateFailed"));
     } finally {
       setIsUpdating(false);
     }
@@ -666,6 +747,47 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
         placeholder="Details for the buyer — e.g. 'Car purchased at Osaka auction, ships Tuesday on MV Horizon'"
         className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-3 resize-none"
       />
+      {needsShipment && (
+        <div className="mb-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            Shipment / tracking number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={shipmentNumber}
+            maxLength={60}
+            onChange={(e) => {
+              setShipmentNumber(e.target.value);
+              if (shipmentError) setShipmentError(null);
+            }}
+            placeholder="e.g. MSKU1234567"
+            data-testid="shipment-number-input"
+            className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none mb-1 ${
+              shipmentError ? "border-red-300 focus:border-red-400" : "border-slate-200 focus:border-accent"
+            }`}
+          />
+          {shipmentError && (
+            <p className="text-xs text-red-600 mb-2" data-testid="shipment-number-error">
+              {shipmentError}
+            </p>
+          )}
+          <label className="block text-xs font-medium text-slate-500 mt-2 mb-1.5">
+            Carrier (optional)
+          </label>
+          <input
+            type="text"
+            value={carrier}
+            maxLength={60}
+            onChange={(e) => setCarrier(e.target.value)}
+            placeholder="e.g. Maersk"
+            data-testid="shipment-carrier-input"
+            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none"
+          />
+          <p className="text-xs text-slate-400 mt-2">
+            The buyer sees this on their tracking page and in the notification.
+          </p>
+        </div>
+      )}
       <label className="block text-xs font-medium text-slate-500 mb-1.5">
         Estimated delivery date (optional)
       </label>
@@ -677,7 +799,7 @@ function StatusUpdatePanel({ order, onUpdated }: { order: Order; onUpdated: () =
       />
       <button
         onClick={handleUpdate}
-        disabled={!newStatus || isUpdating}
+        disabled={!newStatus || isUpdating || shipmentMissing}
         className="w-full py-2.5 bg-accent hover:bg-accent-600 disabled:opacity-40 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
       >
         {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -1107,6 +1229,9 @@ export default function OrderDetailPage() {
               currentStatus={order.status}
               vesselName={listing.vessel_name}
             />
+            <div className="mt-3">
+              <ShipmentNumber order={order} />
+            </div>
           </div>
         )}
 
@@ -1147,7 +1272,7 @@ export default function OrderDetailPage() {
                         <User className="w-6 h-6 text-slate-400" />
                       </div>
                       <div>
-                        <Link href={`/user/${order.buyer_info.id}`} className="font-semibold text-slate-900 hover:text-accent hover:underline">{order.buyer_info.name}</Link>
+                        <Link href={`/buyer/${order.buyer_info.profile_url_id ?? order.buyer_info.id}`} className="font-semibold text-slate-900 hover:text-accent hover:underline">{order.buyer_info.name}</Link>
                         {order.buyer_info.city && (
                           <div className="text-sm text-slate-400 flex items-center gap-1">
                             <MapPin className="w-3 h-3" /> {order.buyer_info.city}

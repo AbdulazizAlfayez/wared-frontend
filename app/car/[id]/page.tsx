@@ -1607,9 +1607,9 @@ export default function CarDetailPage() {
                       <p className="text-[13.5px] text-amber-800/85 mb-4">
                         {t("carDetail.reservedDesc")}
                       </p>
-                      {listing.owner && (
+                      {listing.owner?.profile_url_id && (
                         <Link
-                          href={`/importers/${listing.owner.id}`}
+                          href={`/importers/${listing.owner.profile_url_id}`}
                           className="block w-full text-center py-3 rounded-xl bg-white border border-amber-300 text-amber-900 text-[14px] font-medium hover:bg-amber-50 transition-colors"
                         >
                           {t("carDetail.seeSimilar")} →

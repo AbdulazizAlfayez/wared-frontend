@@ -4,13 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X, SlidersHorizontal, CheckSquare, Square } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
-
-const carMakes = [
-  "Toyota", "Honda", "Nissan", "Hyundai", "Kia", "Ford", "Chevrolet",
-  "BMW", "Mercedes-Benz", "Audi", "Lexus", "GMC", "Jeep", "Land Rover", "Porsche",
-  "Mitsubishi", "Mazda", "Subaru", "Infiniti", "Cadillac", "Lincoln", "Dodge",
-  "RAM", "Volkswagen", "Volvo", "Genesis", "Haval",
-];
+import { useApiQuery } from "@/lib/hooks/use-api";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
+import { RangeSlider } from "@/components/RangeSlider";
+import {
+  fromParam,
+  modelsFor,
+  pruneModels,
+  toParam,
+  type ListingFilterOptions,
+} from "@/lib/filterOptions";
 
 const fuelTypes     = ["Petrol", "Diesel", "Hybrid", "Electric"];
 const transmissions = ["Automatic", "Manual"];
@@ -121,8 +124,57 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
+  /*
+   * The server's own facets, with counts. The makes used to be a list compiled
+   * into the bundle, which offered makes no car on the market had and missed
+   * every new one.
+   */
+  const { data: options } = useApiQuery<ListingFilterOptions>(
+    "/api/listings/filter-options/"
+  );
+
+  /*
+   * Make, model and city hold comma lists — the same shape the URL carries and
+   * the same one `MultiValueIContainsFilter` splits on server-side — so
+   * multi-select needed no change to the filter state, the URL sync or the
+   * chips.
+   */
+  const makes = fromParam(filters.make);
+  const models = fromParam(filters.model);
+  const cities = fromParam(filters.city);
+  const modelOptions = modelsFor(options, makes);
+
+  const mileageBound: [number, number] | null =
+    options?.mileage && options.mileage.max != null
+      ? [options.mileage.min ?? 0, options.mileage.max]
+      : null;
+
+  const mileageValue: [number, number] = mileageBound
+    ? [
+        filters.minMileage ? Number(filters.minMileage) : mileageBound[0],
+        filters.maxMileage ? Number(filters.maxMileage) : mileageBound[1],
+      ]
+    : [0, 0];
+
   const updateFilter = (key: keyof FilterState, value: string) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
+
+  const setMakes = (next: string[]) =>
+    setFilters((prev) => ({
+      ...prev,
+      make: toParam(next),
+      // Dropping a make drops the models only it offered, so the panel cannot
+      // keep filtering on a model that is no longer on offer.
+      model: toParam(pruneModels(options, next, fromParam(prev.model))),
+    }));
+
+  /** A slider at full span is not a filter, so both ends clear. */
+  const setMileage = ([min, max]: [number, number]) =>
+    setFilters((prev) => ({
+      ...prev,
+      minMileage: mileageBound && min <= mileageBound[0] ? "" : String(min),
+      maxMileage: mileageBound && max >= mileageBound[1] ? "" : String(max),
+    }));
 
   const toggleBool = (key: keyof FilterState) =>
     setFilters((prev) => ({ ...prev, [key]: prev[key] === "true" ? "" : "true" }));
@@ -155,6 +207,8 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
   const getFilterDisplayValue = (key: keyof FilterState, value: string): string => {
     if (["condition","negotiable","warrantyRemaining","noAccidents","hasSalvageTitle","gccSpecs"].includes(key)) return "";
+    // Multi-valued filters travel as a comma list; a chip should read as one.
+    if (key === "make" || key === "model" || key === "city") return fromParam(value).join(", ");
     if (key === "minPrice" || key === "maxPrice") return Number(value).toLocaleString() + " SAR";
     if (key === "minMileage" || key === "maxMileage") return Number(value).toLocaleString() + ` ${t("browse.kmUnit")}`;
     if (key === "sort") { const sk = SORT_KEYS.find((o) => o.value === value); return sk ? t(sk.key) : value; }
@@ -279,21 +333,33 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* Make */}
       <div className={sectionCls}>
-        <label className={labelCls}>{t("filters.make")}</label>
-        <select value={filters.make} onChange={(e) => updateFilter("make", e.target.value)} className={selectCls}>
-          <option value="">{t("filters.allMakes")}</option>
-          {carMakes.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <MultiSelectFilter
+          label={t("filters.make")}
+          options={options?.makes ?? []}
+          selected={makes}
+          onChange={setMakes}
+          language={locale}
+          placeholder={t("filters.allMakes")}
+          searchPlaceholder={t("filters.searchMakes")}
+          emptyLabel={t("filters.noMatches")}
+          testId="filter-make"
+        />
       </div>
 
       {/* Model */}
       <div className={sectionCls}>
-        <label className={labelCls}>{t("filters.model")}</label>
-        <input
-          type="text" value={filters.model}
-          onChange={(e) => updateFilter("model", e.target.value)}
+        <MultiSelectFilter
+          label={t("filters.model")}
+          options={modelOptions}
+          selected={models}
+          onChange={(next) => updateFilter("model", toParam(next))}
+          language={locale}
           placeholder={t("filters.modelPlaceholder")}
-          className={inputCls}
+          searchPlaceholder={t("filters.searchModels")}
+          emptyLabel={
+            makes.length ? t("filters.noModelsForMake") : t("filters.noMatches")
+          }
+          testId="filter-model"
         />
       </div>
 
@@ -335,17 +401,20 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
       </div>
 
       {/* Mileage Range */}
-      <div className={sectionCls}>
-        <label className={labelCls}>{t("filters.mileageKm")}</label>
-        <div className="grid grid-cols-2 gap-2">
-          <input type="number" placeholder={t("filters.min")} value={filters.minMileage}
-            onChange={(e) => updateFilter("minMileage", e.target.value)}
-            className={inputCls} />
-          <input type="number" placeholder={t("filters.max")} value={filters.maxMileage}
-            onChange={(e) => updateFilter("maxMileage", e.target.value)}
-            className={inputCls} />
+      {mileageBound && (
+        <div className={sectionCls}>
+          <RangeSlider
+            bound={mileageBound}
+            value={mileageValue}
+            step={options?.mileage?.step || 5000}
+            onChange={setMileage}
+            label={t("filters.mileageKm")}
+            format={(value) => `${value.toLocaleString()} ${t("browse.kmUnit")}`}
+            anyLabel={t("filters.anyMileage")}
+            testId="filter-mileage"
+          />
         </div>
-      </div>
+      )}
 
       {/* Fuel Type */}
       <div className={sectionCls}>
@@ -385,12 +454,16 @@ export default function CarFilters({ onFilterChange }: CarFiltersProps) {
 
       {/* City */}
       <div className={sectionCls}>
-        <label className={labelCls}>{t("filters.city")}</label>
-        <input
-          type="text" value={filters.city}
-          onChange={(e) => updateFilter("city", e.target.value)}
+        <MultiSelectFilter
+          label={t("filters.city")}
+          options={options?.cities ?? []}
+          selected={cities}
+          onChange={(next) => updateFilter("city", toParam(next))}
+          language={locale}
           placeholder={t("filters.cityPlaceholder")}
-          className={inputCls}
+          searchPlaceholder={t("filters.searchCities")}
+          emptyLabel={t("filters.noMatches")}
+          testId="filter-city"
         />
       </div>
 

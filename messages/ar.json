@@ -177,7 +177,13 @@
     "van": "فان",
     "truck": "شاحنة",
     "convertible": "مكشوفة",
-    "wagon": "ستيشن"
+    "wagon": "ستيشن",
+    "searchMakes": "ابحث في الماركات",
+    "searchModels": "ابحث في الموديلات",
+    "searchCities": "ابحث في المدن",
+    "noMatches": "لا توجد نتائج",
+    "noModelsForMake": "لا توجد موديلات للماركات المختارة",
+    "anyMileage": "أي مسافة"
   },
   "car": {
     "price": "السعر",
