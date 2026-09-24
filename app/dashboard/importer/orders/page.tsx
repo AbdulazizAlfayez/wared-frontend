@@ -13,6 +13,7 @@ import {
   CheckCircle, Calendar, DollarSign, User, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { shipmentErrorOf } from "@/lib/shipment";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,25 +95,49 @@ function StatusDropdown({ order, onUpdated, onOptimistic, onRevert }: {
 }) {
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  // Set while the importer is being asked for a shipment number; the status
+  // change waits until they answer.
+  const [askingShipment, setAskingShipment] = useState(false);
   const { showToast } = useToast();
 
-  const handleChange = async (newStatus: string) => {
-    if (newStatus === order.status) { setOpen(false); return; }
-    setOpen(false);
+  const send = async (newStatus: string, extra?: Record<string, string>) => {
     setUpdating(true);
     // Optimistic UI: update immediately
     onOptimistic(order.id, newStatus);
     try {
-      await api.patch(`/api/orders/${order.id}/update-status/`, { status: newStatus });
+      await api.patch(`/api/orders/${order.id}/update-status/`, {
+        status: newStatus,
+        ...(extra ?? {}),
+      });
       showToast("success", "Order status updated.");
+      setAskingShipment(false);
       onUpdated();
-    } catch {
+    } catch (err) {
       // Revert on failure
       onRevert(order.id);
-      showToast("error", "Failed to update status.");
+      // The one refusal with a fix the importer can act on: ask for the
+      // number rather than telling them it failed.
+      const shipmentProblem = shipmentErrorOf(err);
+      if (shipmentProblem) {
+        setAskingShipment(true);
+        showToast("error", shipmentProblem);
+      } else {
+        showToast("error", "Failed to update status.");
+      }
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleChange = async (newStatus: string) => {
+    if (newStatus === order.status) { setOpen(false); return; }
+    setOpen(false);
+    // Shipping is the one move that needs something typed first.
+    if (newStatus === "shipped" && !order.shipment_number) {
+      setAskingShipment(true);
+      return;
+    }
+    await send(newStatus);
   };
 
   return (
@@ -144,6 +169,88 @@ function StatusDropdown({ order, onUpdated, onOptimistic, onRevert }: {
           </div>
         </>
       )}
+      {askingShipment && (
+        <ShipmentPrompt
+          order={order}
+          busy={updating}
+          onCancel={() => setAskingShipment(false)}
+          onConfirm={(shipment_number, carrier) =>
+            send("shipped", { shipment_number, ...(carrier ? { carrier } : {}) })
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Asks for the shipment number before a car can be marked shipped.
+ *
+ * A modal rather than an inline field, because this dropdown lives in a table
+ * row with nowhere to put one — and because the answer is required, so it
+ * should block rather than sit there hoping to be noticed.
+ */
+function ShipmentPrompt({ order, busy, onCancel, onConfirm }: {
+  order: Order;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (shipmentNumber: string, carrier: string) => void;
+}) {
+  const [number, setNumber] = useState(order.shipment_number ?? "");
+  const [carrier, setCarrier] = useState(order.carrier ?? "");
+
+  return (
+    <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-slate-900 mb-1">Mark as shipped</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          {order.order_number} — the buyer follows the car with this number.
+        </p>
+
+        <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          Shipment / tracking number <span className="text-red-500">*</span>
+        </label>
+        <input
+          autoFocus
+          type="text"
+          value={number}
+          maxLength={60}
+          onChange={(e) => setNumber(e.target.value)}
+          placeholder="e.g. MSKU1234567"
+          data-testid="shipment-number-input"
+          className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none mb-3"
+        />
+
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">
+          Carrier (optional)
+        </label>
+        <input
+          type="text"
+          value={carrier}
+          maxLength={60}
+          onChange={(e) => setCarrier(e.target.value)}
+          placeholder="e.g. Maersk"
+          data-testid="shipment-carrier-input"
+          className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-accent focus:outline-none"
+        />
+
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!number.trim() || busy}
+            onClick={() => onConfirm(number.trim(), carrier.trim())}
+            data-testid="shipment-confirm"
+            className="px-4 py-2 text-sm font-semibold rounded-lg bg-accent hover:bg-accent-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {busy ? "Saving…" : "Mark as shipped"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -317,9 +317,17 @@ function buildQueryString(filters: CarGridFilters, page: number, pageSize?: numb
   if (filters.transmission)      p.set("transmission",      filters.transmission);
   if (filters.condition)         p.set("condition",         filters.condition);
   if (filters.bodyType)          p.set("body_type",         filters.bodyType);
-  // Price → final_price_sar range
-  if (filters.minPrice)          p.set("final_price_sar_min", filters.minPrice);
-  if (filters.maxPrice)          p.set("final_price_sar_max", filters.maxPrice);
+  /*
+   * Price. These were `final_price_sar_min` / `final_price_sar_max`, which
+   * `ListingFilter` does not declare — it has `price_min`/`price_max` over
+   * `price`, and `final_price_sar__gte`/`__lte` with a DOUBLE underscore for
+   * the other column. django-filter ignores a parameter it does not know, so
+   * the price range silently did nothing at all. `price` is kept in step with
+   * `final_price_sar` on save (cars/serializers.py), so filtering it gives the
+   * answer the buyer expects.
+   */
+  if (filters.minPrice)          p.set("price_min",         filters.minPrice);
+  if (filters.maxPrice)          p.set("price_max",         filters.maxPrice);
   if (filters.minYear)           p.set("year_min",          filters.minYear);
   if (filters.maxYear)           p.set("year_max",          filters.maxYear);
   if (filters.minMileage)        p.set("mileage_min",       filters.minMileage);

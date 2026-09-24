@@ -177,7 +177,13 @@
     "van": "Van",
     "truck": "Truck",
     "convertible": "Convertible",
-    "wagon": "Wagon"
+    "wagon": "Wagon",
+    "searchMakes": "Search makes",
+    "searchModels": "Search models",
+    "searchCities": "Search cities",
+    "noMatches": "No matches",
+    "noModelsForMake": "No models for the chosen makes",
+    "anyMileage": "Any mileage"
   },
   "car": {
     "price": "Price",

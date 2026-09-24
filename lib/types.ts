@@ -20,6 +20,14 @@ export interface ListingOwner {
   name: string;
   phone: string;
   avatar_url: string | null;
+  role?: string;
+  /**
+   * The id `/importers/[id]` needs. `/api/importers/{pk}/` is keyed by the
+   * ImporterProfile, not the user, and the two differ — linking with `id`
+   * opens somebody else's importer or a 404. Null when this owner has no
+   * importer profile.
+   */
+  profile_url_id?: number | null;
 }
 
 export interface VerificationStatus {
@@ -297,6 +305,32 @@ export interface OrderImporterBrief {
   phone?: string;
 }
 
+/**
+ * `GET /api/users/{id}/public/` — the buyer behind a deal.
+ *
+ * Visible only to an importer sharing a reservation, order or conversation
+ * with them, and to staff. Carries no phone and no email by construction.
+ */
+export interface BuyerPublicProfile {
+  id: number;
+  full_name: string | null;
+  first_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  /** ISO. The importer profile uses the same format; /users/{id}/profile/ does not. */
+  member_since: string | null;
+  /**
+   * `null` means the platform has no way to rate buyers — not "no reviews
+   * yet". Nothing creates a seller_to_buyer review today.
+   */
+  reviews_received: {
+    avg: number | null;
+    count: number;
+    items: { id: number; rating: number; title: string; comment: string; created_at: string }[];
+  } | null;
+  completed_orders_count: number;
+}
+
 export interface Order {
   id: number;
   order_number: string;
@@ -316,8 +350,16 @@ export interface Order {
   updated_at: string;
   notes: string;
   can_cancel: boolean;
-  buyer_info?: { id: number; name: string; city?: string };
-  importer_info?: { id: number; name: string; business_name?: string };
+  /**
+   * What the buyer follows the car with once it ships, and who is carrying
+   * it. Empty strings until the importer marks the order 'shipped', which the
+   * server refuses without a number.
+   */
+  shipment_number?: string;
+  carrier?: string;
+  /** `profile_url_id` is what opens the buyer's profile — see /buyer/[id]. */
+  buyer_info?: { id: number; profile_url_id?: number; name: string; city?: string };
+  importer_info?: { id: number; profile_url_id?: number; name: string; business_name?: string };
   buyer_notes?: string;
 }
 
@@ -775,6 +817,10 @@ export interface ConversationParty {
   name: string;
   email: string;
   avatar_url: string | null;
+  is_verified?: boolean;
+  /** Whose profile the header opens: a buyer's or an importer's. */
+  role?: string;
+  profile_url_id?: number;
 }
 
 export interface ConversationLastMessage {
