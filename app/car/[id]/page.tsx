@@ -1476,7 +1476,14 @@ export default function CarDetailPage() {
                   </div>
                   {ownerId && (
                     <Link
-                      href={`/user/${ownerId}`}
+                      // The seller's business page when they have one; their
+                      // plain user profile is the fallback, since
+                      // /importers/[id] is keyed by the ImporterProfile.
+                      href={
+                        listing.owner?.profile_url_id
+                          ? `/importers/${listing.owner.profile_url_id}`
+                          : `/user/${ownerId}`
+                      }
                       className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-600 font-medium"
                     >
                       {t("carDetail.viewProfile")}

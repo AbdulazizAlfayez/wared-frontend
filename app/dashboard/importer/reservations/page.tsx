@@ -31,6 +31,8 @@ interface PendingReservation {
     id:           number;
     name:         string;
     member_since: string;
+    /** What opens their profile — see /buyer/[id]. */
+    profile_url_id?: number;
   };
   platform_fee_sar:      string;
   paid_at:               string | null;
@@ -198,7 +200,7 @@ export default function ImporterReservationsPage() {
 
                 {/* Detail chips */}
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mb-4">
-                  <Link href={`/user/${res.buyer.id}`} className="flex items-center gap-1.5 text-accent hover:underline font-medium" title="View buyer profile">
+                  <Link href={`/buyer/${res.buyer.profile_url_id ?? res.buyer.id}`} className="flex items-center gap-1.5 text-accent hover:underline font-medium" title="View buyer profile">
                     <User className="w-3.5 h-3.5" /> {res.buyer.name}
                   </Link>
                   <span className="flex items-center gap-1.5">
