@@ -9,6 +9,7 @@ import type { PaginatedResponse, Listing, Appointment } from "@/lib/types";
 import Link from "next/link";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 import {
   Car, Users, Calendar, TrendingUp, Clock, ChevronRight,
   CheckCircle, XCircle, AlertCircle, Eye, Loader2,
@@ -198,9 +199,9 @@ export default function DashboardPage() {
             <ul className="divide-y divide-slate-50">
               {recentListings.map((l) => (
                 <li key={l.id} className="px-5 py-3 flex items-center gap-3">
-                  {l.primary_image ? (
+                  {resolveImageUrl(l, "thumb") ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={l.primary_image} alt="" className="w-12 h-9 rounded-lg object-cover flex-shrink-0" />
+                    <img src={resolveImageUrl(l, "thumb") ?? ""} alt="" className="w-12 h-9 rounded-lg object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-12 h-9 rounded-lg bg-slate-100 flex-shrink-0" />
                   )}

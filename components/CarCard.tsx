@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { getImageUrl } from "@/lib/utils";
 import type { Listing } from "@/lib/types";
 import { useTranslation } from "@/lib/i18n";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 interface CarCardProps {
   listing: Listing;
@@ -83,11 +84,8 @@ export default function CarCard({
   // rules of hooks and crashes React when the prop flips between renders.)
   if (!listing) return null;
 
-  const primaryImage = listing.images?.find((img) => img.is_primary) ?? listing.images?.[0];
-  const imageUrl =
-    listing.primary_image ||
-    primaryImage?.image_url ||
-    (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
+  // One reader for every shape `primary_image` has meant — see lib/images.
+  const imageUrl = resolveImageUrl(listing, "card");
 
   // Import-specific fields (typed as any since they're extended fields)
   const ls = listing as any;

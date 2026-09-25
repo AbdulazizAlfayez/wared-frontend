@@ -24,6 +24,7 @@ import {
   Star,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -123,10 +124,7 @@ function ActiveOrderCard({ order }: { order: Order }) {
   const progress = STATUS_PROGRESS[order.status] ?? 0;
   const statusColor = STATUS_COLORS[order.status] ?? "bg-slate-100 text-slate-600";
   const countryFlag = COUNTRY_FLAGS[listing?.source_country?.toLowerCase() ?? ""] ?? "🌍";
-  const rawImage = listing?.primary_image;
-  const imageUrl = rawImage
-    ? (rawImage.startsWith("http") ? rawImage : getImageUrl(rawImage))
-    : "/images/car-placeholder.jpg";
+  const imageUrl = resolveImageUrl(listing, "card") ?? "/images/car-placeholder.jpg";
 
   return (
     <Link

@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useAuth } from "@/lib/auth-context";
 import { useApiQuery } from "@/lib/hooks/use-api";
 import { Loader2, TrendingUp, Eye, Users, BarChart2, Download, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 // ---------------------------------------------------------------------------
 // Analytics types
@@ -377,10 +378,10 @@ export default function AnalyticsPage() {
                   <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        {l.primary_image ? (
+                        {resolveImageUrl(l, "thumb") ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={l.primary_image}
+                            src={resolveImageUrl(l, "thumb") ?? ""}
                             alt=""
                             className="w-12 h-9 rounded-lg object-cover flex-shrink-0"
                           />

@@ -16,6 +16,7 @@ import type { ImportedListing, PaginatedResponse } from "@/lib/types";
 import { getImageUrl } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { FadeIn, StaggerContainer, StaggerItem, AnimatedCounter, MagneticWrap } from "@/components/motion";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 // ---------------------------------------------------------------------------
 // Helpers (preserved from existing code)
@@ -332,8 +333,9 @@ function BrowseCars() {
         ) : (
         <StaggerContainer stagger={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {listings.map((listing, i) => {
-              const primaryImage = listing.images?.find((img: any) => img.is_primary) ?? listing.images?.[0];
-              const imageUrl = listing.primary_image || primaryImage?.image_url || (primaryImage?.image ? getImageUrl(primaryImage.image) : null);
+              // `resolveImageUrl` walks `images[]` itself when there is no
+              // `primary_image`, so the hand-rolled lookup is gone.
+              const imageUrl = resolveImageUrl(listing, "card");
               const finalPrice = listing.final_price_sar ?? listing.price;
               const demoBadge = isDemo ? DEMO_BADGES[listing.id as string] : null;
               const statusInfo = !isDemo && listing.import_status ? (IMPORT_STATUS_STYLES[listing.import_status] ?? null) : null;
