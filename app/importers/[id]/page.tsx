@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,8 +133,8 @@ function InventoryGrid({ importerId }: { importerId: string }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((car) => {
-        const img = car.primary_image
-          ? (car.primary_image.startsWith("http") ? car.primary_image : getImageUrl(car.primary_image))
+        const img = resolveImageUrl(car, "card")
+          ? (resolveImageUrl(car, "card") as string)
           : null;
         const flag = COUNTRY_FLAGS[car.source_country?.toLowerCase() ?? ""] ?? "🌍";
         const st = STATUS_STYLES[car.import_status ?? ""] ?? { bg: "bg-slate-50", text: "text-slate-600" };

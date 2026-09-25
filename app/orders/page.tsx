@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -150,7 +151,7 @@ const RES_STATUS_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 function ReservationCard({ res, t }: { res: BuyerReservation; t: (key: string, params?: Record<string, string | number>) => string }) {
   const car = res.car;
-  const rawImage = car?.primary_image;
+  const rawImage = resolveImageUrl(car, "thumb");
   const imageUrl = rawImage
     ? (rawImage.startsWith("http") ? rawImage : getImageUrl(rawImage))
     : "/images/car-placeholder.jpg";
@@ -261,7 +262,7 @@ function OrderCard({ order, t }: { order: Order; t: (key: string, params?: Recor
   const progress = STATUS_PROGRESS[order.status] ?? 0;
   const statusColor = STATUS_COLORS[order.status] ?? "bg-slate-100 text-slate-600";
   const countryFlag = COUNTRY_FLAGS[listing?.source_country?.toLowerCase() ?? ""] ?? "🌍";
-  const rawImage = listing?.primary_image;
+  const rawImage = resolveImageUrl(listing, "thumb");
   const imageUrl = rawImage
     ? (rawImage.startsWith("http") ? rawImage : getImageUrl(rawImage))
     : "/images/car-placeholder.jpg";

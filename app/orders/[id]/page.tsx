@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { getImageUrl } from "@/lib/utils";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 const OrderTrackingMap = nextDynamic(
   () => import("@/components/OrderTrackingMap"),
@@ -1135,7 +1136,7 @@ export default function OrderDetailPage() {
   const listing = order.car;
   const countryFlag = COUNTRY_FLAGS[listing?.source_country?.toLowerCase() ?? ""] ?? "🌍";
   const statusColor = STATUS_COLORS[order.status] ?? "bg-slate-100 text-slate-600";
-  const rawImage = listing?.primary_image;
+  const rawImage = resolveImageUrl(listing, "card");
   const imageUrl = rawImage
     ? (rawImage.startsWith("http") ? rawImage : getImageUrl(rawImage))
     : "/images/car-placeholder.jpg";

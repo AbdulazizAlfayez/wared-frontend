@@ -13,6 +13,7 @@ import {
   notifyReservationsChanged,
 } from "@/lib/reservations";
 import Link from "next/link";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 import {
   ArrowLeft, Lock, CheckCircle, Loader2, CreditCard,
   Shield, Clock, ChevronRight,
@@ -295,9 +296,9 @@ export default function CheckoutPage() {
               {/* Car thumbnail */}
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-16 h-12 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
-                  {car.primary_image ? (
+                  {resolveImageUrl(car, "card") ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={car.primary_image} alt="" className="w-full h-full object-cover" />
+                    <img src={resolveImageUrl(car, "card") ?? ""} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <CreditCard className="w-5 h-5 text-slate-300" />

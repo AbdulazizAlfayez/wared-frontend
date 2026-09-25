@@ -14,6 +14,7 @@ import {
   FileText, AlertTriangle, CheckCircle, Lock, CheckSquare, Zap, RefreshCw,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 import {
   isSubmittable,
   needsOwnerFix,
@@ -786,10 +787,10 @@ export default function DealerListingsPage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          {l.primary_image ? (
+                          {resolveImageUrl(l, "thumb") ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={l.primary_image}
+                              src={resolveImageUrl(l, "thumb") ?? ""}
                               alt=""
                               className="w-14 h-10 rounded-lg object-cover flex-shrink-0"
                             />

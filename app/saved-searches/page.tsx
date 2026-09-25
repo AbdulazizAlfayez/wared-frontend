@@ -16,6 +16,7 @@ import { api } from "@/lib/api";
 import { getImageUrl } from "@/lib/utils";
 import type { SavedSearch, PaginatedResponse, Listing } from "@/lib/types";
 import Image from "next/image";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 function formatFilterSummary(filters: Record<string, string>): string {
   const parts: string[] = [];
@@ -107,7 +108,7 @@ function SavedSearchResults({
                 <div className="rounded-xl border border-slate-100 overflow-hidden hover:shadow-md transition-all">
                   <div className="relative aspect-[16/10] bg-slate-100">
                     <Image
-                      src={listing.primary_image || primary?.image_url || getImageUrl(primary?.image)}
+                      src={resolveImageUrl(listing, "thumb") ?? "/images/car-placeholder.jpg"}
                       alt={`${listing.year} ${listing.make} ${listing.model}`}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform"

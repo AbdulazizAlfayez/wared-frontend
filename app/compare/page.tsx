@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth-context";
 import { visibleListings } from "@/lib/reservations";
 import { getImageUrl } from "@/lib/utils";
 import type { Listing } from "@/lib/types";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 function listingToCompareCar(listing: Listing): SampleCar {
   const primary = listing.images?.find((img) => img.is_primary) ?? listing.images?.[0];
@@ -31,7 +32,7 @@ function listingToCompareCar(listing: Listing): SampleCar {
     condition: listing.condition,
     color: listing.color || "Unknown",
     description: listing.description || "",
-    imageUrl: listing.primary_image || primary?.image_url || getImageUrl(primary?.image),
+    imageUrl: resolveImageUrl(listing, "card") ?? "",
     sellerPhone: listing.owner?.phone || undefined,
     sellerEmail: undefined,
   };

@@ -12,6 +12,7 @@ import {
   Loader2, ChevronRight, Car, Users, Clock, ArrowRight,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
+import { imageUrl as resolveImageUrl } from "@/lib/images";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,8 +111,8 @@ function StatCard({
 // Pipeline Card
 // ---------------------------------------------------------------------------
 function PipelineCarCard({ listing }: { listing: PipelineListing }) {
-  const img = listing.primary_image
-    ? (listing.primary_image.startsWith("http") ? listing.primary_image : getImageUrl(listing.primary_image))
+  const img = resolveImageUrl(listing, "thumb")
+    ? (resolveImageUrl(listing, "thumb") as string)
     : "/images/car-placeholder.jpg";
 
   return (
